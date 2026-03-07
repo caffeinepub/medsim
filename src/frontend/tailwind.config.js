@@ -97,12 +97,12 @@ export default {
         "2xl": "1.25rem",
       },
       boxShadow: {
-        xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
+        xs: "0 1px 3px 0 oklch(0 0 0 / 20%)",
         medical:
-          "0 4px 16px -2px oklch(0.32 0.09 200 / 15%), 0 2px 4px -1px oklch(0.32 0.09 200 / 10%)",
+          "0 8px 25px -4px oklch(0.65 0.16 196 / 20%), 0 4px 8px -2px oklch(0.65 0.16 196 / 10%)",
         "medical-lg":
-          "0 8px 32px -4px oklch(0.32 0.09 200 / 20%), 0 4px 8px -2px oklch(0.32 0.09 200 / 12%)",
-        "sidebar-glow": "4px 0 24px oklch(0.32 0.09 200 / 15%)",
+          "0 12px 40px -6px oklch(0.65 0.16 196 / 25%), 0 6px 12px -3px oklch(0.65 0.16 196 / 15%)",
+        "sidebar-glow": "4px 0 24px oklch(0.65 0.16 196 / 15%)",
       },
       keyframes: {
         "accordion-down": {

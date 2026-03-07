@@ -31,49 +31,49 @@
   :root {
     --radius: 0.75rem;
 
-    /* MedSim: Deep Navy + Teal accent - clean clinical precision */
-    --background: 0.97 0.008 220;
-    --foreground: 0.16 0.04 240;
+    /* MedSim: Deep Navy + Teal accent - dark clinical precision */
+    --background: 0.14 0.04 230;
+    --foreground: 0.92 0.015 215;
 
-    --card: 0.99 0.003 220;
-    --card-foreground: 0.16 0.04 240;
+    --card: 0.18 0.05 235;
+    --card-foreground: 0.92 0.015 215;
 
-    --popover: 0.99 0.003 220;
-    --popover-foreground: 0.16 0.04 240;
+    --popover: 0.18 0.05 235;
+    --popover-foreground: 0.92 0.015 215;
 
-    /* Deep teal primary */
-    --primary: 0.32 0.09 200;
+    /* Bright teal primary */
+    --primary: 0.65 0.16 196;
     --primary-foreground: 0.99 0 0;
 
-    --secondary: 0.93 0.015 215;
-    --secondary-foreground: 0.25 0.06 230;
+    --secondary: 0.25 0.055 230;
+    --secondary-foreground: 0.88 0.02 215;
 
-    --muted: 0.93 0.012 218;
-    --muted-foreground: 0.52 0.03 230;
+    --muted: 0.22 0.05 230;
+    --muted-foreground: 0.62 0.04 225;
 
     /* Teal accent */
-    --accent: 0.92 0.03 195;
-    --accent-foreground: 0.22 0.08 200;
+    --accent: 0.25 0.055 230;
+    --accent-foreground: 0.88 0.02 215;
 
-    --destructive: 0.55 0.22 27;
+    --destructive: 0.65 0.22 27;
     --destructive-foreground: 0.99 0 0;
 
-    --border: 0.88 0.018 215;
-    --input: 0.88 0.018 215;
-    --ring: 0.32 0.09 200;
+    --border: 0.28 0.05 235;
+    --input: 0.28 0.05 235;
+    --ring: 0.65 0.16 196;
 
     /* Medical success/warning */
-    --success: 0.52 0.14 152;
+    --success: 0.65 0.16 152;
     --success-foreground: 0.99 0 0;
-    --warning: 0.72 0.16 68;
+    --warning: 0.78 0.16 68;
     --warning-foreground: 0.15 0 0;
 
     /* Charts */
-    --chart-1: 0.52 0.14 200;
-    --chart-2: 0.55 0.14 152;
-    --chart-3: 0.55 0.22 27;
-    --chart-4: 0.72 0.16 68;
-    --chart-5: 0.58 0.15 280;
+    --chart-1: 0.65 0.16 196;
+    --chart-2: 0.65 0.16 152;
+    --chart-3: 0.65 0.22 27;
+    --chart-4: 0.78 0.16 68;
+    --chart-5: 0.65 0.15 280;
 
     /* Sidebar */
     --sidebar: 0.18 0.05 235;
@@ -83,7 +83,7 @@
     --sidebar-accent: 0.25 0.055 230;
     --sidebar-accent-foreground: 0.88 0.02 215;
     --sidebar-border: 0.28 0.05 235;
-    --sidebar-ring: 0.55 0.14 200;
+    --sidebar-ring: 0.65 0.14 200;
   }
 
   * {
@@ -157,8 +157,18 @@
   .card-hover:hover {
     transform: translateY(-2px);
     box-shadow:
-      0 8px 25px -4px oklch(0.32 0.09 200 / 15%),
-      0 4px 8px -2px oklch(0.32 0.09 200 / 10%);
+      0 8px 25px -4px oklch(0.65 0.16 196 / 20%),
+      0 4px 8px -2px oklch(0.65 0.16 196 / 10%);
+  }
+
+  .shadow-medical {
+    box-shadow:
+      0 8px 25px -4px oklch(0.65 0.16 196 / 20%),
+      0 4px 8px -2px oklch(0.65 0.16 196 / 10%);
+  }
+
+  .shadow-xs {
+    box-shadow: 0 1px 3px 0 oklch(0 0 0 / 20%);
   }
 }
 
@@ -356,6 +366,17 @@
 
 .animate-wave {
   animation: wave-breathe 3s ease-in-out infinite;
+}
+
+/* AI Assistant dark theme overrides */
+.ai-textarea {
+  background: oklch(0.22 0.05 230 / 0.6) !important;
+  color: oklch(0.88 0.015 215) !important;
+}
+
+.ai-textarea::placeholder {
+  color: oklch(0.52 0.04 230) !important;
+  opacity: 1;
 }
 
 /* No print */

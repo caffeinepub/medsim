@@ -39,6 +39,7 @@ interface AppLayoutProps {
   onNavigate: (page: Page) => void;
   isAdmin: boolean;
   children: React.ReactNode;
+  banner?: React.ReactNode;
 }
 
 interface NavItem {
@@ -95,6 +96,7 @@ export function AppLayout({
   onNavigate,
   isAdmin,
   children,
+  banner,
 }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { clear } = useInternetIdentity();
@@ -318,18 +320,31 @@ export function AppLayout({
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile header */}
-        <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
+        <header
+          className="flex items-center justify-between border-b px-4 py-3 lg:hidden"
+          style={{
+            background: "oklch(0.18 0.05 235)",
+            borderColor: "oklch(0.28 0.05 235)",
+          }}
+        >
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-muted"
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
+            style={{ color: "oklch(0.88 0.015 215)" }}
           >
             <Menu className="h-5 w-5" />
           </button>
 
           <div className="flex items-center gap-2">
-            <Stethoscope className="h-5 w-5 text-primary" />
-            <span className="font-display font-bold text-foreground">
+            <Stethoscope
+              className="h-5 w-5"
+              style={{ color: "oklch(0.65 0.16 196)" }}
+            />
+            <span
+              className="font-display font-bold"
+              style={{ color: "oklch(0.92 0.015 215)" }}
+            >
               MedSim
             </span>
           </div>
@@ -337,7 +352,8 @@ export function AppLayout({
           <button
             type="button"
             onClick={() => handleNavigate("profile")}
-            className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-muted"
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
+            style={{ color: "oklch(0.88 0.015 215)" }}
           >
             {unreadAlerts > 0 ? (
               <div className="relative">
@@ -351,6 +367,9 @@ export function AppLayout({
             )}
           </button>
         </header>
+
+        {/* Profile incomplete banner */}
+        {banner}
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">{children}</main>

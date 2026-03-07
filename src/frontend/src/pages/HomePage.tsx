@@ -28,12 +28,12 @@ interface HomePageProps {
 }
 
 const SUBJECT_COLORS: Record<string, string> = {
-  Pharmacology: "text-purple-600 bg-purple-50",
-  Medicine: "text-blue-600 bg-blue-50",
-  Surgery: "text-orange-600 bg-orange-50",
-  Pathology: "text-rose-600 bg-rose-50",
-  Microbiology: "text-green-600 bg-green-50",
-  Pediatrics: "text-yellow-600 bg-yellow-50",
+  Pharmacology: "text-purple-300 bg-purple-950/60",
+  Medicine: "text-blue-300 bg-blue-950/60",
+  Surgery: "text-orange-300 bg-orange-950/60",
+  Pathology: "text-rose-300 bg-rose-950/60",
+  Microbiology: "text-green-300 bg-green-950/60",
+  Pediatrics: "text-yellow-300 bg-yellow-950/60",
   Default: "text-primary bg-primary/10",
 };
 
@@ -157,7 +157,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
                   className={`group relative flex items-center gap-4 rounded-2xl border bg-gradient-to-br p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-medical ${color}`}
                 >
                   <div
-                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/60 ${iconColor}`}
+                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 ${iconColor}`}
                   >
                     <Icon className="h-5 w-5" />
                   </div>

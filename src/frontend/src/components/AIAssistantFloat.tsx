@@ -7,17 +7,20 @@ import {
   CheckCircle2,
   ExternalLink,
   HelpCircle,
+  Pill,
   Send,
   Stethoscope,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import type { AdminAlert, PatientData } from "../backend.d";
+import type { AdminAlert, Disease, PatientData } from "../backend.d";
 import {
+  useAllDiseases,
   useCreateAIEscalationAlert,
   useGetAIDiagnosis,
 } from "../hooks/useQueries";
+import { generateResponse, searchDiseases } from "../lib/aiSearch";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -25,13 +28,13 @@ interface FloatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  diagnoses?: Array<{
-    diseaseId: string;
-    name: string;
-    icd10Code: string;
-    description: string;
-    category: string;
-  }>;
+  diseases?: Disease[];
+  responseType?:
+    | "disease_info"
+    | "comparison"
+    | "symptom_match"
+    | "no_match"
+    | "backend";
   reasoning?: string;
   probability?: number;
   escalated?: boolean;
@@ -71,6 +74,190 @@ function TypingDots() {
   );
 }
 
+// ─── Compact Disease Card ─────────────────────────────────────────
+
+function CompactDiseaseCard({ disease }: { disease: Disease }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div
+      className="rounded-lg overflow-hidden"
+      style={{
+        background: "oklch(0.19 0.045 230 / 0.8)",
+        border: "1px solid oklch(0.32 0.055 230 / 0.5)",
+      }}
+    >
+      <button
+        type="button"
+        className="w-full text-left px-2.5 py-2"
+        onClick={() => setExpanded((e) => !e)}
+      >
+        <div className="flex items-start justify-between gap-1.5">
+          <div className="min-w-0">
+            <p
+              className="font-semibold text-xs leading-tight"
+              style={{ color: "oklch(0.92 0.015 215)" }}
+            >
+              {disease.name}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {disease.icd10Code && (
+                <span
+                  className="font-mono text-[9px]"
+                  style={{ color: "oklch(0.6 0.12 196)" }}
+                >
+                  {disease.icd10Code}
+                </span>
+              )}
+              <span
+                className="rounded px-1 py-0.5 text-[9px] font-medium"
+                style={{
+                  background: "oklch(0.65 0.16 196 / 0.12)",
+                  color: "oklch(0.7 0.1 196)",
+                }}
+              >
+                {disease.category}
+              </span>
+            </div>
+          </div>
+          <span
+            className="text-[9px] flex-shrink-0 mt-0.5"
+            style={{ color: "oklch(0.5 0.02 230)" }}
+          >
+            {expanded ? "▲" : "▼"}
+          </span>
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden"
+          >
+            <div
+              className="px-2.5 pb-2.5 space-y-2"
+              style={{ borderTop: "1px solid oklch(0.28 0.05 230 / 0.4)" }}
+            >
+              {/* Symptoms */}
+              {disease.symptoms.length > 0 && (
+                <div className="pt-2">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Stethoscope
+                      className="h-2.5 w-2.5"
+                      style={{ color: "oklch(0.65 0.16 196)" }}
+                    />
+                    <p
+                      className="text-[9px] font-bold uppercase tracking-wider"
+                      style={{ color: "oklch(0.65 0.16 196)" }}
+                    >
+                      Symptoms
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {disease.symptoms.slice(0, 4).map((s) => (
+                      <span
+                        key={s.name}
+                        className="px-1.5 py-0.5 rounded-full text-[9px]"
+                        style={{
+                          background: "oklch(0.55 0.18 68 / 0.1)",
+                          border: "1px solid oklch(0.72 0.16 68 / 0.2)",
+                          color: "oklch(0.75 0.12 68)",
+                        }}
+                      >
+                        {s.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Medicines */}
+              {disease.medicines.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <Pill
+                      className="h-2.5 w-2.5"
+                      style={{ color: "oklch(0.65 0.16 152)" }}
+                    />
+                    <p
+                      className="text-[9px] font-bold uppercase tracking-wider"
+                      style={{ color: "oklch(0.65 0.16 196)" }}
+                    >
+                      Medicines
+                    </p>
+                  </div>
+                  {disease.medicines.slice(0, 3).map((m) => (
+                    <p
+                      key={m.id}
+                      className="text-[10px] py-0.5"
+                      style={{ color: "oklch(0.72 0.015 215)" }}
+                    >
+                      • {m.name} — {m.dosage}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Inline text renderer (compact) ───────────────────────────────
+
+function InlineText({ text }: { text: string }) {
+  if (!text) return null;
+  // Show first 300 chars with basic bold support
+  const truncated = text.length > 300 ? `${text.slice(0, 300)}…` : text;
+  const lines = truncated.split("\n").filter((l) => l.trim());
+
+  return (
+    <div className="space-y-0.5">
+      {lines.slice(0, 5).map((line, i) => {
+        // biome-ignore lint/suspicious/noArrayIndexKey: static text lines, order never changes
+        const lineKey = `fline-${i}`;
+        const parts = line.split(/\*\*(.*?)\*\*/g);
+        if (parts.length > 1) {
+          return (
+            <p
+              key={lineKey}
+              className="text-xs"
+              style={{ color: "oklch(0.80 0.015 215)" }}
+            >
+              {parts.map((p, j) =>
+                j % 2 === 1 ? (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: split parts have no stable id
+                  <strong key={j} style={{ color: "oklch(0.90 0.015 215)" }}>
+                    {p}
+                  </strong>
+                ) : (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: split parts have no stable id
+                  <span key={j}>{p}</span>
+                ),
+              )}
+            </p>
+          );
+        }
+        return (
+          <p
+            key={lineKey}
+            className="text-xs"
+            style={{ color: "oklch(0.78 0.015 215)" }}
+          >
+            {line.replace(/^[•\-]\s*/, "• ")}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Float Message ────────────────────────────────────────────────
 
 function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
@@ -91,9 +278,9 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
   }
 
   const prob = msg.probability ?? 0;
-  const isLowConf = prob < 50;
-  const hasNoDiag = !msg.diagnoses || msg.diagnoses.length === 0;
-  const showNeedMoreInfo = hasNoDiag && isLowConf;
+  const isLowConf = prob < 50 && prob > 0;
+  const showNeedMoreInfo =
+    msg.responseType === "no_match" || (prob === 0 && !msg.diseases?.length);
 
   return (
     <div className="flex items-end gap-1.5">
@@ -125,14 +312,14 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
             <div>
               <p className="font-semibold">Aur detail mein batao</p>
               <p className="opacity-75 mt-0.5">
-                Symptoms, duration ya age add karo.
+                Disease ka naam ya symptoms likhein.
               </p>
             </div>
           </div>
         )}
 
         {/* Escalation warning */}
-        {isLowConf && !hasNoDiag && (
+        {isLowConf && !showNeedMoreInfo && (
           <div
             className="flex items-center gap-1.5 rounded-lg px-2 py-1.5"
             style={{
@@ -145,8 +332,11 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
           </div>
         )}
 
-        {/* Diagnoses */}
-        {msg.diagnoses && msg.diagnoses.length > 0 && (
+        {/* Response text */}
+        {msg.content && !showNeedMoreInfo && <InlineText text={msg.content} />}
+
+        {/* Disease cards */}
+        {msg.diseases && msg.diseases.length > 0 && (
           <div className="space-y-1.5">
             <div className="flex items-center gap-1">
               <Stethoscope
@@ -157,79 +347,27 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: "oklch(0.65 0.16 196)" }}
               >
-                Diagnoses
+                {msg.responseType === "comparison"
+                  ? "Comparison"
+                  : "Disease Info"}
               </p>
             </div>
-            {msg.diagnoses.slice(0, 3).map((d) => (
-              <div
-                key={d.diseaseId}
-                className="rounded-lg px-2.5 py-2"
-                style={{
-                  background: "oklch(0.28 0.055 230 / 0.6)",
-                  border: "1px solid oklch(0.36 0.055 230 / 0.4)",
-                }}
-              >
-                <p
-                  className="font-semibold leading-tight"
-                  style={{ color: "oklch(0.92 0.015 215)" }}
-                >
-                  {d.name}
-                </p>
-                <div className="mt-0.5 flex items-center gap-2">
-                  {d.icd10Code && (
-                    <span
-                      className="font-mono text-[9px]"
-                      style={{ color: "oklch(0.6 0.12 196)" }}
-                    >
-                      {d.icd10Code}
-                    </span>
-                  )}
-                  {d.category && (
-                    <span
-                      className="rounded px-1 py-0.5 text-[9px] font-medium"
-                      style={{
-                        background: "oklch(0.65 0.16 196 / 0.12)",
-                        color: "oklch(0.7 0.1 196)",
-                      }}
-                    >
-                      {d.category}
-                    </span>
-                  )}
-                </div>
-              </div>
+            {msg.diseases.slice(0, 3).map((d) => (
+              <CompactDiseaseCard key={d.id} disease={d} />
             ))}
-            {msg.diagnoses.length > 3 && (
+            {msg.diseases.length > 3 && (
               <p
                 className="text-[10px] pl-1"
                 style={{ color: "oklch(0.58 0.08 196)" }}
               >
-                +{msg.diagnoses.length - 3} more — full page kholo
+                +{msg.diseases.length - 3} more — full page kholo
               </p>
             )}
           </div>
         )}
 
-        {/* Clinical Reasoning */}
-        {msg.reasoning && (
-          <div className="space-y-1">
-            <p
-              className="text-[10px] font-bold uppercase tracking-wider"
-              style={{ color: "oklch(0.65 0.16 196)" }}
-            >
-              Clinical Reasoning
-            </p>
-            <p
-              className="leading-relaxed"
-              style={{ color: "oklch(0.7 0.02 215)" }}
-            >
-              {msg.reasoning.slice(0, 200)}
-              {msg.reasoning.length > 200 ? "…" : ""}
-            </p>
-          </div>
-        )}
-
         {/* Confidence bar */}
-        {msg.probability !== undefined && (
+        {msg.probability !== undefined && msg.probability > 0 && (
           <div className="flex items-center gap-2">
             <div
               className="h-1 flex-1 overflow-hidden rounded-full"
@@ -265,11 +403,6 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
             <span>Expert ko alert bhej diya gaya</span>
           </div>
         )}
-
-        {/* Fallback plain text */}
-        {!msg.diagnoses?.length && !msg.reasoning && !showNeedMoreInfo && (
-          <p>{msg.content}</p>
-        )}
       </div>
     </div>
   );
@@ -286,6 +419,7 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const { data: diseases = [] } = useAllDiseases();
   const aiDiagnosis = useGetAIDiagnosis();
   const escalationAlert = useCreateAIEscalationAlert();
 
@@ -329,6 +463,27 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
+      // 1. Local disease database search first
+      const matched = searchDiseases(userMessage, diseases);
+      const localResult = generateResponse(userMessage, diseases, matched);
+
+      if (localResult.type !== "no_match") {
+        const aiMsg: FloatMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: localResult.responseText,
+          responseType: localResult.type,
+          diseases: localResult.diseases,
+          probability: localResult.confidence,
+          escalated: false,
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+        if (!isOpen) setUnreadCount((c) => c + 1);
+        setIsThinking(false);
+        return;
+      }
+
+      // 2. Backend fallback
       const patientData: PatientData = {
         id: crypto.randomUUID(),
         age: BigInt(25),
@@ -380,8 +535,20 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
         id: crypto.randomUUID(),
         role: "assistant",
         content: result.reasoning || "Koi jawab nahi mila.",
-        diagnoses: result.diagnosis,
-        reasoning: result.reasoning,
+        responseType: "backend",
+        diseases: result.diagnosis.map((d) => ({
+          id: d.diseaseId,
+          name: d.name,
+          icd10Code: d.icd10Code,
+          description: d.description,
+          category: d.category,
+          symptoms: d.symptoms ?? [],
+          medicines: [],
+          diagnosticCriteria: "",
+          clinicalSigns: { bp: "—", hr: "—", rr: "—", spo2: "—", temp: "—" },
+          associatedDiseases: [],
+          subjectMapping: [],
+        })),
         probability: prob,
         escalated,
       };
@@ -395,7 +562,7 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
         ...prev,
         {
           id: crypto.randomUUID(),
-          role: "assistant",
+          role: "assistant" as const,
           content: "Kuch error aa gaya. Dobara try karein.",
           probability: 0,
         },
@@ -463,7 +630,9 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
                   className="text-[10px]"
                   style={{ color: "oklch(0.65 0.16 196)" }}
                 >
-                  Powered by MedSim AI
+                  {diseases.length > 0
+                    ? `${diseases.length} diseases loaded`
+                    : "Powered by MedSim AI"}
                 </p>
               </div>
 
@@ -489,7 +658,10 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1">
+            <ScrollArea
+              className="flex-1 [&>[data-slot=scroll-area-viewport]]:bg-transparent"
+              style={{ background: "transparent" }}
+            >
               <div ref={scrollRef} className="space-y-3 px-3 py-4">
                 {messages.length === 0 && (
                   <div className="py-8 text-center">
@@ -501,7 +673,9 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
                       className="text-xs"
                       style={{ color: "oklch(0.55 0.02 230)" }}
                     >
-                      Koi bhi medical sawaal poochho
+                      {diseases.length > 0
+                        ? `${diseases.length} diseases loaded. Koi bhi medical sawaal poochho.`
+                        : "Koi bhi medical sawaal poochho"}
                     </p>
                     {/* Quick suggestions */}
                     <div className="mt-3 flex flex-wrap justify-center gap-1.5">
@@ -556,9 +730,9 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Medical sawaal likhein..."
+                placeholder="Medical sawaal likhein… (e.g. malaria symptoms)"
                 rows={1}
-                className="resize-none text-xs"
+                className="resize-none text-xs ai-textarea"
                 style={{
                   background: "oklch(0.22 0.05 230 / 0.6)",
                   border: "1px solid oklch(0.35 0.06 230)",

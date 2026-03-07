@@ -4,9 +4,16 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { AIAssistantFloat } from "./components/AIAssistantFloat";
 import { AppLayout } from "./components/AppLayout";
+import { CameraPermissionScreen } from "./components/CameraPermissionScreen";
+import { ProfileIncompleteBanner } from "./components/ProfileIncompleteBanner";
 import { SecuritySystem } from "./components/SecuritySystem";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
-import { useCallerUserProfile, useIsAdmin } from "./hooks/useQueries";
+import {
+  useCallerUserProfile,
+  useIsAdmin,
+  useMyPerformanceStats,
+} from "./hooks/useQueries";
+import { useSeedDiseases } from "./hooks/useSeedDiseases";
 import { AIAssistantPage } from "./pages/AIAssistantPage";
 import { AdminPage } from "./pages/AdminPage";
 import { CustomPatientPage } from "./pages/CustomPatientPage";
@@ -25,7 +32,17 @@ type AppPage =
   | "profile"
   | "ai-assistant";
 
-type AppState = "loading" | "login" | "app";
+type AppState = "loading" | "login" | "camera-permission" | "app";
+
+function calcProfileScore(): number {
+  // We can't get the profile from backend here directly, but we can read localStorage
+  // This is used for the banner only — full score computed in ProfilePage
+  const photo = localStorage.getItem("medsim_profile_photo");
+  const cameraGranted =
+    localStorage.getItem("medsim_camera_granted") === "true";
+  // Return something low if camera not granted
+  return cameraGranted && photo ? 50 : 20;
+}
 
 function LoadingScreen() {
   return (
@@ -39,6 +56,50 @@ function LoadingScreen() {
         <p className="mt-1 text-sm text-white/70">Loading...</p>
       </div>
     </div>
+  );
+}
+
+// Inner component that has access to actor (for seeding)
+function AppWithSeed({
+  currentPage,
+  handleNavigate,
+  isAdmin,
+  children,
+}: {
+  currentPage: AppPage;
+  handleNavigate: (page: string) => void;
+  isAdmin: boolean;
+  children: React.ReactNode;
+}) {
+  useSeedDiseases();
+  const { data: performanceStats } = useMyPerformanceStats();
+
+  const profileScore = calcProfileScore();
+  const showBanner = profileScore < 100;
+
+  return (
+    <>
+      <SecuritySystem enabled={true} />
+      <AppLayout
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        isAdmin={isAdmin}
+        banner={
+          showBanner ? (
+            <ProfileIncompleteBanner
+              profileScore={profileScore}
+              onNavigateToProfile={() => handleNavigate("profile")}
+            />
+          ) : undefined
+        }
+      >
+        {children}
+      </AppLayout>
+      <AIAssistantFloat onNavigate={handleNavigate} />
+      <Toaster richColors position="top-right" />
+      {/* Suppress unused variable warning */}
+      {performanceStats && null}
+    </>
   );
 }
 
@@ -61,15 +122,24 @@ export default function App() {
       return;
     }
 
-    // Authenticated — go directly to app (profile is optional)
-    if (identity) {
-      setAppState("app");
+    // Check if camera permission screen should be shown
+    const permissionAsked = localStorage.getItem(
+      "medsim_camera_permission_asked",
+    );
+    if (!permissionAsked) {
+      setAppState("camera-permission");
       return;
     }
+
+    setAppState("app");
   }, [isInitializing, identity, profileLoading]);
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page as AppPage);
+  };
+
+  const handleCameraPermissionComplete = () => {
+    setAppState("app");
   };
 
   const pageContent: Record<AppPage, React.ReactNode> = {
@@ -97,19 +167,24 @@ export default function App() {
     );
   }
 
+  // Camera permission screen (first time only)
+  if (appState === "camera-permission") {
+    return (
+      <>
+        <CameraPermissionScreen onComplete={handleCameraPermissionComplete} />
+        <Toaster />
+      </>
+    );
+  }
+
   // Full app
   return (
-    <>
-      <SecuritySystem enabled={true} />
-      <AppLayout
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        isAdmin={isAdmin}
-      >
-        {pageContent[currentPage]}
-      </AppLayout>
-      <AIAssistantFloat onNavigate={handleNavigate} />
-      <Toaster richColors position="top-right" />
-    </>
+    <AppWithSeed
+      currentPage={currentPage}
+      handleNavigate={handleNavigate}
+      isAdmin={isAdmin}
+    >
+      {pageContent[currentPage]}
+    </AppWithSeed>
   );
 }
