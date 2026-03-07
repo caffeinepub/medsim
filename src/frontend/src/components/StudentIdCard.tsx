@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import html2canvas from "html2canvas";
 import { CheckCircle, Download, Shield, Stethoscope } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
@@ -164,38 +165,29 @@ export function StudentIdCard({
     verifyUrl,
   });
 
-  // Download using native canvas capture
+  // Download using html2canvas — captures photo + QR properly
   const handleDownload = async () => {
     if (!cardRef.current || isDownloading) return;
     setIsDownloading(true);
     try {
-      // Use html2canvas if available (CDN), otherwise snapshot via native canvas
-      const cardEl = cardRef.current;
-      const w = cardEl.offsetWidth;
-      const h = cardEl.offsetHeight;
-      const offCanvas = document.createElement("canvas");
-      offCanvas.width = w * 2;
-      offCanvas.height = h * 2;
-      const ctx = offCanvas.getContext("2d");
-      if (ctx) {
-        ctx.scale(2, 2);
-        ctx.fillStyle = "rgba(3, 10, 28, 1)";
-        ctx.fillRect(0, 0, w, h);
-        ctx.font = "14px 'Plus Jakarta Sans', system-ui";
-        ctx.fillStyle = "#00d4ff";
-        ctx.fillText(`MedSim ID: ${systemId}`, 20, 30);
-        ctx.fillStyle = "#e8f4ff";
-        ctx.fillText(name || "—", 20, 55);
-        ctx.fillStyle = "rgba(150,200,255,0.6)";
-        ctx.fillText(`${roleLabel} · Batch: ${batch || "—"}`, 20, 75);
-        if (collegeName) {
-          ctx.fillText(`College: ${collegeName}`, 20, 95);
-        }
-        if (rollNumber) {
-          ctx.fillText(`Roll No: ${rollNumber}`, 20, 115);
-        }
-      }
-      const dataUrl = offCanvas.toDataURL("image/png");
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "rgba(3, 10, 28, 1)",
+        logging: false,
+        onclone: (doc: Document) => {
+          // Make sure the cloned card element has a solid background
+          const cardEl = doc.querySelector<HTMLElement>(
+            '[data-ocid="profile.id_card"]',
+          );
+          if (cardEl) {
+            cardEl.style.background =
+              "linear-gradient(135deg, rgb(3,10,28) 0%, rgb(5,18,45) 50%, rgb(3,12,32) 100%)";
+          }
+        },
+      });
+      const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.download = `MedSim-ID-${systemId}.png`;
       link.href = dataUrl;
