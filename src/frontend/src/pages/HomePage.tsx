@@ -90,51 +90,49 @@ export function HomePage({ onNavigate }: HomePageProps) {
   ];
 
   return (
-    <div className="p-4 lg:p-8">
-      <div className="mx-auto max-w-5xl space-y-6">
+    <div className="p-3 sm:p-4 lg:p-8">
+      <div className="mx-auto max-w-5xl space-y-5 sm:space-y-6">
         {/* Welcome header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-3xl bg-gradient-to-br from-primary/15 via-background to-accent/10 border border-border p-6 lg:p-8"
+          className="rounded-3xl bg-gradient-to-br from-primary/15 via-background to-accent/10 border border-border p-4 sm:p-6 lg:p-8"
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="min-w-0">
               {profileLoading ? (
                 <Skeleton className="mb-2 h-8 w-56" />
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">{greeting} 👋</p>
-                  <h1 className="font-display text-3xl font-black text-foreground">
+                  <h1 className="font-display text-2xl sm:text-3xl font-black text-foreground truncate">
                     {profile?.name || "Doctor Ji"}
                   </h1>
-                  <p className="mt-1 text-sm capitalize text-muted-foreground">
+                  <p className="mt-1 text-sm capitalize text-muted-foreground truncate">
                     {profile?.role || "MBBS Student"} • MedSim India
                   </p>
                 </>
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0">
               {perfLoading ? (
                 <Skeleton className="h-20 w-32 rounded-2xl" />
               ) : (
-                <div className="flex flex-col items-center rounded-2xl bg-card border border-border px-5 py-3 text-center shadow-xs">
-                  <span className="font-display text-3xl font-black text-primary">
+                <div className="flex flex-col items-center rounded-2xl bg-card border border-border px-4 py-3 text-center shadow-xs">
+                  <span className="font-display text-2xl sm:text-3xl font-black text-primary">
                     {accuracy}%
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    Overall Accuracy
+                    Accuracy
                   </span>
                 </div>
               )}
-              <div className="flex flex-col items-center rounded-2xl bg-card border border-border px-5 py-3 text-center shadow-xs">
-                <span className="font-display text-3xl font-black text-foreground">
+              <div className="flex flex-col items-center rounded-2xl bg-card border border-border px-4 py-3 text-center shadow-xs">
+                <span className="font-display text-2xl sm:text-3xl font-black text-foreground">
                   {totalAttempts}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  Total Cases
-                </span>
+                <span className="text-xs text-muted-foreground">Cases</span>
               </div>
             </div>
           </div>
@@ -142,10 +140,10 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
         {/* Quick actions */}
         <div>
-          <h2 className="font-display mb-3 text-lg font-bold text-foreground">
+          <h2 className="font-display mb-3 text-base sm:text-lg font-bold text-foreground">
             Kya Karna Hai Aaj?
           </h2>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
             {quickActions.map(
               ({ id, label, sublabel, icon: Icon, color, iconColor }, i) => (
                 <motion.button
@@ -154,18 +152,20 @@ export function HomePage({ onNavigate }: HomePageProps) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * i }}
                   onClick={() => onNavigate(id)}
-                  className={`group relative flex items-center gap-4 rounded-2xl border bg-gradient-to-br p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-medical ${color}`}
+                  className={`group relative flex items-center gap-3 rounded-2xl border bg-gradient-to-br p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-medical overflow-hidden ${color}`}
                 >
                   <div
                     className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 ${iconColor}`}
                   >
                     <Icon className="h-5 w-5" />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground">{label}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground truncate">
+                      {label}
+                    </p>
                     <p className="text-xs text-muted-foreground">{sublabel}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                  <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
                 </motion.button>
               ),
             )}
@@ -175,7 +175,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
         {/* Subject performance */}
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-lg font-bold text-foreground">
+            <h2 className="font-display text-base sm:text-lg font-bold text-foreground">
               Subject-wise Performance
             </h2>
             <Button
@@ -189,28 +189,28 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
 
           {perfLoading ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {["s1", "s2", "s3"].map((id) => (
                 <Skeleton key={id} className="h-24 rounded-2xl" />
               ))}
             </div>
           ) : perf && perf.caseHistory.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {perf.caseHistory.map((item, i) => (
                 <motion.div
                   key={item.subjectName}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.05 * i }}
-                  className="rounded-2xl border border-border bg-card p-4 shadow-xs"
+                  className="rounded-2xl border border-border bg-card p-4 shadow-xs overflow-hidden"
                 >
-                  <div className="mb-2 flex items-center justify-between">
+                  <div className="mb-2 flex items-center justify-between gap-2">
                     <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${getSubjectColor(item.subjectName)}`}
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold truncate ${getSubjectColor(item.subjectName)}`}
                     >
                       {item.subjectName}
                     </span>
-                    <span className="font-display text-lg font-bold text-foreground">
+                    <span className="font-display text-lg font-bold text-foreground flex-shrink-0">
                       {Number(item.accuracy)}%
                     </span>
                   </div>

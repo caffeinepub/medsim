@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -691,7 +690,10 @@ export function AIAssistantPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll triggered intentionally on message/thinking state
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     }
   }, [messages, isThinking]);
 
@@ -858,7 +860,7 @@ export function AIAssistantPage() {
     >
       {/* Header */}
       <div
-        className="flex-shrink-0 border-b px-5 py-4"
+        className="flex-shrink-0 border-b px-3 sm:px-5 py-3 sm:py-4"
         style={{
           borderColor: "oklch(0.28 0.05 235)",
           background: "oklch(0.17 0.05 235 / 0.95)",
@@ -904,51 +906,115 @@ export function AIAssistantPage() {
           </div>
 
           {/* Quick search bar */}
-          <form onSubmit={handleQuickSearch} className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
-              style={{ color: "oklch(0.55 0.12 196)" }}
-            />
-            <Input
-              ref={searchRef}
-              data-ocid="ai_assistant.search_input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search diseases, symptoms, medicines… (e.g. malaria symptoms, TB ki dawa)"
-              className="pl-9 pr-20 text-sm h-10"
+          <form onSubmit={handleQuickSearch} className="relative group">
+            {/* Animated outer glow ring */}
+            <div
+              className="absolute -inset-[1.5px] rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"
               style={{
-                background: "oklch(0.20 0.05 230 / 0.7)",
-                border: "1px solid oklch(0.38 0.08 230 / 0.6)",
-                color: "oklch(0.88 0.015 215)",
-                backdropFilter: "blur(8px)",
+                background:
+                  "linear-gradient(90deg, oklch(0.65 0.16 196), oklch(0.58 0.18 240), oklch(0.65 0.16 152), oklch(0.65 0.16 196))",
+                backgroundSize: "300% 100%",
+                animation: "searchGradientShift 3s linear infinite",
+                filter: "blur(3px)",
               }}
-              disabled={diseasesLoading}
             />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md text-xs font-medium transition-all"
+            {/* Static subtle border always visible */}
+            <div
+              className="absolute -inset-[1px] rounded-xl"
               style={{
-                background: searchQuery.trim()
-                  ? "oklch(0.45 0.12 200 / 0.8)"
-                  : "oklch(0.28 0.05 230 / 0.5)",
-                color: searchQuery.trim()
-                  ? "oklch(0.95 0.01 215)"
-                  : "oklch(0.52 0.02 215)",
+                background:
+                  "linear-gradient(90deg, oklch(0.45 0.10 196 / 0.5), oklch(0.38 0.08 240 / 0.4), oklch(0.45 0.10 152 / 0.5))",
               }}
-              disabled={!searchQuery.trim() || diseasesLoading}
+            />
+            {/* Inner container */}
+            <div
+              className="relative flex items-center rounded-xl overflow-hidden"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.20 0.06 230 / 0.95), oklch(0.17 0.05 235 / 0.95))",
+                backdropFilter: "blur(12px)",
+              }}
             >
-              Search
-            </button>
+              {/* Left icon with pulse */}
+              <div className="relative pl-3.5 flex-shrink-0">
+                <Search
+                  className="h-4 w-4 pointer-events-none"
+                  style={{ color: "oklch(0.65 0.16 196)" }}
+                />
+                {/* Ping dot on icon */}
+                <span
+                  className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full"
+                  style={{
+                    background: "oklch(0.65 0.16 152)",
+                    animation: !diseasesLoading
+                      ? "ping 2s cubic-bezier(0,0,0.2,1) infinite"
+                      : "none",
+                    opacity: 0.75,
+                  }}
+                />
+              </div>
+              <Input
+                ref={searchRef}
+                data-ocid="ai_assistant.search_input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={
+                  diseasesLoading
+                    ? "Database load ho rahi hai..."
+                    : "Bimari ka naam, symptoms, ya dawa likhein… jaise Malaria, bukhaar, Paracetamol"
+                }
+                className="flex-1 border-0 bg-transparent pl-2.5 pr-2 text-sm h-11 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-[oklch(0.45_0.05_220)]"
+                style={{
+                  color: "oklch(0.90 0.015 215)",
+                }}
+                disabled={diseasesLoading}
+              />
+              {/* Search button */}
+              <div className="pr-1.5 flex-shrink-0">
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 active:scale-95"
+                  style={{
+                    background: searchQuery.trim()
+                      ? "linear-gradient(135deg, oklch(0.48 0.14 200), oklch(0.38 0.10 225))"
+                      : "oklch(0.28 0.06 230 / 0.7)",
+                    color: searchQuery.trim()
+                      ? "oklch(0.96 0.01 215)"
+                      : "oklch(0.50 0.03 220)",
+                    boxShadow: searchQuery.trim()
+                      ? "0 0 10px oklch(0.55 0.14 200 / 0.4)"
+                      : "none",
+                    border: searchQuery.trim()
+                      ? "1px solid oklch(0.58 0.14 196 / 0.4)"
+                      : "1px solid oklch(0.35 0.05 230 / 0.5)",
+                  }}
+                  disabled={!searchQuery.trim() || diseasesLoading}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Khojo
+                </button>
+              </div>
+            </div>
           </form>
+          <style>{`
+            @keyframes searchGradientShift {
+              0% { background-position: 0% 50%; }
+              100% { background-position: 300% 50%; }
+            }
+            @keyframes ping {
+              75%, 100% { transform: scale(2); opacity: 0; }
+            }
+          `}</style>
         </div>
       </div>
 
       {/* Messages */}
-      <ScrollArea
-        className="flex-1 [&>[data-slot=scroll-area-viewport]]:bg-transparent"
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto"
         style={{ background: "transparent" }}
       >
-        <div ref={scrollRef} className="mx-auto max-w-3xl space-y-4 px-5 py-6">
+        <div className="mx-auto max-w-3xl space-y-4 px-3 sm:px-5 py-4 sm:py-6">
           {/* Loading skeleton */}
           {diseasesLoading && messages.length === 0 && <LoadingSkeleton />}
 
@@ -1068,64 +1134,249 @@ export function AIAssistantPage() {
           {/* Typing indicator */}
           <AnimatePresence>{isThinking && <TypingIndicator />}</AnimatePresence>
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Input area */}
       <div
-        className="flex-shrink-0 border-t px-5 py-4"
+        className="flex-shrink-0 border-t px-3 sm:px-5 pt-3 pb-4"
         style={{
           borderColor: "oklch(0.28 0.05 235)",
-          background: "oklch(0.17 0.05 235 / 0.95)",
-          backdropFilter: "blur(8px)",
+          background: "oklch(0.15 0.05 235 / 0.97)",
+          backdropFilter: "blur(16px)",
         }}
       >
-        <div className="mx-auto flex max-w-3xl gap-3">
-          <div className="relative flex-1">
-            <Textarea
-              ref={textareaRef}
-              data-ocid="ai_assistant.textarea"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Apna medical sawaal yahan likhein... (Enter to send, Shift+Enter for new line)"
-              rows={2}
-              className="resize-none pr-12 text-sm ai-textarea"
+        <div className="mx-auto max-w-3xl">
+          {/* Decorative label badge */}
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-1.5">
+              <span
+                className="h-1.5 w-1.5 rounded-full animate-pulse"
+                style={{ background: "oklch(0.65 0.22 152)" }}
+              />
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.15em]"
+                style={{ color: "oklch(0.65 0.16 196)" }}
+              >
+                Medical AI Chat
+              </span>
+              <span
+                className="text-[10px]"
+                style={{ color: "oklch(0.45 0.05 230)" }}
+              >
+                —
+              </span>
+              <span
+                className="text-[10px]"
+                style={{ color: "oklch(0.50 0.04 220)" }}
+              >
+                {isThinking ? "Processing…" : "Ready"}
+              </span>
+            </div>
+            <div
+              className="ml-auto flex items-center gap-1 rounded-full px-2 py-0.5"
               style={{
-                background: "oklch(0.22 0.05 230 / 0.6)",
-                border: "1px solid oklch(0.35 0.06 230)",
-                color: "oklch(0.88 0.015 215)",
+                background: "oklch(0.25 0.08 200 / 0.4)",
+                border: "1px solid oklch(0.45 0.12 196 / 0.3)",
               }}
-              disabled={isThinking}
-            />
+            >
+              <Brain
+                className="h-2.5 w-2.5"
+                style={{ color: "oklch(0.65 0.16 196)" }}
+              />
+              <span
+                className="text-[9px] font-semibold"
+                style={{ color: "oklch(0.62 0.12 196)" }}
+              >
+                ICMR DB
+              </span>
+            </div>
           </div>
-          <Button
-            data-ocid="ai_assistant.submit_button"
-            onClick={handleSend}
-            disabled={!input.trim() || isThinking}
-            size="icon"
-            className="h-[68px] w-12 flex-shrink-0 self-end"
-            style={{
-              background:
-                input.trim() && !isThinking
-                  ? "linear-gradient(135deg, oklch(0.45 0.12 200), oklch(0.38 0.1 220))"
-                  : "oklch(0.25 0.05 230)",
-              border: "none",
-            }}
+
+          {/* Input + Send row */}
+          <div className="flex items-end gap-3">
+            {/* Glowing textarea wrapper */}
+            <div className="relative flex-1 group/input">
+              {/* Always-on ambient glow (pulsing) */}
+              <div
+                className="absolute -inset-[2px] rounded-xl"
+                style={{
+                  background:
+                    "linear-gradient(135deg, oklch(0.55 0.18 196 / 0.35), oklch(0.48 0.16 240 / 0.25), oklch(0.55 0.18 152 / 0.2))",
+                  animation: "chatInputAmbient 4s ease-in-out infinite",
+                  filter: "blur(4px)",
+                }}
+              />
+              {/* Focus-triggered gradient ring */}
+              <div
+                className="absolute -inset-[1.5px] rounded-xl opacity-0 group-focus-within/input:opacity-100 transition-opacity duration-400"
+                style={{
+                  background:
+                    "linear-gradient(90deg, oklch(0.65 0.18 196), oklch(0.55 0.2 240), oklch(0.65 0.18 152), oklch(0.58 0.16 200), oklch(0.65 0.18 196))",
+                  backgroundSize: "400% 100%",
+                  animation:
+                    "chatGradientShift 3s linear infinite, chatGlow 2s ease-in-out infinite",
+                  filter: "blur(2px)",
+                }}
+              />
+              {/* Static border */}
+              <div
+                className="absolute -inset-[1px] rounded-xl"
+                style={{
+                  background:
+                    "linear-gradient(135deg, oklch(0.40 0.10 196 / 0.6), oklch(0.35 0.08 240 / 0.4), oklch(0.40 0.10 152 / 0.5))",
+                }}
+              />
+              {/* Inner textarea container */}
+              <div
+                className="relative rounded-xl overflow-hidden"
+                style={{
+                  background:
+                    "linear-gradient(135deg, oklch(0.20 0.06 230 / 0.95), oklch(0.17 0.05 235 / 0.98))",
+                  backdropFilter: "blur(12px)",
+                }}
+              >
+                {/* Shimmer scan line */}
+                <div
+                  className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl"
+                  style={{ zIndex: 1 }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: "-100%",
+                      width: "60%",
+                      height: "100%",
+                      background:
+                        "linear-gradient(90deg, transparent, oklch(0.65 0.16 196 / 0.06), transparent)",
+                      animation: "chatScanLine 4s ease-in-out infinite",
+                    }}
+                  />
+                </div>
+                <Textarea
+                  ref={textareaRef}
+                  data-ocid="ai_assistant.textarea"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Apna medical sawaal yahan likhein… (Enter bhejo, Shift+Enter nayi line)"
+                  rows={2}
+                  className="resize-none text-sm relative"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "oklch(0.90 0.015 215)",
+                    outline: "none",
+                    boxShadow: "none",
+                    padding: "12px 16px",
+                    zIndex: 2,
+                    caretColor: "oklch(0.65 0.16 196)",
+                  }}
+                  disabled={isThinking}
+                />
+              </div>
+            </div>
+
+            {/* Send button — large, vibrant */}
+            <div className="relative flex-shrink-0 group/send">
+              {/* Button ambient glow */}
+              <div
+                className="absolute -inset-[3px] rounded-xl opacity-60 group-hover/send:opacity-100 transition-opacity duration-300"
+                style={{
+                  background:
+                    input.trim() && !isThinking
+                      ? "linear-gradient(135deg, oklch(0.55 0.18 196), oklch(0.45 0.16 220))"
+                      : "oklch(0.30 0.06 230)",
+                  filter: "blur(6px)",
+                  animation:
+                    input.trim() && !isThinking
+                      ? "sendButtonPulse 2s ease-in-out infinite"
+                      : "none",
+                }}
+              />
+              <Button
+                data-ocid="ai_assistant.submit_button"
+                onClick={handleSend}
+                disabled={!input.trim() || isThinking}
+                className="relative h-[72px] w-14 flex-shrink-0 rounded-xl transition-all duration-300 active:scale-95 group-hover/send:scale-105 border-0"
+                style={{
+                  background:
+                    input.trim() && !isThinking
+                      ? "linear-gradient(135deg, oklch(0.48 0.16 200), oklch(0.40 0.14 225), oklch(0.45 0.15 195))"
+                      : "oklch(0.22 0.05 230)",
+                  boxShadow:
+                    input.trim() && !isThinking
+                      ? "0 0 20px oklch(0.55 0.16 196 / 0.5), inset 0 1px 0 oklch(0.75 0.10 196 / 0.3)"
+                      : "none",
+                }}
+              >
+                {isThinking ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span
+                      className="text-[8px] font-bold"
+                      style={{ color: "oklch(0.65 0.16 196)" }}
+                    >
+                      AI
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-1">
+                    <Send
+                      className="h-5 w-5 transition-transform duration-200 group-hover/send:-translate-y-0.5 group-hover/send:translate-x-0.5"
+                      style={{
+                        color: input.trim() ? "white" : "oklch(0.45 0.05 230)",
+                      }}
+                    />
+                    <span
+                      className="text-[8px] font-bold tracking-wider"
+                      style={{
+                        color: input.trim()
+                          ? "oklch(0.80 0.10 196)"
+                          : "oklch(0.40 0.04 230)",
+                      }}
+                    >
+                      SEND
+                    </span>
+                  </div>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <p
+            className="mt-2 text-center text-[10px]"
+            style={{ color: "oklch(0.40 0.02 230)" }}
           >
-            {isThinking ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            ) : (
-              <Send className="h-4 w-4 text-white" />
-            )}
-          </Button>
+            AI ke jawab sirf educational purposes ke liye hain — clinical
+            decisions ke liye senior ki guidance zaruri hai
+          </p>
         </div>
-        <p
-          className="mx-auto mt-2 max-w-3xl text-center text-[10px]"
-          style={{ color: "oklch(0.45 0.02 230)" }}
-        >
-          AI ke jawab sirf educational purposes ke liye hain — clinical
-          decisions ke liye senior ki guidance zaruri hai
-        </p>
+
+        <style>{`
+          @keyframes chatInputAmbient {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+          }
+          @keyframes chatGradientShift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 400% 50%; }
+          }
+          @keyframes chatGlow {
+            0%, 100% { filter: blur(2px); }
+            50% { filter: blur(3.5px); }
+          }
+          @keyframes chatScanLine {
+            0% { left: -100%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { left: 200%; opacity: 0; }
+          }
+          @keyframes sendButtonPulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+          }
+        `}</style>
       </div>
     </div>
   );

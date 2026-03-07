@@ -77,7 +77,7 @@ export function CustomPatientPage() {
 
   const [ageYears, setAgeYears] = useState(30);
   const [ageMonths, setAgeMonths] = useState(0);
-  const [gender, setGender] = useState<"male" | "female">("male");
+  const [gender, setGender] = useState<"male" | "female" | "other">("male");
   const [disability, setDisability] = useState("None");
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [customSymptom, setCustomSymptom] = useState("");
@@ -293,7 +293,9 @@ export function CustomPatientPage() {
                   <Label>Gender</Label>
                   <Select
                     value={gender}
-                    onValueChange={(v) => setGender(v as "male" | "female")}
+                    onValueChange={(v) =>
+                      setGender(v as "male" | "female" | "other")
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -301,6 +303,7 @@ export function CustomPatientPage() {
                     <SelectContent>
                       <SelectItem value="male">Male</SelectItem>
                       <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

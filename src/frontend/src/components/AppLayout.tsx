@@ -2,11 +2,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
+  Activity,
+  ArrowLeft,
   BarChart3,
   Bell,
   BookOpen,
   Brain,
+  Briefcase,
   ChevronRight,
+  ClipboardList,
   Home,
   LogOut,
   Menu,
@@ -32,7 +36,12 @@ type Page =
   | "performance"
   | "admin"
   | "profile"
-  | "ai-assistant";
+  | "ai-assistant"
+  | "career"
+  | "exam"
+  | "my-applications"
+  | "icu-simulator"
+  | "verify";
 
 interface AppLayoutProps {
   currentPage: Page;
@@ -50,13 +59,69 @@ interface NavItem {
   adminOnly?: boolean;
 }
 
+// Back button: top-right fixed, shown on non-home pages
+function BackButton({
+  currentPage,
+  onNavigate,
+}: {
+  currentPage: Page;
+  onNavigate: (page: Page) => void;
+}) {
+  if (currentPage === "home") return null;
+
+  return (
+    <button
+      type="button"
+      data-ocid="nav.back_button"
+      onClick={() => onNavigate("home")}
+      className="fixed right-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+      style={{
+        background: "oklch(0.22 0.06 235 / 0.85)",
+        border: "1px solid oklch(0.65 0.16 196 / 0.4)",
+        backdropFilter: "blur(12px)",
+        boxShadow:
+          "0 0 16px oklch(0.65 0.16 196 / 0.2), 0 2px 8px oklch(0.1 0.03 235 / 0.6)",
+        color: "oklch(0.65 0.16 196)",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background =
+          "oklch(0.65 0.16 196 / 0.2)";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow =
+          "0 0 24px oklch(0.65 0.16 196 / 0.4), 0 2px 12px oklch(0.1 0.03 235 / 0.6)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background =
+          "oklch(0.22 0.06 235 / 0.85)";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow =
+          "0 0 16px oklch(0.65 0.16 196 / 0.2), 0 2px 8px oklch(0.1 0.03 235 / 0.6)";
+      }}
+      title="Back to Home"
+      aria-label="Go back to home"
+    >
+      <ArrowLeft className="h-5 w-5" />
+    </button>
+  );
+}
+
 const navItems: NavItem[] = [
+  {
+    id: "profile",
+    label: "My Profile",
+    hinglish: "Mera Profile",
+    icon: User,
+  },
   { id: "home", label: "Home", hinglish: "Ghar", icon: Home },
   {
     id: "exercise",
     label: "Exercise Mode",
     hinglish: "Practice Karo",
     icon: BookOpen,
+  },
+  {
+    id: "icu-simulator" as Page,
+    label: "ICU Simulator",
+    hinglish: "ICU Practice",
+    icon: Activity,
   },
   {
     id: "custom-patient",
@@ -71,10 +136,16 @@ const navItems: NavItem[] = [
     icon: BarChart3,
   },
   {
-    id: "profile",
-    label: "My Profile",
-    hinglish: "Mera Profile",
-    icon: User,
+    id: "career",
+    label: "Career",
+    hinglish: "Naukri Dekho",
+    icon: Briefcase,
+  },
+  {
+    id: "my-applications",
+    label: "My Applications",
+    hinglish: "Meri Apply",
+    icon: ClipboardList,
   },
   {
     id: "ai-assistant",
@@ -374,6 +445,9 @@ export function AppLayout({
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
+
+      {/* Back navigation button — top-right, visible on non-home pages */}
+      <BackButton currentPage={currentPage} onNavigate={onNavigate} />
     </div>
   );
 }

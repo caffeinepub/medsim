@@ -27,6 +27,13 @@
   font-display: swap;
 }
 
+/* Prevent horizontal scroll on mobile */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 @layer base {
   :root {
     --radius: 0.75rem;

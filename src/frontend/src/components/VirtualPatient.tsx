@@ -4,7 +4,7 @@ import React from "react";
 
 interface VirtualPatientProps {
   ageMonths: number;
-  gender: "male" | "female";
+  gender: "male" | "female" | "other";
   disability?: string;
   symptoms?: string[];
   className?: string;
@@ -37,7 +37,7 @@ function getSkinColor(outcome?: string): string {
 
 interface PatientSVGProps {
   ageGroup: AgeGroup;
-  gender: "male" | "female";
+  gender: "male" | "female" | "other";
   skinColor: string;
   hasFever: boolean;
   hasChestPain: boolean;
@@ -71,7 +71,11 @@ function PatientSVG({
 
   const hairColor = gender === "female" ? "#5C3A1A" : "#2C1A0A";
   const shirtColor =
-    gender === "female" ? "oklch(0.72 0.12 340)" : "oklch(0.42 0.09 230)";
+    gender === "female"
+      ? "oklch(0.72 0.12 340)"
+      : gender === "other"
+        ? "oklch(0.52 0.12 165)"
+        : "oklch(0.42 0.09 230)";
   const pantColor =
     ageGroup === "elderly" ? "oklch(0.55 0.04 260)" : "oklch(0.35 0.06 250)";
 
@@ -102,7 +106,7 @@ function PatientSVG({
         <rect
           x={gender === "female" ? "32" : "35"}
           y="90"
-          width={gender === "female" ? "56" : "50"}
+          width={gender === "female" ? "56" : gender === "other" ? "52" : "50"}
           height="70"
           rx="8"
           fill={shirtColor}
@@ -154,6 +158,14 @@ function PatientSVG({
               rx="4"
               fill={hairColor}
             />
+          </>
+        )}
+
+        {/* Other gender — medium-length hair (short side strands) */}
+        {gender === "other" && ageGroup !== "infant" && (
+          <>
+            <rect x="40" y="55" width="8" height="18" rx="4" fill={hairColor} />
+            <rect x="72" y="55" width="8" height="18" rx="4" fill={hairColor} />
           </>
         )}
 
@@ -233,7 +245,7 @@ function PatientSVG({
 
         {/* Arms */}
         <rect
-          x={gender === "female" ? "20" : "23"}
+          x={gender === "female" ? "20" : gender === "other" ? "21" : "23"}
           y="92"
           width="14"
           height="55"
@@ -245,7 +257,7 @@ function PatientSVG({
           }}
         />
         <rect
-          x={gender === "female" ? "86" : "83"}
+          x={gender === "female" ? "86" : gender === "other" ? "85" : "83"}
           y="92"
           width="14"
           height="55"
@@ -282,6 +294,19 @@ function PatientSVG({
               fill={pantColor}
             />
           </>
+        )}
+
+        {/* Gender-neutral teal accent stripe on shirt for "other" */}
+        {gender === "other" && (
+          <rect
+            x="57"
+            y="92"
+            width="6"
+            height="68"
+            rx="2"
+            fill="oklch(0.72 0.15 185)"
+            opacity="0.5"
+          />
         )}
 
         {/* Feet */}
@@ -713,7 +738,12 @@ export function VirtualPatient({
           style={{ color: "rgba(180, 210, 255, 0.7)" }}
         >
           <p className="font-mono text-sm font-bold tracking-wider">
-            {gender === "male" ? "♂ MALE" : "♀ FEMALE"} · {ageLabel}
+            {gender === "male"
+              ? "♂ MALE"
+              : gender === "female"
+                ? "♀ FEMALE"
+                : "⚥ OTHER"}{" "}
+            · {ageLabel}
           </p>
           <p className="font-mono text-[10px] uppercase tracking-widest opacity-60">
             {ageGroupLabels[ageGroup]}

@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -9,7 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   Target,
-  TrendingDown,
   TrendingUp,
   XCircle,
 } from "lucide-react";
@@ -21,29 +19,13 @@ import {
   useMyCaseAttempts,
   useMyPerformanceStats,
 } from "../hooks/useQueries";
+import { getSubjectIcon, getSubjectsByYear } from "../lib/mbbs-subjects";
 
 type TabType = "overview" | "history" | "recommendations";
 
-const SUBJECT_ICONS: Record<string, string> = {
-  Pharmacology: "💊",
-  Medicine: "🏥",
-  Surgery: "🔬",
-  Pathology: "🧫",
-  Microbiology: "🦠",
-  Pediatrics: "👶",
-  Gynecology: "👩‍⚕️",
-  Orthopedics: "🦴",
-  Cardiology: "❤️",
-  Neurology: "🧠",
-  Default: "📋",
-};
-
-function getSubjectIcon(subject: string): string {
-  return SUBJECT_ICONS[subject] || SUBJECT_ICONS.Default;
-}
-
 function SubjectCard({
   subjectName,
+  icon,
   attempts,
   correct,
   accuracy,
@@ -51,12 +33,14 @@ function SubjectCard({
   delay,
 }: {
   subjectName: string;
+  icon: string;
   attempts: number;
   correct: number;
   accuracy: number;
   isWeak: boolean;
   delay: number;
 }) {
+  const hasAttempts = attempts > 0;
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -65,14 +49,16 @@ function SubjectCard({
       className={`rounded-2xl border p-5 shadow-xs ${
         isWeak
           ? "border-destructive/20 bg-destructive/5"
-          : accuracy >= 80
+          : accuracy >= 80 && hasAttempts
             ? "border-success/20 bg-success/5"
-            : "border-border bg-card"
+            : !hasAttempts
+              ? "border-border/50 bg-card/50 opacity-70"
+              : "border-border bg-card"
       }`}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{getSubjectIcon(subjectName)}</span>
+          <span className="text-xl">{icon}</span>
           <span className="font-display font-bold text-foreground text-sm">
             {subjectName}
           </span>
@@ -82,15 +68,27 @@ function SubjectCard({
             Weak
           </Badge>
         )}
-        {accuracy >= 80 && !isWeak && (
+        {accuracy >= 80 && !isWeak && hasAttempts && (
           <Badge className="bg-success/10 text-success text-xs border-success/20">
             Strong
+          </Badge>
+        )}
+        {!hasAttempts && (
+          <Badge
+            variant="outline"
+            className="text-xs border-muted-foreground/30 text-muted-foreground"
+          >
+            Practice karein
           </Badge>
         )}
       </div>
 
       <div className="mb-2 flex items-end justify-between">
-        <span className="font-display text-3xl font-black text-foreground">
+        <span
+          className={`font-display text-3xl font-black ${
+            hasAttempts ? "text-foreground" : "text-muted-foreground/40"
+          }`}
+        >
           {accuracy}%
         </span>
         <span className="text-xs text-muted-foreground">
@@ -100,7 +98,7 @@ function SubjectCard({
       <Progress
         value={accuracy}
         className={`h-2 ${
-          accuracy >= 80
+          accuracy >= 80 && hasAttempts
             ? "[&>div]:bg-success"
             : isWeak
               ? "[&>div]:bg-destructive"
@@ -136,11 +134,11 @@ export function PerformancePage() {
   ];
 
   return (
-    <div className="p-4 lg:p-8">
-      <div className="mx-auto max-w-5xl space-y-6">
+    <div className="p-3 sm:p-4 lg:p-8">
+      <div className="mx-auto max-w-5xl space-y-5 sm:space-y-6">
         {/* Header stats */}
         <div>
-          <h1 className="font-display mb-2 text-3xl font-black text-foreground">
+          <h1 className="font-display mb-2 text-2xl sm:text-3xl font-black text-foreground">
             Mera Performance
           </h1>
           <p className="text-muted-foreground">
@@ -149,13 +147,13 @@ export function PerformancePage() {
         </div>
 
         {perfLoading ? (
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
             {["stat1", "stat2", "stat3"].map((id) => (
               <Skeleton key={id} className="h-28 rounded-2xl" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
             {[
               {
                 label: "Total Attempts",
@@ -184,7 +182,7 @@ export function PerformancePage() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * i }}
-                className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-xs"
+                className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs overflow-hidden"
               >
                 <div
                   className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${bg}`}
@@ -224,35 +222,78 @@ export function PerformancePage() {
         {activeTab === "overview" && (
           <div>
             {perfLoading ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {["sub1", "sub2", "sub3", "sub4", "sub5", "sub6"].map((id) => (
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  "sub1",
+                  "sub2",
+                  "sub3",
+                  "sub4",
+                  "sub5",
+                  "sub6",
+                  "sub7",
+                  "sub8",
+                  "sub9",
+                ].map((id) => (
                   <Skeleton key={id} className="h-32 rounded-2xl" />
                 ))}
               </div>
-            ) : perf && perf.caseHistory.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {perf.caseHistory.map((item, i) => (
-                  <SubjectCard
-                    key={item.subjectName}
-                    subjectName={item.subjectName}
-                    attempts={Number(item.attempts)}
-                    correct={Number(item.correct)}
-                    accuracy={Number(item.accuracy)}
-                    isWeak={perf.weakSubjects.includes(item.subjectName)}
-                    delay={0.05 * i}
-                  />
-                ))}
-              </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-border py-16 text-center">
-                <Target className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
-                <p className="font-semibold text-muted-foreground">
-                  Koi data nahi abhi
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Exercise mode mein case solve karein
-                </p>
-              </div>
+              (() => {
+                // Build a map of subject stats from backend data
+                const subjectDataMap = new Map<
+                  string,
+                  { attempts: number; correct: number; accuracy: number }
+                >();
+                if (perf) {
+                  for (const item of perf.caseHistory) {
+                    subjectDataMap.set(item.subjectName, {
+                      attempts: Number(item.attempts),
+                      correct: Number(item.correct),
+                      accuracy: Number(item.accuracy),
+                    });
+                  }
+                }
+
+                const byYear = getSubjectsByYear();
+                let globalIndex = 0;
+
+                return (
+                  <div
+                    className="space-y-8"
+                    data-ocid="performance.overview.section"
+                  >
+                    {Array.from(byYear.entries()).map(
+                      ([yearLabel, subjects]) => (
+                        <div key={yearLabel}>
+                          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                            {yearLabel}
+                          </h3>
+                          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                            {subjects.map((s) => {
+                              const data = subjectDataMap.get(s.name);
+                              const isWeak =
+                                perf?.weakSubjects.includes(s.name) ?? false;
+                              const idx = globalIndex++;
+                              return (
+                                <SubjectCard
+                                  key={s.name}
+                                  subjectName={s.name}
+                                  icon={s.icon}
+                                  attempts={data?.attempts ?? 0}
+                                  correct={data?.correct ?? 0}
+                                  accuracy={data?.accuracy ?? 0}
+                                  isWeak={isWeak}
+                                  delay={0.03 * idx}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                );
+              })()
             )}
           </div>
         )}

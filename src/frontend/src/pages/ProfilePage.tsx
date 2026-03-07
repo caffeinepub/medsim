@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ import {
   Briefcase,
   Building2,
   Camera,
+  ChevronRight,
   Edit3,
   Loader2,
   Lock,
@@ -42,12 +44,14 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { UserProfile } from "../backend.d";
+import { StudentIdCard } from "../components/StudentIdCard";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useCallerUserProfile,
   useMyPerformanceStats,
   useSaveProfile,
 } from "../hooks/useQueries";
+import { generateSystemId } from "../utils/systemId";
 
 const PHOTO_STORAGE_KEY = "medsim_profile_photo";
 
@@ -745,10 +749,14 @@ function CameraModal({
 }
 
 const ROLES = [
-  { value: "junior", label: "Junior (1st-2nd Year)", color: "#00d4ff" },
-  { value: "senior", label: "Senior (3rd-4th Year)", color: "#00e676" },
-  { value: "intern", label: "Intern / House Officer", color: "#ffb800" },
-  { value: "professor", label: "Professor / Faculty", color: "#9b59ff" },
+  { value: "student", label: "Student (MBBS)", color: "#4fc3f7" },
+  { value: "intern", label: "Intern", color: "#ffb800" },
+  { value: "jr1", label: "Junior Resident 1 (Jr 1)", color: "#00d4ff" },
+  { value: "jr2", label: "Junior Resident 2 (Jr 2)", color: "#00b8e0" },
+  { value: "sr1", label: "Senior Resident 1 (Sr 1)", color: "#00e676" },
+  { value: "sr2", label: "Senior Resident 2 (Sr 2)", color: "#00c460" },
+  { value: "asst_professor", label: "Assistant Professor", color: "#b39dff" },
+  { value: "assoc_professor", label: "Associate Professor", color: "#9b59ff" },
   { value: "hod", label: "Head of Department (HOD)", color: "#ff3355" },
 ];
 
@@ -772,9 +780,11 @@ interface ExtendedProfile {
   zohoMail: string;
   gmail: string;
   batch: string;
+  collegeName: string;
+  rollNumber: string;
 }
 
-// Score includes photo as a field (9 total)
+// Score includes photo as a field (11 total)
 function calcCompletion(
   form: ExtendedProfile,
   hasPhoto: boolean,
@@ -788,6 +798,8 @@ function calcCompletion(
     form.zohoMail,
     form.gmail,
     form.batch,
+    form.collegeName,
+    form.rollNumber,
     hasPhoto ? "photo" : null,
   ];
   const filled = fields.filter((f) => f && f.toString().trim() !== "").length;
@@ -831,7 +843,11 @@ function MonitorField({
   );
 }
 
-export function ProfilePage() {
+interface ProfilePageProps {
+  onNavigate?: (page: string) => void;
+}
+
+export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
   const { identity } = useInternetIdentity();
   const { data: profile, isLoading } = useCallerUserProfile();
   const { data: performanceStats } = useMyPerformanceStats();
@@ -840,6 +856,9 @@ export function ProfilePage() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(() =>
     localStorage.getItem(PHOTO_STORAGE_KEY),
+  );
+  const [mbbsComplete, setMbbsComplete] = useState<boolean>(
+    () => localStorage.getItem("medsim_mbbs_complete") === "true",
   );
 
   const [form, setForm] = useState<ExtendedProfile>({
@@ -851,6 +870,8 @@ export function ProfilePage() {
     zohoMail: localStorage.getItem("medsim_zohoMail") || "",
     gmail: localStorage.getItem("medsim_gmail") || "",
     batch: localStorage.getItem("medsim_batch") || "",
+    collegeName: localStorage.getItem("medsim_college") || "",
+    rollNumber: localStorage.getItem("medsim_rollNumber") || "",
   });
 
   // Populate form when profile loads
@@ -874,6 +895,8 @@ export function ProfilePage() {
       zohoMail: "medsim_zohoMail",
       gmail: "medsim_gmail",
       batch: "medsim_batch",
+      collegeName: "medsim_college",
+      rollNumber: "medsim_rollNumber",
     };
     if (lsFields[field]) {
       localStorage.setItem(lsFields[field], value);
@@ -974,7 +997,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="min-h-full p-4 md:p-8">
+    <div className="min-h-full p-3 sm:p-4 md:p-8">
       <div className="mx-auto max-w-3xl">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -1312,6 +1335,38 @@ export function ProfilePage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <MonitorField
+                    label="College / University Name"
+                    icon={Building2}
+                    required
+                  >
+                    <Input
+                      data-ocid="profile.college_name_input"
+                      placeholder="AIIMS New Delhi, GMC Mumbai..."
+                      value={form.collegeName}
+                      onChange={(e) =>
+                        updateField("collegeName")(e.target.value)
+                      }
+                      disabled={!isEditing}
+                      style={isEditing ? inputStyle : readonlyStyle}
+                      className="h-11 border-0 focus-visible:ring-0"
+                    />
+                  </MonitorField>
+                </div>
+
+                <MonitorField label="Roll Number" icon={BookOpen} required>
+                  <Input
+                    data-ocid="profile.roll_number_input"
+                    placeholder="2024MBBS0123"
+                    value={form.rollNumber}
+                    onChange={(e) => updateField("rollNumber")(e.target.value)}
+                    disabled={!isEditing}
+                    style={isEditing ? inputStyle : readonlyStyle}
+                    className="h-11 border-0 font-mono focus-visible:ring-0"
+                  />
+                </MonitorField>
+
                 <MonitorField label="Role" icon={User} required>
                   <Select
                     value={form.role}
@@ -1395,6 +1450,70 @@ export function ProfilePage() {
                     className="h-11 border-0 focus-visible:ring-0"
                   />
                 </MonitorField>
+
+                {/* MBBS Completion checkbox */}
+                <div className="sm:col-span-2">
+                  {/* biome-ignore lint/a11y/useKeyWithClickEvents: wrapper click delegates to checkbox */}
+                  <div
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 cursor-pointer transition-all"
+                    style={{
+                      background: mbbsComplete
+                        ? "rgba(0, 230, 118, 0.06)"
+                        : "rgba(0, 10, 25, 0.4)",
+                      border: `1px solid ${mbbsComplete ? "rgba(0,230,118,0.2)" : "rgba(0,212,255,0.12)"}`,
+                    }}
+                    onClick={() => {
+                      const next = !mbbsComplete;
+                      setMbbsComplete(next);
+                      localStorage.setItem(
+                        "medsim_mbbs_complete",
+                        next ? "true" : "false",
+                      );
+                    }}
+                  >
+                    <Checkbox
+                      data-ocid="profile.mbbs_complete_checkbox"
+                      id="mbbs-complete"
+                      checked={mbbsComplete}
+                      onCheckedChange={(checked) => {
+                        const next = !!checked;
+                        setMbbsComplete(next);
+                        localStorage.setItem(
+                          "medsim_mbbs_complete",
+                          next ? "true" : "false",
+                        );
+                      }}
+                      className="border-0"
+                      style={{
+                        background: mbbsComplete
+                          ? "#00e676"
+                          : "rgba(0,10,25,0.6)",
+                        border: `1px solid ${mbbsComplete ? "rgba(0,230,118,0.4)" : "rgba(0,212,255,0.2)"}`,
+                      }}
+                    />
+                    <div>
+                      <Label
+                        htmlFor="mbbs-complete"
+                        className="font-semibold text-sm cursor-pointer"
+                        style={{
+                          color: mbbsComplete
+                            ? "#00e676"
+                            : "rgba(180, 210, 255, 0.7)",
+                        }}
+                      >
+                        MBBS Degree Complete
+                      </Label>
+                      <p
+                        className="text-xs mt-0.5"
+                        style={{ color: "rgba(100, 150, 200, 0.45)" }}
+                      >
+                        {mbbsComplete
+                          ? "✓ MBBS complete hai — senior job positions ke liye eligible"
+                          : "MBBS degree complete hone par tick karein (career opportunities unlock hongi)"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1525,6 +1644,24 @@ export function ProfilePage() {
               ))}
             </div>
 
+            {/* View All button */}
+            {onNavigate && (
+              <button
+                type="button"
+                data-ocid="profile.career_view_all_button"
+                onClick={() => onNavigate("career")}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all hover:opacity-90"
+                style={{
+                  background: `${careerTier.color}10`,
+                  border: `1px solid ${careerTier.color}25`,
+                  color: careerTier.color,
+                }}
+              >
+                View All Opportunities
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
+
             <p
               className="mt-4 text-center font-mono text-xs"
               style={{ color: "rgba(100, 150, 200, 0.35)" }}
@@ -1532,6 +1669,37 @@ export function ProfilePage() {
               ℹ️ Career recommendations profile + performance score pe based hain
             </p>
           </div>
+
+          {/* ── Student ID Card Section ── */}
+          {form.name &&
+            form.batch &&
+            (() => {
+              const principalId =
+                identity?.getPrincipal().toString() ||
+                profile?.id ||
+                "anonymous";
+              const systemId = generateSystemId(principalId);
+              return (
+                <div
+                  className="rounded-2xl p-5"
+                  style={{
+                    background: "rgba(5, 15, 35, 0.9)",
+                    border: "1px solid rgba(0, 212, 255, 0.15)",
+                  }}
+                >
+                  <StudentIdCard
+                    name={form.name}
+                    batch={form.batch}
+                    role={form.role}
+                    profilePhoto={profilePhoto}
+                    systemId={systemId}
+                    principalId={principalId}
+                    collegeName={form.collegeName}
+                    rollNumber={form.rollNumber}
+                  />
+                </div>
+              );
+            })()}
 
           {/* Footer */}
           <p

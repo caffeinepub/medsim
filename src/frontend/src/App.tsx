@@ -16,12 +16,17 @@ import {
 import { useSeedDiseases } from "./hooks/useSeedDiseases";
 import { AIAssistantPage } from "./pages/AIAssistantPage";
 import { AdminPage } from "./pages/AdminPage";
+import { CareerPage } from "./pages/CareerPage";
 import { CustomPatientPage } from "./pages/CustomPatientPage";
+import { ExamPage } from "./pages/ExamPage";
 import { ExercisePage } from "./pages/ExercisePage";
 import { HomePage } from "./pages/HomePage";
+import { IcuSimulatorPage } from "./pages/IcuSimulatorPage";
 import { LoginPage } from "./pages/LoginPage";
+import { MyApplicationsPage } from "./pages/MyApplicationsPage";
 import { PerformancePage } from "./pages/PerformancePage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { VerifyPage } from "./pages/VerifyPage";
 
 type AppPage =
   | "home"
@@ -30,9 +35,24 @@ type AppPage =
   | "performance"
   | "admin"
   | "profile"
-  | "ai-assistant";
+  | "ai-assistant"
+  | "career"
+  | "exam"
+  | "my-applications"
+  | "icu-simulator"
+  | "verify";
 
 type AppState = "loading" | "login" | "camera-permission" | "app";
+
+// Check if this is a verification URL (publicly accessible)
+function getVerifyPrincipalFromHash(): string | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash;
+  if (hash.startsWith("#verify/")) {
+    return decodeURIComponent(hash.slice("#verify/".length));
+  }
+  return null;
+}
 
 function calcProfileScore(): number {
   // We can't get the profile from backend here directly, but we can read localStorage
@@ -103,7 +123,7 @@ function AppWithSeed({
   );
 }
 
-export default function App() {
+function AppMain() {
   const { identity, isInitializing } = useInternetIdentity();
   const { isLoading: profileLoading } = useCallerUserProfile();
   const { data: isAdmin = false } = useIsAdmin();
@@ -148,8 +168,13 @@ export default function App() {
     "custom-patient": <CustomPatientPage />,
     performance: <PerformancePage />,
     admin: isAdmin ? <AdminPage /> : <HomePage onNavigate={handleNavigate} />,
-    profile: <ProfilePage />,
+    profile: <ProfilePage onNavigate={handleNavigate} />,
     "ai-assistant": <AIAssistantPage />,
+    career: <CareerPage onNavigate={handleNavigate} />,
+    exam: <ExamPage onNavigate={handleNavigate} />,
+    "my-applications": <MyApplicationsPage onNavigate={handleNavigate} />,
+    "icu-simulator": <IcuSimulatorPage />,
+    verify: <VerifyPage principalId="" />,
   };
 
   // Loading
@@ -187,4 +212,18 @@ export default function App() {
       {pageContent[currentPage]}
     </AppWithSeed>
   );
+}
+
+export default function App() {
+  // Check for verify hash before rendering the main app (public page, no login needed)
+  const verifyPrincipalId = getVerifyPrincipalFromHash();
+  if (verifyPrincipalId) {
+    return (
+      <>
+        <VerifyPage principalId={verifyPrincipalId} />
+        <Toaster />
+      </>
+    );
+  }
+  return <AppMain />;
 }

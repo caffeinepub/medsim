@@ -9,7 +9,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Stethoscope, User } from "lucide-react";
+import {
+  BookOpen,
+  Building2,
+  CheckCircle2,
+  Stethoscope,
+  User,
+} from "lucide-react";
 import { motion } from "motion/react";
 import type React from "react";
 import { useState } from "react";
@@ -24,10 +30,14 @@ interface ProfileSetupPageProps {
 }
 
 const ROLES = [
-  { value: "junior", label: "Junior (1st-2nd Year)" },
-  { value: "senior", label: "Senior (3rd-4th Year)" },
-  { value: "intern", label: "Intern / House Officer" },
-  { value: "professor", label: "Professor / Faculty" },
+  { value: "student", label: "Student (MBBS)" },
+  { value: "intern", label: "Intern" },
+  { value: "jr1", label: "Junior Resident 1 (Jr 1)" },
+  { value: "jr2", label: "Junior Resident 2 (Jr 2)" },
+  { value: "sr1", label: "Senior Resident 1 (Sr 1)" },
+  { value: "sr2", label: "Senior Resident 2 (Sr 2)" },
+  { value: "asst_professor", label: "Assistant Professor" },
+  { value: "assoc_professor", label: "Associate Professor" },
   { value: "hod", label: "Head of Department (HOD)" },
 ];
 
@@ -58,10 +68,16 @@ export function ProfileSetupPage({
     gmail: "",
     batch: "",
     role: "",
+    collegeName: localStorage.getItem("medsim_college") || "",
+    rollNumber: localStorage.getItem("medsim_rollNumber") || "",
   });
 
-  const updateField = (field: string) => (value: string) =>
+  const updateField = (field: string) => (value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (field === "collegeName") localStorage.setItem("medsim_college", value);
+    if (field === "rollNumber")
+      localStorage.setItem("medsim_rollNumber", value);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,6 +222,40 @@ export function ProfileSetupPage({
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="collegeName">
+                      <Building2 className="inline h-3.5 w-3.5 mr-1 mb-0.5" />
+                      College / University Name{" "}
+                      <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="collegeName"
+                      placeholder="AIIMS New Delhi, GMC Mumbai..."
+                      value={form.collegeName}
+                      onChange={(e) =>
+                        updateField("collegeName")(e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="rollNumber">
+                      <BookOpen className="inline h-3.5 w-3.5 mr-1 mb-0.5" />
+                      University / College Roll No.{" "}
+                      <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="rollNumber"
+                      placeholder="2024MBBS0123"
+                      value={form.rollNumber}
+                      onChange={(e) =>
+                        updateField("rollNumber")(e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="role">
                       Role <span className="text-destructive">*</span>

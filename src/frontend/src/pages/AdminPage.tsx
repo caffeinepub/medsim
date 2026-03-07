@@ -55,6 +55,7 @@ import {
   Edit2,
   Eye,
   FileJson,
+  FileQuestion,
   FileText,
   Plus,
   RefreshCw,
@@ -97,7 +98,8 @@ type AdminTab =
   | "cases"
   | "alerts"
   | "security"
-  | "database";
+  | "database"
+  | "exams";
 
 const ADMIN_TABS = [
   { id: "dashboard" as AdminTab, label: "Dashboard", icon: BarChart3 },
@@ -107,6 +109,7 @@ const ADMIN_TABS = [
   { id: "alerts" as AdminTab, label: "AI Alerts", icon: Bell },
   { id: "security" as AdminTab, label: "Security", icon: Shield },
   { id: "database" as AdminTab, label: "DB Import", icon: CloudDownload },
+  { id: "exams" as AdminTab, label: "Exams", icon: FileQuestion },
 ];
 
 // ─── Dashboard Tab ────────────────────────────────────────────────
@@ -2074,6 +2077,828 @@ function DatabaseTab() {
   );
 }
 
+// ─── Exams Admin Tab ─────────────────────────────────────────────
+
+interface AdminExamQuestion {
+  id: string;
+  type: "mcq" | "descriptive";
+  text: string;
+  options?: string[];
+  correctIndex?: number;
+  subject: string;
+  marks: number;
+}
+
+type ExamRole = "mbbs" | "jr1" | "jr2" | "sr1" | "sr2" | "professor" | "hod";
+
+const EXAM_ROLES: { value: ExamRole; label: string; color: string }[] = [
+  { value: "mbbs", label: "MBBS / Intern", color: "#00d4ff" },
+  { value: "jr1", label: "Junior 1 (Jr 1)", color: "#00e676" },
+  { value: "jr2", label: "Junior 2 (Jr 2)", color: "#00c460" },
+  { value: "sr1", label: "Senior 1 (Sr 1)", color: "#ffb800" },
+  { value: "sr2", label: "Senior 2 (Sr 2)", color: "#ff9500" },
+  { value: "professor", label: "Professor", color: "#9b59ff" },
+  { value: "hod", label: "HOD", color: "#ff3355" },
+];
+
+interface ExamResultRecord {
+  applicationId: string;
+  role: string;
+  mcqScore: number;
+  mcqTotal: number;
+  descriptiveAnswers: { questionId: string; answer: string }[];
+  status: "pass" | "pending" | "fail";
+  submittedAt: string;
+  pendingReview: boolean;
+  grades?: Record<string, { score: number; feedback: string }>;
+}
+
+// Extracted component to avoid hooks-in-loop violation
+function DescriptiveAnswerGradeRow({
+  da,
+  daIdx,
+  subIdx,
+  existingGrade,
+  onGrade,
+}: {
+  da: { questionId: string; answer: string };
+  daIdx: number;
+  subIdx: number;
+  existingGrade?: { score: number; feedback: string };
+  onGrade: (questionId: string, score: number, feedback: string) => void;
+}) {
+  const fieldStyle: React.CSSProperties = {
+    background: "rgba(0, 15, 35, 0.7)",
+    border: "1px solid rgba(0, 212, 255, 0.2)",
+    color: "#e8f4ff",
+    borderRadius: "0.75rem",
+    fontSize: "0.875rem",
+  };
+  const [localScore, setLocalScore] = useState(existingGrade?.score ?? 0);
+  const [localFeedback, setLocalFeedback] = useState(
+    existingGrade?.feedback ?? "",
+  );
+
+  return (
+    <div
+      className="rounded-lg p-3 space-y-2"
+      style={{
+        background: "rgba(155, 89, 255, 0.04)",
+        border: "1px solid rgba(155,89,255,0.1)",
+      }}
+    >
+      <p
+        className="text-xs font-semibold"
+        style={{ color: "rgba(155,89,255,0.7)" }}
+      >
+        Q{daIdx + 1}: {da.questionId}
+      </p>
+      <p
+        className="text-xs leading-relaxed"
+        style={{ color: "rgba(180,210,255,0.6)" }}
+      >
+        {da.answer || (
+          <span style={{ color: "rgba(150,200,255,0.3)" }}>
+            No answer provided
+          </span>
+        )}
+      </p>
+      {!existingGrade ? (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Input
+            type="number"
+            value={localScore}
+            onChange={(e) => setLocalScore(Number(e.target.value))}
+            placeholder="Score (0-10)"
+            min={0}
+            max={10}
+            className="h-8 w-24 border-0 font-mono"
+            style={{ ...fieldStyle, fontSize: "12px" }}
+            data-ocid={`admin.exams.grade_score_input.${subIdx + 1}`}
+          />
+          <Input
+            value={localFeedback}
+            onChange={(e) => setLocalFeedback(e.target.value)}
+            placeholder="Feedback..."
+            className="h-8 flex-1 border-0"
+            style={{ ...fieldStyle, fontSize: "12px" }}
+            data-ocid={`admin.exams.grade_feedback_input.${subIdx + 1}`}
+          />
+          <Button
+            size="sm"
+            data-ocid={`admin.exams.grade_save_button.${subIdx + 1}`}
+            onClick={() => onGrade(da.questionId, localScore, localFeedback)}
+            className="h-8 text-xs rounded-lg border-0"
+            style={{
+              background: "rgba(0,230,118,0.15)",
+              color: "#00e676",
+              border: "1px solid rgba(0,230,118,0.2)",
+            }}
+          >
+            <Check className="h-3 w-3 mr-1" />
+            Grade & Save
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <Badge
+            className="text-xs border-0"
+            style={{ background: "rgba(0,230,118,0.1)", color: "#00e676" }}
+          >
+            Score: {existingGrade.score}/10
+          </Badge>
+          {existingGrade.feedback && (
+            <span
+              className="text-xs"
+              style={{ color: "rgba(150,200,255,0.5)" }}
+            >
+              {existingGrade.feedback}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExamsAdminTab() {
+  const [activeRole, setActiveRole] = useState<ExamRole>("mbbs");
+  const [questions, setQuestions] = useState<
+    Record<ExamRole, AdminExamQuestion[]>
+  >(() => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("medsim_exam_questions") || "{}",
+      ) as Record<ExamRole, AdminExamQuestion[]>;
+    } catch {
+      return {} as Record<ExamRole, AdminExamQuestion[]>;
+    }
+  });
+  const [submissions, setSubmissions] = useState<
+    Record<string, ExamResultRecord>
+  >(() => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("medsim_exam_results") || "{}",
+      ) as Record<string, ExamResultRecord>;
+    } catch {
+      return {};
+    }
+  });
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newQ, setNewQ] = useState<Partial<AdminExamQuestion>>({
+    type: "mcq",
+    text: "",
+    options: ["", "", "", ""],
+    correctIndex: 0,
+    subject: "Medicine",
+    marks: 2,
+  });
+
+  const fieldStyle: React.CSSProperties = {
+    background: "rgba(0, 15, 35, 0.7)",
+    border: "1px solid rgba(0, 212, 255, 0.2)",
+    color: "#e8f4ff",
+    borderRadius: "0.75rem",
+    fontSize: "0.875rem",
+  };
+
+  const saveQuestions = (updated: Record<ExamRole, AdminExamQuestion[]>) => {
+    setQuestions(updated);
+    localStorage.setItem("medsim_exam_questions", JSON.stringify(updated));
+  };
+
+  const handleAddQuestion = () => {
+    if (!newQ.text?.trim()) {
+      toast.error("Question text zaroori hai");
+      return;
+    }
+    if (newQ.type === "mcq" && newQ.options?.some((o) => !o.trim())) {
+      toast.error("Sabhi 4 options fill karein");
+      return;
+    }
+    const q: AdminExamQuestion = {
+      id: `admin_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      type: newQ.type || "mcq",
+      text: newQ.text || "",
+      options: newQ.type === "mcq" ? newQ.options : undefined,
+      correctIndex: newQ.type === "mcq" ? (newQ.correctIndex ?? 0) : undefined,
+      subject: newQ.subject || "Medicine",
+      marks: newQ.marks || 2,
+    };
+    const current = questions[activeRole] || [];
+    saveQuestions({ ...questions, [activeRole]: [...current, q] });
+    setNewQ({
+      type: "mcq",
+      text: "",
+      options: ["", "", "", ""],
+      correctIndex: 0,
+      subject: "Medicine",
+      marks: 2,
+    });
+    setShowAddForm(false);
+    toast.success("Question added!");
+  };
+
+  const handleDeleteQuestion = (qId: string) => {
+    const current = questions[activeRole] || [];
+    saveQuestions({
+      ...questions,
+      [activeRole]: current.filter((q) => q.id !== qId),
+    });
+    toast.success("Question deleted");
+  };
+
+  const handleGradeDescriptive = (
+    appId: string,
+    questionId: string,
+    score: number,
+    feedback: string,
+  ) => {
+    const updated = { ...submissions };
+    if (!updated[appId]) return;
+    if (!updated[appId].grades) updated[appId].grades = {};
+    updated[appId].grades![questionId] = { score, feedback };
+
+    // Check if all descriptive answers graded
+    const descAnswers = updated[appId].descriptiveAnswers || [];
+    const allGraded = descAnswers.every(
+      (a) => updated[appId].grades?.[a.questionId],
+    );
+    if (allGraded && descAnswers.length > 0) {
+      const totalDescScore = Object.values(updated[appId].grades!).reduce(
+        (s, g) => s + g.score,
+        0,
+      );
+      const maxDescScore = descAnswers.length * 10;
+      const descPct = (totalDescScore / Math.max(1, maxDescScore)) * 100;
+      const mcqPct =
+        updated[appId].mcqTotal > 0
+          ? (updated[appId].mcqScore / updated[appId].mcqTotal) * 100
+          : 100;
+      updated[appId].status = mcqPct >= 70 && descPct >= 60 ? "pass" : "fail";
+      updated[appId].pendingReview = false;
+    }
+    setSubmissions(updated);
+    localStorage.setItem("medsim_exam_results", JSON.stringify(updated));
+    toast.success("Grade saved!");
+  };
+
+  const handleMarkPassFail = (appId: string, newStatus: "pass" | "fail") => {
+    const updated = { ...submissions };
+    if (!updated[appId]) return;
+    updated[appId].status = newStatus;
+    updated[appId].pendingReview = false;
+    setSubmissions(updated);
+    localStorage.setItem("medsim_exam_results", JSON.stringify(updated));
+
+    // Update application status
+    const apps: Array<{ id: string; status: string }> = JSON.parse(
+      localStorage.getItem("medsim_applications") || "[]",
+    );
+    const updatedApps = apps.map((a) =>
+      a.id === appId ? { ...a, status: newStatus } : a,
+    );
+    localStorage.setItem("medsim_applications", JSON.stringify(updatedApps));
+    toast.success(`Submission marked as ${newStatus.toUpperCase()}`);
+  };
+
+  const currentRoleQuestions = questions[activeRole] || [];
+  const roleAliasMap: Record<string, string[]> = {
+    mbbs: ["mbbs", "intern"],
+    jr1: ["jr1", "junior"],
+    jr2: ["jr2"],
+    sr1: ["sr1", "senior"],
+    sr2: ["sr2"],
+    professor: ["professor"],
+    hod: ["hod"],
+  };
+  const currentSubmissions = Object.values(submissions).filter((s) =>
+    (roleAliasMap[activeRole] || [activeRole]).includes(s.role),
+  );
+  const pendingReviewSubmissions = currentSubmissions.filter(
+    (s) => s.pendingReview,
+  );
+
+  const activeRoleConfig = EXAM_ROLES.find((r) => r.value === activeRole)!;
+
+  return (
+    <div className="space-y-6">
+      {/* Role tabs */}
+      <div className="flex flex-wrap gap-2">
+        {EXAM_ROLES.map((r) => (
+          <button
+            type="button"
+            key={r.value}
+            data-ocid={`admin.exams.${r.value}_tab`}
+            onClick={() => setActiveRole(r.value)}
+            className="rounded-xl px-4 py-2 text-sm font-semibold transition-all"
+            style={
+              activeRole === r.value
+                ? {
+                    background: `${r.color}20`,
+                    border: `1px solid ${r.color}40`,
+                    color: r.color,
+                  }
+                : {
+                    background: "rgba(0,10,25,0.4)",
+                    border: "1px solid rgba(0,212,255,0.1)",
+                    color: "rgba(150,200,255,0.5)",
+                  }
+            }
+          >
+            {r.label}
+            <span className="ml-1.5 font-mono text-[10px] opacity-70">
+              ({(questions[r.value] || []).length} Qs)
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Questions section */}
+      <div
+        className="rounded-2xl p-5 space-y-4"
+        style={{
+          background: "rgba(5, 15, 35, 0.9)",
+          border: `1px solid ${activeRoleConfig.color}20`,
+        }}
+      >
+        <div className="flex items-center justify-between">
+          <h3
+            className="font-display font-bold"
+            style={{ color: "rgba(180, 220, 255, 0.9)" }}
+          >
+            {activeRoleConfig.label} — Questions ({currentRoleQuestions.length})
+          </h3>
+          <Button
+            size="sm"
+            data-ocid="admin.exams.add_question_button"
+            onClick={() => setShowAddForm((v) => !v)}
+            className="gap-2"
+            style={{
+              background: `${activeRoleConfig.color}18`,
+              border: `1px solid ${activeRoleConfig.color}30`,
+              color: activeRoleConfig.color,
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Add Question
+          </Button>
+        </div>
+
+        {/* Add question form */}
+        {showAddForm && (
+          <div
+            className="rounded-xl p-4 space-y-3"
+            style={{
+              background: "rgba(0, 10, 30, 0.6)",
+              border: "1px solid rgba(0, 212, 255, 0.12)",
+            }}
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Type</Label>
+                <Select
+                  value={newQ.type}
+                  onValueChange={(v) =>
+                    setNewQ((p) => ({ ...p, type: v as "mcq" | "descriptive" }))
+                  }
+                >
+                  <SelectTrigger
+                    className="h-9 border-0"
+                    style={fieldStyle}
+                    data-ocid="admin.exams.question_type_select"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    style={{
+                      background: "rgba(5,15,35,0.98)",
+                      border: "1px solid rgba(0,212,255,0.2)",
+                      color: "#e8f4ff",
+                    }}
+                  >
+                    <SelectItem value="mcq">MCQ</SelectItem>
+                    <SelectItem value="descriptive">Descriptive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Subject</Label>
+                <Input
+                  value={newQ.subject || ""}
+                  onChange={(e) =>
+                    setNewQ((p) => ({ ...p, subject: e.target.value }))
+                  }
+                  placeholder="Medicine, Surgery..."
+                  style={fieldStyle}
+                  className="h-9 border-0"
+                  data-ocid="admin.exams.question_subject_input"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Marks</Label>
+                <Input
+                  type="number"
+                  value={newQ.marks || 2}
+                  onChange={(e) =>
+                    setNewQ((p) => ({ ...p, marks: Number(e.target.value) }))
+                  }
+                  style={fieldStyle}
+                  className="h-9 border-0 font-mono"
+                  data-ocid="admin.exams.question_marks_input"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Question Text *
+              </Label>
+              <Textarea
+                value={newQ.text || ""}
+                onChange={(e) =>
+                  setNewQ((p) => ({ ...p, text: e.target.value }))
+                }
+                placeholder="Question likhein..."
+                rows={3}
+                style={{ ...fieldStyle, resize: "none" }}
+                className="border-0"
+                data-ocid="admin.exams.question_text_textarea"
+              />
+            </div>
+            {newQ.type === "mcq" && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {(newQ.options || ["", "", "", ""]).map((opt, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: options are positional by design
+                  <div key={`opt-${i}`} className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Option {String.fromCharCode(65 + i)}{" "}
+                      {newQ.correctIndex === i && (
+                        <span style={{ color: "#00e676" }}>(Correct)</span>
+                      )}
+                    </Label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNewQ((p) => ({ ...p, correctIndex: i }))
+                        }
+                        className="h-9 w-9 flex-shrink-0 rounded-lg text-xs font-bold transition-all"
+                        style={
+                          newQ.correctIndex === i
+                            ? {
+                                background: "rgba(0,230,118,0.2)",
+                                border: "1px solid rgba(0,230,118,0.4)",
+                                color: "#00e676",
+                              }
+                            : {
+                                background: "rgba(0,10,25,0.4)",
+                                border: "1px solid rgba(0,212,255,0.1)",
+                                color: "rgba(150,200,255,0.4)",
+                              }
+                        }
+                        aria-label={`Mark as correct answer ${String.fromCharCode(65 + i)}`}
+                      >
+                        {String.fromCharCode(65 + i)}
+                      </button>
+                      <Input
+                        value={opt}
+                        onChange={(e) => {
+                          const opts = [...(newQ.options || ["", "", "", ""])];
+                          opts[i] = e.target.value;
+                          setNewQ((p) => ({ ...p, options: opts }));
+                        }}
+                        placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                        style={fieldStyle}
+                        className="h-9 flex-1 border-0"
+                        data-ocid={`admin.exams.option_input.${i + 1}`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                data-ocid="admin.exams.add_question_cancel_button"
+                onClick={() => setShowAddForm(false)}
+                style={{ color: "rgba(150,200,255,0.5)" }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                data-ocid="admin.exams.save_question_button"
+                onClick={handleAddQuestion}
+                style={{
+                  background: "linear-gradient(135deg, #0099cc, #00d4ff)",
+                  color: "#000",
+                  border: "none",
+                }}
+              >
+                Save Question
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Questions list */}
+        {currentRoleQuestions.length === 0 ? (
+          <div
+            className="py-10 text-center rounded-xl"
+            data-ocid="admin.exams.questions_empty_state"
+            style={{ border: "1px dashed rgba(0,212,255,0.12)" }}
+          >
+            <FileQuestion
+              className="mx-auto h-10 w-10 mb-2"
+              style={{ color: "rgba(0,212,255,0.2)" }}
+            />
+            <p className="text-sm" style={{ color: "rgba(150,200,255,0.4)" }}>
+              Koi questions nahi. Add karein ya seed data use hoga.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {currentRoleQuestions.map((q, idx) => (
+              <div
+                key={q.id}
+                data-ocid={`admin.exams.question.item.${idx + 1}`}
+                className="flex items-start justify-between gap-3 rounded-xl px-4 py-3"
+                style={{
+                  background: "rgba(0, 10, 30, 0.5)",
+                  border: "1px solid rgba(0, 212, 255, 0.08)",
+                }}
+              >
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <span
+                    className="flex-shrink-0 font-mono text-xs font-bold h-6 w-6 rounded-full flex items-center justify-center"
+                    style={{
+                      background:
+                        q.type === "mcq"
+                          ? "rgba(0,212,255,0.1)"
+                          : "rgba(155,89,255,0.1)",
+                      color: q.type === "mcq" ? "#00d4ff" : "#9b59ff",
+                      border: `1px solid ${q.type === "mcq" ? "rgba(0,212,255,0.2)" : "rgba(155,89,255,0.2)"}`,
+                    }}
+                  >
+                    {idx + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge
+                        className="text-[9px] border-0 px-1.5"
+                        style={{
+                          background:
+                            q.type === "mcq"
+                              ? "rgba(0,212,255,0.08)"
+                              : "rgba(155,89,255,0.08)",
+                          color: q.type === "mcq" ? "#00d4ff" : "#9b59ff",
+                        }}
+                      >
+                        {q.type.toUpperCase()}
+                      </Badge>
+                      <span
+                        className="text-[10px]"
+                        style={{ color: "rgba(150,200,255,0.4)" }}
+                      >
+                        {q.subject}
+                      </span>
+                      <span
+                        className="text-[10px] font-mono"
+                        style={{ color: "#ffb800" }}
+                      >
+                        {q.marks}m
+                      </span>
+                    </div>
+                    <p
+                      className="text-xs leading-relaxed line-clamp-2"
+                      style={{ color: "rgba(180,210,255,0.7)" }}
+                    >
+                      {q.text}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  data-ocid={`admin.exams.delete_question_button.${idx + 1}`}
+                  onClick={() => handleDeleteQuestion(q.id)}
+                  className="flex-shrink-0 h-7 w-7 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/10"
+                  style={{ color: "rgba(255,51,85,0.4)" }}
+                  aria-label="Delete question"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Submissions section */}
+      <div
+        className="rounded-2xl p-5 space-y-4"
+        style={{
+          background: "rgba(5, 15, 35, 0.9)",
+          border: "1px solid rgba(255, 184, 0, 0.15)",
+        }}
+      >
+        <h3
+          className="font-display font-bold"
+          style={{ color: "rgba(180, 220, 255, 0.9)" }}
+        >
+          Exam Submissions — {activeRoleConfig.label} (
+          {currentSubmissions.length})
+          {pendingReviewSubmissions.length > 0 && (
+            <Badge
+              className="ml-2 text-xs"
+              style={{ background: "rgba(255,184,0,0.15)", color: "#ffb800" }}
+            >
+              {pendingReviewSubmissions.length} pending review
+            </Badge>
+          )}
+        </h3>
+
+        {currentSubmissions.length === 0 ? (
+          <div
+            className="py-8 text-center rounded-xl"
+            data-ocid="admin.exams.submissions_empty_state"
+            style={{ border: "1px dashed rgba(255,184,0,0.12)" }}
+          >
+            <p className="text-sm" style={{ color: "rgba(150,200,255,0.4)" }}>
+              Koi submissions nahi abi tak
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {currentSubmissions.map((sub, idx) => {
+              const mcqPct =
+                sub.mcqTotal > 0
+                  ? Math.round((sub.mcqScore / sub.mcqTotal) * 100)
+                  : 100;
+              return (
+                <div
+                  key={sub.applicationId}
+                  data-ocid={`admin.exams.submission.item.${idx + 1}`}
+                  className="rounded-xl p-4 space-y-3"
+                  style={{
+                    background: "rgba(0, 10, 30, 0.5)",
+                    border: `1px solid ${sub.status === "pass" ? "rgba(0,230,118,0.15)" : sub.status === "fail" ? "rgba(255,51,85,0.15)" : "rgba(255,184,0,0.15)"}`,
+                  }}
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <p
+                        className="font-mono text-xs font-semibold"
+                        style={{ color: "rgba(150,200,255,0.5)" }}
+                      >
+                        App ID: {sub.applicationId.slice(-12)}
+                      </p>
+                      <p
+                        className="text-xs mt-0.5"
+                        style={{ color: "rgba(100,150,200,0.5)" }}
+                      >
+                        Submitted:{" "}
+                        {new Date(sub.submittedAt).toLocaleString("en-IN")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {sub.mcqTotal > 0 && (
+                        <Badge
+                          className="text-xs border-0"
+                          style={{
+                            background:
+                              mcqPct >= 70
+                                ? "rgba(0,230,118,0.1)"
+                                : "rgba(255,51,85,0.1)",
+                            color: mcqPct >= 70 ? "#00e676" : "#ff3355",
+                          }}
+                        >
+                          MCQ: {sub.mcqScore}/{sub.mcqTotal} ({mcqPct}%)
+                        </Badge>
+                      )}
+                      <Badge
+                        className="text-xs border-0"
+                        style={{
+                          background:
+                            sub.status === "pass"
+                              ? "rgba(0,230,118,0.1)"
+                              : sub.status === "fail"
+                                ? "rgba(255,51,85,0.1)"
+                                : "rgba(255,184,0,0.1)",
+                          color:
+                            sub.status === "pass"
+                              ? "#00e676"
+                              : sub.status === "fail"
+                                ? "#ff3355"
+                                : "#ffb800",
+                        }}
+                      >
+                        {sub.status.toUpperCase()}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Descriptive answers */}
+                  {sub.descriptiveAnswers &&
+                    sub.descriptiveAnswers.length > 0 && (
+                      <div className="space-y-3">
+                        <p
+                          className="font-mono text-xs font-semibold"
+                          style={{ color: "rgba(155,89,255,0.6)" }}
+                        >
+                          Descriptive Answers ({sub.descriptiveAnswers.length})
+                        </p>
+                        {sub.descriptiveAnswers.map((da, daIdx) => (
+                          <DescriptiveAnswerGradeRow
+                            key={da.questionId}
+                            da={da}
+                            daIdx={daIdx}
+                            subIdx={idx}
+                            existingGrade={sub.grades?.[da.questionId]}
+                            onGrade={(questionId, score, feedback) =>
+                              handleGradeDescriptive(
+                                sub.applicationId,
+                                questionId,
+                                score,
+                                feedback,
+                              )
+                            }
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                  {/* Mark pass/fail */}
+                  <div
+                    className="flex items-center gap-2 pt-2"
+                    style={{ borderTop: "1px solid rgba(0,212,255,0.08)" }}
+                  >
+                    <span
+                      className="text-xs mr-2"
+                      style={{ color: "rgba(150,200,255,0.4)" }}
+                    >
+                      Override:
+                    </span>
+                    <Button
+                      size="sm"
+                      data-ocid={`admin.exams.mark_pass_button.${idx + 1}`}
+                      onClick={() =>
+                        handleMarkPassFail(sub.applicationId, "pass")
+                      }
+                      className="h-7 text-xs rounded-lg border-0"
+                      style={
+                        sub.status === "pass"
+                          ? {
+                              background: "rgba(0,230,118,0.2)",
+                              border: "1px solid rgba(0,230,118,0.3)",
+                              color: "#00e676",
+                            }
+                          : {
+                              background: "rgba(0,10,25,0.4)",
+                              border: "1px solid rgba(0,212,255,0.1)",
+                              color: "rgba(0,230,118,0.4)",
+                            }
+                      }
+                    >
+                      Mark Pass
+                    </Button>
+                    <Button
+                      size="sm"
+                      data-ocid={`admin.exams.mark_fail_button.${idx + 1}`}
+                      onClick={() =>
+                        handleMarkPassFail(sub.applicationId, "fail")
+                      }
+                      className="h-7 text-xs rounded-lg border-0"
+                      style={
+                        sub.status === "fail"
+                          ? {
+                              background: "rgba(255,51,85,0.2)",
+                              border: "1px solid rgba(255,51,85,0.3)",
+                              color: "#ff3355",
+                            }
+                          : {
+                              background: "rgba(0,10,25,0.4)",
+                              border: "1px solid rgba(0,212,255,0.1)",
+                              color: "rgba(255,51,85,0.4)",
+                            }
+                      }
+                    >
+                      Mark Fail
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Admin Page ──────────────────────────────────────────────
 
 export function AdminPage() {
@@ -2087,6 +2912,7 @@ export function AdminPage() {
     alerts: <AlertsTab />,
     security: <SecurityTab />,
     database: <DatabaseTab />,
+    exams: <ExamsAdminTab />,
   };
 
   return (

@@ -8,7 +8,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -56,6 +58,24 @@ import {
   useGetAIDiagnosis,
   useSubmitCaseAttempt,
 } from "../hooks/useQueries";
+import { MBBS_SUBJECTS, getSubjectsByYear } from "../lib/mbbs-subjects";
+import { SEED_CASES } from "../lib/seed-cases";
+
+// ─── Vitals parsing helpers ──────────────────────────────────────
+/** Extract the first numeric value from strings like "110 bpm", "37.2°C", "98%", "16/min" */
+function parseVitalNumber(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback;
+  const match = raw.match(/[\d]+(?:\.[\d]+)?/);
+  if (!match) return fallback;
+  return Number.parseFloat(match[0]);
+}
+
+/** Parse BP string: may be "90/60 mmHg" → return "90/60", else fallback */
+function parseVitalBP(raw: string | undefined, fallback: string): string {
+  if (!raw) return fallback;
+  const match = raw.match(/[\d]+\/[\d]+/);
+  return match ? match[0] : fallback;
+}
 
 type DifficultyColor = { bg: string; text: string; border: string };
 const DIFFICULTY_COLORS: Record<string, DifficultyColor> = {
@@ -132,22 +152,28 @@ function CaseBrowser({
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
 
-  // Difficulty counts
-  const easyCnt = useMemo(
-    () => cases.filter((c) => c.difficulty === "Easy").length,
-    [cases],
-  );
-  const mediumCnt = useMemo(
-    () => cases.filter((c) => c.difficulty === "Medium").length,
-    [cases],
-  );
-  const hardCnt = useMemo(
-    () => cases.filter((c) => c.difficulty === "Hard").length,
+  // Merge backend cases with seed cases (use seed when backend is empty)
+  const allCases = useMemo<PatientCase[]>(
+    () => (cases.length > 0 ? cases : (SEED_CASES as unknown as PatientCase[])),
     [cases],
   );
 
+  // Difficulty counts (based on allCases)
+  const easyCnt = useMemo(
+    () => allCases.filter((c) => c.difficulty === "Easy").length,
+    [allCases],
+  );
+  const mediumCnt = useMemo(
+    () => allCases.filter((c) => c.difficulty === "Medium").length,
+    [allCases],
+  );
+  const hardCnt = useMemo(
+    () => allCases.filter((c) => c.difficulty === "Hard").length,
+    [allCases],
+  );
+
   const filtered = useMemo(() => {
-    return cases.filter((c) => {
+    return allCases.filter((c) => {
       const disease = diseases.find((d) => d.id === c.diseaseId);
       const matchSearch =
         !search ||
@@ -163,15 +189,13 @@ function CaseBrowser({
       return matchSearch && matchCategory && matchSubject && matchDifficulty;
     });
   }, [
-    cases,
+    allCases,
     search,
     categoryFilter,
     subjectFilter,
     difficultyFilter,
     diseases,
   ]);
-
-  const subjects = [...new Set(cases.map((c) => c.subject))].filter(Boolean);
 
   const getAgeDisplay = (ageMonths: bigint) => {
     const m = Number(ageMonths);
@@ -191,10 +215,10 @@ function CaseBrowser({
   };
 
   return (
-    <div className="p-4 lg:p-8">
+    <div className="p-3 sm:p-4 lg:p-8">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6">
-          <h1 className="font-display text-3xl font-black text-foreground">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-foreground">
             Exercise Mode
           </h1>
           <p className="text-muted-foreground">
@@ -203,12 +227,12 @@ function CaseBrowser({
         </div>
 
         {/* Difficulty Stats Row */}
-        {!isLoading && cases.length > 0 && (
+        {!isLoading && allCases.length > 0 && (
           <div className="mb-6 grid grid-cols-3 gap-3">
             <DifficultyStatCard
               label="Easy"
               count={easyCnt}
-              total={cases.length}
+              total={allCases.length}
               colorClass="text-success"
               bgClass="bg-success/5"
               borderClass="border-success/20"
@@ -216,7 +240,7 @@ function CaseBrowser({
             <DifficultyStatCard
               label="Medium"
               count={mediumCnt}
-              total={cases.length}
+              total={allCases.length}
               colorClass="text-warning"
               bgClass="bg-warning/5"
               borderClass="border-warning/20"
@@ -224,7 +248,7 @@ function CaseBrowser({
             <DifficultyStatCard
               label="Hard"
               count={hardCnt}
-              total={cases.length}
+              total={allCases.length}
               colorClass="text-destructive"
               bgClass="bg-destructive/5"
               borderClass="border-destructive/20"
@@ -261,7 +285,7 @@ function CaseBrowser({
               }`}
             >
               {tabLabel[tab]}
-              {tab !== "all" && !isLoading && (
+              {tab !== "all" && !isLoading && allCases.length > 0 && (
                 <span className="ml-1.5 text-xs opacity-60">
                   (
                   {tab === "Easy"
@@ -300,16 +324,26 @@ function CaseBrowser({
             </SelectContent>
           </Select>
           <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-            <SelectTrigger className="w-full sm:w-44">
-              <SelectValue placeholder="Subject" />
+            <SelectTrigger
+              data-ocid="exercise.subject.select"
+              className="w-full sm:w-52"
+            >
+              <SelectValue placeholder="All Subjects" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Subjects</SelectItem>
-              {subjects.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
+              {Array.from(getSubjectsByYear().entries()).map(
+                ([yearLabel, subjects]) => (
+                  <SelectGroup key={yearLabel}>
+                    <SelectLabel>{yearLabel}</SelectLabel>
+                    {subjects.map((s) => (
+                      <SelectItem key={s.name} value={s.name}>
+                        {s.icon} {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ),
+              )}
             </SelectContent>
           </Select>
           <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
@@ -325,12 +359,50 @@ function CaseBrowser({
           </Select>
         </div>
 
+        {/* Subject Stats Strip */}
+        {!isLoading && (
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
+            {MBBS_SUBJECTS.map((s) => {
+              const count = allCases.filter((c) => c.subject === s.name).length;
+              return (
+                <button
+                  key={s.name}
+                  type="button"
+                  data-ocid="exercise.subject.tab"
+                  onClick={() => setSubjectFilter(s.name)}
+                  className={`flex-shrink-0 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all ${
+                    subjectFilter === s.name
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {s.icon} {s.name}{" "}
+                  <span className="ml-1 opacity-60">({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Cases grid */}
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {["c1", "c2", "c3", "c4", "c5", "c6"].map((id) => (
               <Skeleton key={id} className="h-40 rounded-2xl" />
             ))}
+          </div>
+        ) : filtered.length === 0 && allCases.length === 0 ? (
+          <div
+            data-ocid="exercise.case.empty_state"
+            className="rounded-2xl border border-dashed border-border py-16 text-center"
+          >
+            <Target className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+            <p className="font-semibold text-muted-foreground">
+              Koi case nahi mila
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Admin panel se cases add karein
+            </p>
           </div>
         ) : filtered.length === 0 ? (
           <div
@@ -1584,11 +1656,18 @@ function CaseSolver({
               gender={
                 patientCase.patientGender.toLowerCase() === "female"
                   ? "female"
-                  : "male"
+                  : patientCase.patientGender.toLowerCase() === "other"
+                    ? "other"
+                    : "male"
               }
               disability={patientCase.patientDisability}
               symptoms={symptoms}
               diseaseName={disease?.name}
+              bp={parseVitalBP(disease?.clinicalSigns?.bp, "120/80")}
+              hr={parseVitalNumber(disease?.clinicalSigns?.hr, 72)}
+              temp={parseVitalNumber(disease?.clinicalSigns?.temp, 37)}
+              spo2={parseVitalNumber(disease?.clinicalSigns?.spo2, 98)}
+              rr={parseVitalNumber(disease?.clinicalSigns?.rr, 16)}
               outcome={
                 step === "results" && results
                   ? results.diagnosisCorrect
