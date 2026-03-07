@@ -31,6 +31,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  GraduationCap,
   Lightbulb,
   Search,
   Send,
@@ -141,11 +142,13 @@ function CaseBrowser({
   diseases,
   isLoading,
   onSelectCase,
+  onNavigate,
 }: {
   cases: PatientCase[];
   diseases: Disease[];
   isLoading: boolean;
   onSelectCase: (c: PatientCase) => void;
+  onNavigate?: (page: string) => void;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -225,6 +228,53 @@ function CaseBrowser({
             Apna case chunein aur diagnosis shuru karein
           </p>
         </div>
+
+        {/* NEET PG Banner */}
+        {onNavigate && (
+          <motion.button
+            type="button"
+            data-ocid="exercise.neet_pg_banner.button"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => onNavigate("neet-pg")}
+            className="mb-5 flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.22 0.06 235 / 0.8), oklch(0.18 0.05 235 / 0.7))",
+              borderColor: "oklch(0.65 0.16 196 / 0.4)",
+              boxShadow: "0 0 20px oklch(0.65 0.16 196 / 0.08)",
+            }}
+          >
+            <div
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl"
+              style={{ background: "oklch(0.65 0.16 196 / 0.15)" }}
+            >
+              <GraduationCap
+                className="h-5 w-5"
+                style={{ color: "oklch(0.65 0.16 196)" }}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p
+                className="font-display font-bold text-sm"
+                style={{ color: "oklch(0.92 0.015 215)" }}
+              >
+                NEET PG Practice Mode
+              </p>
+              <p
+                className="text-xs truncate"
+                style={{ color: "oklch(0.65 0.16 196)" }}
+              >
+                NEET PG standard MCQs — all 19 subjects, chapter-wise, with
+                detailed explanations & references
+              </p>
+            </div>
+            <ChevronRight
+              className="h-4 w-4 flex-shrink-0"
+              style={{ color: "oklch(0.65 0.16 196 / 0.6)" }}
+            />
+          </motion.button>
+        )}
 
         {/* Difficulty Stats Row */}
         {!isLoading && allCases.length > 0 && (
@@ -2009,6 +2059,7 @@ export function ExercisePage({
       diseases={diseases}
       isLoading={isLoading}
       onSelectCase={setSelectedCase}
+      onNavigate={onNavigate}
     />
   );
 }

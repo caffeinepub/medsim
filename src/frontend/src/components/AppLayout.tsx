@@ -11,6 +11,7 @@ import {
   Briefcase,
   ChevronRight,
   ClipboardList,
+  GraduationCap,
   Home,
   LogOut,
   Menu,
@@ -32,6 +33,7 @@ import {
 type Page =
   | "home"
   | "exercise"
+  | "neet-pg"
   | "custom-patient"
   | "performance"
   | "admin"
@@ -114,8 +116,14 @@ const navItems: NavItem[] = [
   {
     id: "exercise",
     label: "Exercise Mode",
-    hinglish: "Practice Karo",
+    hinglish: "Clinical Cases",
     icon: BookOpen,
+  },
+  {
+    id: "neet-pg" as Page,
+    label: "NEET PG Practice",
+    hinglish: "MCQ Bank",
+    icon: GraduationCap,
   },
   {
     id: "icu-simulator" as Page,

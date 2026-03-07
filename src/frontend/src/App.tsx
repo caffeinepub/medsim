@@ -24,6 +24,7 @@ import { HomePage } from "./pages/HomePage";
 import { IcuSimulatorPage } from "./pages/IcuSimulatorPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyApplicationsPage } from "./pages/MyApplicationsPage";
+import { NEETPGQuizPage } from "./pages/NEETPGQuizPage";
 import { PerformancePage } from "./pages/PerformancePage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { VerifyPage } from "./pages/VerifyPage";
@@ -31,6 +32,7 @@ import { VerifyPage } from "./pages/VerifyPage";
 type AppPage =
   | "home"
   | "exercise"
+  | "neet-pg"
   | "custom-patient"
   | "performance"
   | "admin"
@@ -165,6 +167,7 @@ function AppMain() {
   const pageContent: Record<AppPage, React.ReactNode> = {
     home: <HomePage onNavigate={handleNavigate} />,
     exercise: <ExercisePage onNavigate={handleNavigate} />,
+    "neet-pg": <NEETPGQuizPage onNavigate={handleNavigate} />,
     "custom-patient": <CustomPatientPage />,
     performance: <PerformancePage />,
     admin: isAdmin ? <AdminPage /> : <HomePage onNavigate={handleNavigate} />,
