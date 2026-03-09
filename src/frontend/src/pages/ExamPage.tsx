@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Award,
   BookOpen,
+  Building2,
   CheckCircle2,
   ChevronRight,
   Clock,
@@ -27,7 +28,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   type ExamQuestion,
@@ -54,6 +55,226 @@ interface ExamResult {
 
 type AnswerMap = Record<string, string | number>;
 
+// ─── Waiting screen when exam is locked ──────────────────────────
+function ExamLockedScreen({
+  application,
+  onNavigate,
+  onRefresh,
+}: {
+  application: {
+    id: string;
+    jobTitle: string;
+    hospital: string;
+    submittedAt: string;
+  } | null;
+  onNavigate?: (page: string) => void;
+  onRefresh: () => void;
+}) {
+  const [timeLeft, setTimeLeft] = useState<{
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const calc = () => {
+      if (!application?.submittedAt) return;
+      const unlockAt =
+        new Date(application.submittedAt).getTime() + 24 * 60 * 60 * 1000;
+      const remaining = unlockAt - Date.now();
+      if (remaining <= 0) {
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+      const totalSeconds = Math.floor(remaining / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      setTimeLeft({ hours, minutes, seconds });
+    };
+    calc();
+    const interval = setInterval(calc, 1000);
+    return () => clearInterval(interval);
+  }, [application?.submittedAt]);
+
+  return (
+    <div className="min-h-full flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md"
+      >
+        <div
+          className="rounded-2xl p-8 text-center space-y-6"
+          style={{
+            background: "rgba(5, 15, 35, 0.98)",
+            border: "1.5px solid rgba(255, 184, 0, 0.3)",
+            boxShadow: "0 0 40px rgba(255, 184, 0, 0.08)",
+          }}
+        >
+          {/* Animated clock */}
+          <motion.div
+            animate={{ scale: [1, 1.08, 1] }}
+            transition={{
+              repeat: Number.POSITIVE_INFINITY,
+              duration: 2,
+              ease: "easeInOut",
+            }}
+            className="flex justify-center"
+          >
+            <div
+              className="rounded-full p-5"
+              style={{
+                background: "rgba(255, 184, 0, 0.1)",
+                border: "1.5px solid rgba(255, 184, 0, 0.3)",
+              }}
+            >
+              <Clock className="h-12 w-12" style={{ color: "#ffb800" }} />
+            </div>
+          </motion.div>
+
+          <div>
+            <h2
+              className="font-display text-2xl font-black mb-2"
+              style={{ color: "#ffb800" }}
+            >
+              Exam Abhi Unlock Nahi Hua
+            </h2>
+            <p
+              className="text-sm"
+              style={{ color: "rgba(150, 200, 255, 0.6)" }}
+            >
+              Admin approval ya 24 ghante baad exam unlock hoga
+            </p>
+          </div>
+
+          {application && (
+            <div
+              className="rounded-xl p-4 text-left space-y-2"
+              style={{
+                background: "rgba(0, 10, 30, 0.6)",
+                border: "1px solid rgba(0, 212, 255, 0.1)",
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Building2
+                  className="h-4 w-4 flex-shrink-0"
+                  style={{ color: "#00d4ff" }}
+                />
+                <p
+                  className="font-semibold text-sm"
+                  style={{ color: "#e8f4ff" }}
+                >
+                  {application.hospital}
+                </p>
+              </div>
+              <p
+                className="text-xs"
+                style={{ color: "rgba(100, 160, 220, 0.7)" }}
+              >
+                {application.jobTitle}
+              </p>
+              <p
+                className="text-xs"
+                style={{ color: "rgba(150, 200, 255, 0.4)" }}
+              >
+                Applied:{" "}
+                {new Date(application.submittedAt).toLocaleString("en-IN")}
+              </p>
+            </div>
+          )}
+
+          {/* Countdown */}
+          {timeLeft !== null && (
+            <div>
+              <p
+                className="text-xs mb-2"
+                style={{ color: "rgba(150, 200, 255, 0.4)" }}
+              >
+                Auto-unlock mein bacha waqt:
+              </p>
+              <div className="flex justify-center gap-3">
+                {[
+                  { val: timeLeft.hours, label: "Hours" },
+                  { val: timeLeft.minutes, label: "Min" },
+                  { val: timeLeft.seconds, label: "Sec" },
+                ].map(({ val, label }) => (
+                  <div
+                    key={label}
+                    className="rounded-xl px-4 py-3 text-center min-w-[60px]"
+                    style={{
+                      background: "rgba(255, 184, 0, 0.08)",
+                      border: "1px solid rgba(255, 184, 0, 0.2)",
+                    }}
+                  >
+                    <p
+                      className="font-display text-2xl font-black"
+                      style={{ color: "#ffb800" }}
+                    >
+                      {String(val).padStart(2, "0")}
+                    </p>
+                    <p
+                      className="font-mono text-[10px]"
+                      style={{ color: "rgba(255,184,0,0.5)" }}
+                    >
+                      {label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {timeLeft?.hours === 0 &&
+            timeLeft.minutes === 0 &&
+            timeLeft.seconds === 0 && (
+              <div
+                className="rounded-xl p-3 text-xs text-center"
+                style={{
+                  background: "rgba(0, 230, 118, 0.08)",
+                  border: "1px solid rgba(0, 230, 118, 0.2)",
+                  color: "#00e676",
+                }}
+              >
+                ✅ 24 ghante guzar gaye! Refresh karo — exam unlock ho gaya
+                hoga.
+              </div>
+            )}
+
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              data-ocid="exam.locked.my_applications_button"
+              onClick={() => onNavigate?.("my-applications")}
+              className="flex-1 gap-2 rounded-xl border-0"
+              style={{
+                background: "rgba(0, 212, 255, 0.1)",
+                border: "1px solid rgba(0,212,255,0.2)",
+                color: "#00d4ff",
+              }}
+            >
+              <BookOpen className="h-4 w-4" />
+              Meri Applications
+            </Button>
+            <Button
+              data-ocid="exam.locked.refresh_button"
+              onClick={onRefresh}
+              className="flex-1 gap-2 rounded-xl border-0"
+              style={{
+                background: "rgba(255, 184, 0, 0.1)",
+                border: "1px solid rgba(255,184,0,0.2)",
+                color: "#ffb800",
+              }}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export function ExamPage({
   onNavigate,
   applicationId: propAppId,
@@ -66,6 +287,55 @@ export function ExamPage({
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<ExamResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [_refreshTick, setRefreshTick] = useState(0);
+
+  // ── Check unlock status ───────────────────────────────────────
+  const checkUnlocked = useCallback((): {
+    unlocked: boolean;
+    app: {
+      id: string;
+      jobTitle: string;
+      hospital: string;
+      submittedAt: string;
+      status: string;
+    } | null;
+  } => {
+    const apps: Array<{
+      id: string;
+      status: string;
+      submittedAt: string;
+      jobTitle: string;
+      hospital: string;
+    }> = JSON.parse(localStorage.getItem("medsim_applications") || "[]");
+    const currentApp = applicationId
+      ? apps.find((a) => a.id === applicationId)
+      : null;
+
+    if (!currentApp) return { unlocked: true, app: null }; // direct nav → allow
+
+    const is24hrPassed =
+      currentApp.submittedAt &&
+      Date.now() - new Date(currentApp.submittedAt).getTime() >
+        24 * 60 * 60 * 1000;
+
+    const unlocked =
+      currentApp.status === "exam_unlocked" ||
+      currentApp.status === "pending_exam" || // legacy
+      Boolean(is24hrPassed);
+
+    return { unlocked, app: currentApp };
+  }, [applicationId]);
+
+  const { unlocked: isUnlocked, app: currentApplication } = checkUnlocked();
+
+  // Re-check every 30 seconds while locked
+  useEffect(() => {
+    if (isUnlocked) return;
+    const interval = setInterval(() => {
+      setRefreshTick((t) => t + 1);
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [isUnlocked]);
 
   // Load questions — check admin-uploaded first, fallback to seed data
   const questions: ExamQuestion[] = useMemo(() => {
@@ -193,6 +463,17 @@ export function ExamPage({
 
   const mcqCount = ROLE_MCQ_COUNT[role] || 15;
   const descCount = ROLE_DESC_COUNT[role] || 0;
+
+  // Locked screen — exam not yet unlocked by admin / 24hr
+  if (!isUnlocked) {
+    return (
+      <ExamLockedScreen
+        application={currentApplication}
+        onNavigate={onNavigate}
+        onRefresh={() => setRefreshTick((t) => t + 1)}
+      />
+    );
+  }
 
   // Result screen
   if (submitted && result) {

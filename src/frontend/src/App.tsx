@@ -27,6 +27,7 @@ import { MyApplicationsPage } from "./pages/MyApplicationsPage";
 import { NEETPGQuizPage } from "./pages/NEETPGQuizPage";
 import { PerformancePage } from "./pages/PerformancePage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { ShareAppPage } from "./pages/ShareAppPage";
 import { VerifyPage } from "./pages/VerifyPage";
 
 type AppPage =
@@ -42,9 +43,12 @@ type AppPage =
   | "exam"
   | "my-applications"
   | "icu-simulator"
-  | "verify";
+  | "verify"
+  | "share-app";
 
 type AppState = "loading" | "login" | "camera-permission" | "app";
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Check if this is a verification URL (publicly accessible)
 function getVerifyPrincipalFromHash(): string | null {
@@ -56,13 +60,16 @@ function getVerifyPrincipalFromHash(): string | null {
   return null;
 }
 
+function isLoginWithin30Days(): boolean {
+  const ts = localStorage.getItem("medsim_login_timestamp");
+  if (!ts) return false;
+  return Date.now() - Number.parseInt(ts, 10) < THIRTY_DAYS_MS;
+}
+
 function calcProfileScore(): number {
-  // We can't get the profile from backend here directly, but we can read localStorage
-  // This is used for the banner only — full score computed in ProfilePage
   const photo = localStorage.getItem("medsim_profile_photo");
   const cameraGranted =
     localStorage.getItem("medsim_camera_granted") === "true";
-  // Return something low if camera not granted
   return cameraGranted && photo ? 50 : 20;
 }
 
@@ -126,9 +133,15 @@ function AppWithSeed({
 }
 
 function AppMain() {
+  const ADMIN_MOBILE = "8209918491";
+
   const { identity, isInitializing } = useInternetIdentity();
   const { isLoading: profileLoading } = useCallerUserProfile();
-  const { data: isAdmin = false } = useIsAdmin();
+  const { data: isAdminBackend = false } = useIsAdmin();
+
+  // Admin access is granted if the stored login mobile matches the admin number
+  const storedMobile = localStorage.getItem("medsim_login_mobile") ?? "";
+  const isAdmin = isAdminBackend || storedMobile === ADMIN_MOBILE;
 
   const [appState, setAppState] = useState<AppState>("loading");
   const [currentPage, setCurrentPage] = useState<AppPage>("home");
@@ -140,6 +153,16 @@ function AppMain() {
     }
 
     if (!identity) {
+      // Persistent login check: if user logged in within 30 days, don't show login screen.
+      // The identity should still be in IndexedDB — if identity is null here, the
+      // auth-client is still initializing. But if isInitializing=false and identity=null
+      // we truly need to log in again unless within-30-days flag exists.
+      if (isLoginWithin30Days()) {
+        // Give a brief grace period — auth client may still be loading from IDB
+        // We stay in loading state; if identity doesn't appear, fall through to login
+        setAppState("loading");
+        return;
+      }
       setAppState("login");
       return;
     }
@@ -156,12 +179,30 @@ function AppMain() {
     setAppState("app");
   }, [isInitializing, identity, profileLoading]);
 
+  // If within-30-days but identity still null after 3 seconds, show login
+  useEffect(() => {
+    if (!isInitializing && !identity && isLoginWithin30Days()) {
+      const timer = setTimeout(() => {
+        if (!identity) {
+          setAppState("login");
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isInitializing, identity]);
+
   const handleNavigate = (page: string) => {
     setCurrentPage(page as AppPage);
   };
 
   const handleCameraPermissionComplete = () => {
     setAppState("app");
+  };
+
+  const handleLoginSuccess = () => {
+    // Save persistent login timestamp (30 days)
+    localStorage.setItem("medsim_login_timestamp", Date.now().toString());
+    setAppState("loading");
   };
 
   const pageContent: Record<AppPage, React.ReactNode> = {
@@ -178,6 +219,7 @@ function AppMain() {
     "my-applications": <MyApplicationsPage onNavigate={handleNavigate} />,
     "icu-simulator": <IcuSimulatorPage />,
     verify: <VerifyPage principalId="" />,
+    "share-app": <ShareAppPage />,
   };
 
   // Loading
@@ -189,7 +231,7 @@ function AppMain() {
   if (appState === "login") {
     return (
       <>
-        <LoginPage onLoginSuccess={() => setAppState("loading")} />
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
         <Toaster />
       </>
     );

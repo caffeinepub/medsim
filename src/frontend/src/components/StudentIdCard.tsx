@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import html2canvas from "html2canvas";
 import { CheckCircle, Download, Shield, Stethoscope } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
@@ -165,36 +164,68 @@ export function StudentIdCard({
     verifyUrl,
   });
 
-  // Download using html2canvas — captures photo + QR properly
+  // Download card as SVG-based image using canvas drawing
   const handleDownload = async () => {
     if (!cardRef.current || isDownloading) return;
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "rgba(3, 10, 28, 1)",
-        logging: false,
-        onclone: (doc: Document) => {
-          // Make sure the cloned card element has a solid background
-          const cardEl = doc.querySelector<HTMLElement>(
-            '[data-ocid="profile.id_card"]',
-          );
-          if (cardEl) {
-            cardEl.style.background =
-              "linear-gradient(135deg, rgb(3,10,28) 0%, rgb(5,18,45) 50%, rgb(3,12,32) 100%)";
-          }
-        },
-      });
-      const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = `MedSim-ID-${systemId}.png`;
-      link.href = dataUrl;
-      link.click();
+      // Serialize the card element to SVG via foreignObject
+      const cardEl = cardRef.current;
+      const width = cardEl.offsetWidth || 420;
+      const height = cardEl.offsetHeight || 260;
+
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${width * 2}" height="${height * 2}">
+          <defs>
+            <style>
+              body { margin: 0; padding: 0; background: rgb(3,10,28); }
+            </style>
+          </defs>
+          <rect width="${width * 2}" height="${height * 2}" fill="rgb(3,10,28)"/>
+          <foreignObject width="${width}" height="${height}" transform="scale(2)">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden;">
+              ${cardEl.outerHTML}
+            </div>
+          </foreignObject>
+        </svg>`;
+
+      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = width * 2;
+        canvas.height = height * 2;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = "rgb(3,10,28)";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+        }
+        URL.revokeObjectURL(url);
+        const dataUrl = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.download = `MedSim-ID-${systemId}.png`;
+        link.href = dataUrl;
+        link.click();
+        setIsDownloading(false);
+      };
+      img.onerror = () => {
+        // Fallback: direct SVG download
+        URL.revokeObjectURL(url);
+        const fallbackBlob = new Blob([svg], { type: "image/svg+xml" });
+        const fallbackUrl = URL.createObjectURL(fallbackBlob);
+        const link = document.createElement("a");
+        link.download = `MedSim-ID-${systemId}.svg`;
+        link.href = fallbackUrl;
+        link.click();
+        URL.revokeObjectURL(fallbackUrl);
+        setIsDownloading(false);
+      };
+      img.src = url;
     } catch (err) {
       console.error("Download failed:", err);
-    } finally {
       setIsDownloading(false);
     }
   };

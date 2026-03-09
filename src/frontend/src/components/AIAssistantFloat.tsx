@@ -220,7 +220,6 @@ function InlineText({ text }: { text: string }) {
   return (
     <div className="space-y-0.5">
       {lines.slice(0, 5).map((line, i) => {
-        // biome-ignore lint/suspicious/noArrayIndexKey: static text lines, order never changes
         const lineKey = `fline-${i}`;
         const parts = line.split(/\*\*(.*?)\*\*/g);
         if (parts.length > 1) {

@@ -73,7 +73,6 @@ function ResponseText({ text }: { text: string }) {
   return (
     <div className="space-y-1 text-sm leading-relaxed">
       {lines.map((line, i) => {
-        // biome-ignore lint/suspicious/noArrayIndexKey: text lines are static content, order never changes
         const lineKey = `line-${i}`;
         if (!line.trim()) return <div key={lineKey} className="h-1" />;
 

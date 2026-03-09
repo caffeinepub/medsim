@@ -15,6 +15,7 @@ import {
   Home,
   LogOut,
   Menu,
+  Share2,
   Shield,
   Stethoscope,
   User,
@@ -43,7 +44,8 @@ type Page =
   | "exam"
   | "my-applications"
   | "icu-simulator"
-  | "verify";
+  | "verify"
+  | "share-app";
 
 interface AppLayoutProps {
   currentPage: Page;
@@ -162,6 +164,12 @@ const navItems: NavItem[] = [
     icon: Brain,
   },
   {
+    id: "share-app" as Page,
+    label: "Share App",
+    hinglish: "Doston Ko Bhejo",
+    icon: Share2,
+  },
+  {
     id: "admin",
     label: "Admin Panel",
     hinglish: "Admin",
@@ -188,6 +196,13 @@ export function AppLayout({
   const handleNavigate = (page: Page) => {
     onNavigate(page);
     setSidebarOpen(false);
+  };
+
+  const handleLogout = () => {
+    // Clear persistent login data on manual logout
+    localStorage.removeItem("medsim_login_timestamp");
+    localStorage.removeItem("medsim_login_mobile");
+    clear();
   };
 
   const SidebarContent = () => (
@@ -272,7 +287,13 @@ export function AppLayout({
               type="button"
               key={item.id}
               onClick={() => handleNavigate(item.id)}
-              data-ocid={item.id === "profile" ? "nav.profile_link" : undefined}
+              data-ocid={
+                item.id === "profile"
+                  ? "nav.profile_link"
+                  : item.id === "share-app"
+                    ? "nav.share_app_link"
+                    : undefined
+              }
               className="group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition-all"
               style={
                 isActive
@@ -346,7 +367,8 @@ export function AppLayout({
         <Button
           variant="ghost"
           size="sm"
-          onClick={clear}
+          data-ocid="nav.logout_button"
+          onClick={handleLogout}
           className="w-full justify-start gap-2"
           style={{ color: "oklch(0.92 0.015 215 / 0.6)" }}
         >
@@ -408,6 +430,7 @@ export function AppLayout({
         >
           <button
             type="button"
+            data-ocid="nav.hamburger_button"
             onClick={() => setSidebarOpen(true)}
             className="flex h-9 w-9 items-center justify-center rounded-lg"
             style={{ color: "oklch(0.88 0.015 215)" }}

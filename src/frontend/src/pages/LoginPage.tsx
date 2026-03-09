@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 const SIMULATED_OTP = "123456";
+const ADMIN_MOBILE = "8209918491";
+const ADMIN_OTP = "820991";
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -347,9 +349,11 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [step, setStep] = useState<"mobile" | "otp" | "connecting">("mobile");
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
-  const [generatedOtp] = useState(SIMULATED_OTP);
   const { login, isLoggingIn, isLoginSuccess, identity } =
     useInternetIdentity();
+
+  const isAdminNumber = mobile === ADMIN_MOBILE;
+  const generatedOtp = isAdminNumber ? ADMIN_OTP : SIMULATED_OTP;
 
   // Pick one random theme per session
   const theme = useMemo(
@@ -363,10 +367,19 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       toast.error("Valid mobile number daalen (10 digits)");
       return;
     }
-    toast.success(
-      `OTP bheja gaya: ${generatedOtp} (Demo mode — yahi enter karein)`,
-      { duration: 8000 },
-    );
+    // Save mobile to localStorage so admin check works after login
+    localStorage.setItem("medsim_login_mobile", mobile);
+    if (isAdminNumber) {
+      toast.success(
+        `Admin OTP bheja gaya: ${generatedOtp} — yahi enter karein`,
+        { duration: 8000 },
+      );
+    } else {
+      toast.success(
+        `OTP bheja gaya: ${generatedOtp} (Demo mode — yahi enter karein)`,
+        { duration: 8000 },
+      );
+    }
     setStep("otp");
   };
 
@@ -576,6 +589,33 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                   >
                     OTP Bhejo →
                   </Button>
+
+                  {/* Stay Logged In indicator */}
+                  <div
+                    className="flex items-center justify-center gap-2 rounded-xl p-2"
+                    style={{
+                      background: `rgba(${theme.accentRgb}, 0.06)`,
+                      border: `1px solid rgba(${theme.accentRgb}, 0.12)`,
+                    }}
+                  >
+                    <span className="text-lg">🔒</span>
+                    <p
+                      className="text-xs"
+                      style={{ color: theme.textSecondary }}
+                    >
+                      <span
+                        className="font-semibold"
+                        style={{ color: theme.accent }}
+                      >
+                        Stay Logged In:
+                      </span>{" "}
+                      Aap{" "}
+                      <strong style={{ color: theme.textPrimary }}>
+                        30 din
+                      </strong>{" "}
+                      tak automatically logged in rahenge.
+                    </p>
+                  </div>
                 </form>
 
                 <div
@@ -592,7 +632,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                     >
                       Demo Mode:
                     </span>{" "}
-                    Koi bhi 10 digit number daalen. OTP:{" "}
+                    Student login ke liye koi bhi 10 digit number daalen. OTP:{" "}
                     <span
                       className="font-mono font-bold"
                       style={{ color: theme.textPrimary }}
@@ -628,19 +668,35 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 <div
                   className="mb-4 rounded-xl p-3 text-center"
                   style={{
-                    background: `rgba(${theme.accentRgb}, 0.1)`,
-                    border: `1px solid rgba(${theme.accentRgb}, 0.2)`,
+                    background: isAdminNumber
+                      ? "rgba(255,184,0,0.10)"
+                      : `rgba(${theme.accentRgb}, 0.1)`,
+                    border: isAdminNumber
+                      ? "1px solid rgba(255,184,0,0.35)"
+                      : `1px solid rgba(${theme.accentRgb}, 0.2)`,
                   }}
                 >
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: theme.accent }}
-                  >
-                    Demo OTP:{" "}
-                    <span className="font-mono text-lg tracking-widest">
-                      {generatedOtp}
-                    </span>
-                  </p>
+                  {isAdminNumber ? (
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "#ffb800" }}
+                    >
+                      🔐 Admin Access OTP:{" "}
+                      <span className="font-mono text-lg tracking-widest">
+                        {generatedOtp}
+                      </span>
+                    </p>
+                  ) : (
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: theme.accent }}
+                    >
+                      Demo OTP:{" "}
+                      <span className="font-mono text-lg tracking-widest">
+                        {generatedOtp}
+                      </span>
+                    </p>
+                  )}
                 </div>
 
                 <form onSubmit={handleVerifyOtp} className="space-y-4">

@@ -23,7 +23,15 @@ interface Application {
   jobId: string;
   jobTitle: string;
   hospital: string;
-  status: "pending_exam" | "under_review" | "pass" | "fail" | "exam_submitted";
+  status:
+    | "pending_admin_approval"
+    | "exam_unlocked"
+    | "pending_exam"
+    | "under_review"
+    | "pass"
+    | "fail"
+    | "exam_submitted"
+    | "rejected";
   submittedAt: string;
   formData?: {
     name?: string;
@@ -56,6 +64,20 @@ const STATUS_CONFIG: Record<
     icon: React.FC<{ className?: string }>;
   }
 > = {
+  pending_admin_approval: {
+    label: "Awaiting Admin Approval",
+    color: "#ffb800",
+    bg: "rgba(255,184,0,0.08)",
+    border: "rgba(255,184,0,0.2)",
+    icon: Clock,
+  },
+  exam_unlocked: {
+    label: "Exam Ready!",
+    color: "#00e676",
+    bg: "rgba(0,230,118,0.08)",
+    border: "rgba(0,230,118,0.2)",
+    icon: FileQuestion,
+  },
   pending_exam: {
     label: "Exam Pending",
     color: "#ffb800",
@@ -86,6 +108,13 @@ const STATUS_CONFIG: Record<
   },
   fail: {
     label: "Not Cleared",
+    color: "#ff3355",
+    bg: "rgba(255,51,85,0.08)",
+    border: "rgba(255,51,85,0.2)",
+    icon: XCircle,
+  },
+  rejected: {
+    label: "Rejected",
     color: "#ff3355",
     bg: "rgba(255,51,85,0.08)",
     border: "rgba(255,51,85,0.2)",
@@ -182,23 +211,30 @@ export function MyApplicationsPage({ onNavigate }: MyApplicationsPageProps) {
                 icon: ClipboardList,
               },
               {
-                label: "Exam Pending",
-                value: applications.filter((a) => a.status === "pending_exam")
-                  .length,
+                label: "Awaiting Approval",
+                value: applications.filter(
+                  (a) => a.status === "pending_admin_approval",
+                ).length,
                 color: "#ffb800",
-                icon: FileQuestion,
+                icon: Clock,
               },
               {
-                label: "Under Review",
-                value: applications.filter((a) => a.status === "under_review")
-                  .length,
-                color: "#9b59ff",
-                icon: Clock,
+                label: "Exam Ready",
+                value: applications.filter(
+                  (a) =>
+                    a.status === "exam_unlocked" ||
+                    a.status === "pending_exam" ||
+                    (!!a.submittedAt &&
+                      Date.now() - new Date(a.submittedAt).getTime() >
+                        24 * 60 * 60 * 1000),
+                ).length,
+                color: "#00e676",
+                icon: FileQuestion,
               },
               {
                 label: "Pass",
                 value: applications.filter((a) => a.status === "pass").length,
-                color: "#00e676",
+                color: "#9b59ff",
                 icon: Award,
               },
             ].map(({ label, value, color, icon: Icon }) => (
@@ -283,7 +319,12 @@ export function MyApplicationsPage({ onNavigate }: MyApplicationsPageProps) {
                     STATUS_CONFIG[app.status] || STATUS_CONFIG.pending_exam;
                   const StatusIcon = statusConfig.icon;
                   const result = examResults[app.id];
-                  const canTakeExam = app.status === "pending_exam";
+                  const canTakeExam =
+                    app.status === "exam_unlocked" ||
+                    app.status === "pending_exam" ||
+                    (!!app.submittedAt &&
+                      Date.now() - new Date(app.submittedAt).getTime() >
+                        24 * 60 * 60 * 1000);
                   const isNavigating = navigatingTo === app.id;
 
                   return (

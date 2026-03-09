@@ -46,8 +46,11 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  Building2,
+  CalendarDays,
   Check,
   CheckCircle2,
+  ClipboardList,
   Cloud,
   CloudDownload,
   Database,
@@ -64,10 +67,11 @@ import {
   Upload,
   Users,
   X,
+  XCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
 import type React from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Disease, PatientCase, UserProfile } from "../backend.d";
 import { useActor } from "../hooks/useActor";
@@ -99,7 +103,8 @@ type AdminTab =
   | "alerts"
   | "security"
   | "database"
-  | "exams";
+  | "exams"
+  | "applications";
 
 const ADMIN_TABS = [
   { id: "dashboard" as AdminTab, label: "Dashboard", icon: BarChart3 },
@@ -110,6 +115,11 @@ const ADMIN_TABS = [
   { id: "security" as AdminTab, label: "Security", icon: Shield },
   { id: "database" as AdminTab, label: "DB Import", icon: CloudDownload },
   { id: "exams" as AdminTab, label: "Exams", icon: FileQuestion },
+  {
+    id: "applications" as AdminTab,
+    label: "Applications",
+    icon: ClipboardList,
+  },
 ];
 
 // ─── Dashboard Tab ────────────────────────────────────────────────
@@ -2899,10 +2909,518 @@ function ExamsAdminTab() {
   );
 }
 
+// ─── Applications Tab ─────────────────────────────────────────────
+
+interface AdminApplication {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  hospital: string;
+  status: string;
+  submittedAt: string;
+  formData?: {
+    name?: string;
+    role?: string;
+    mobile?: string;
+    college?: string;
+  };
+}
+
+interface AdminNotification {
+  id: number;
+  type: string;
+  appId: string;
+  jobTitle: string;
+  hospital: string;
+  studentName: string;
+  submittedAt: string;
+  read: boolean;
+}
+
+function ApplicationsTab() {
+  const [applications, setApplications] = useState<AdminApplication[]>(() =>
+    JSON.parse(localStorage.getItem("medsim_applications") || "[]"),
+  );
+  const [notifications, setNotifications] = useState<AdminNotification[]>(() =>
+    JSON.parse(localStorage.getItem("medsim_admin_notifications") || "[]"),
+  );
+  const [examResults] = useState<
+    Record<string, { mcqScore: number; mcqTotal: number; status: string }>
+  >(() => JSON.parse(localStorage.getItem("medsim_exam_results") || "{}"));
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Mark all notifications as read when tab mounts (run once on mount)
+  useEffect(() => {
+    const stored: AdminNotification[] = JSON.parse(
+      localStorage.getItem("medsim_admin_notifications") || "[]",
+    );
+    const hasUnread = stored.some((n) => !n.read);
+    if (hasUnread) {
+      const updated = stored.map((n) => ({ ...n, read: true as const }));
+      setNotifications(updated);
+      localStorage.setItem(
+        "medsim_admin_notifications",
+        JSON.stringify(updated),
+      );
+    }
+  }, []);
+
+  const handleApproveExam = (appId: string) => {
+    // Update application status
+    const updatedApps = applications.map((a) =>
+      a.id === appId ? { ...a, status: "exam_unlocked" } : a,
+    );
+    setApplications(updatedApps);
+    localStorage.setItem("medsim_applications", JSON.stringify(updatedApps));
+
+    // Mark related notifications as read
+    const updatedNotifs = notifications.map((n) =>
+      n.appId === appId ? { ...n, read: true } : n,
+    );
+    setNotifications(updatedNotifs);
+    localStorage.setItem(
+      "medsim_admin_notifications",
+      JSON.stringify(updatedNotifs),
+    );
+
+    toast.success("Exam unlock kar diya! Student ko notify hoga.");
+  };
+
+  const handleRejectApplication = (appId: string) => {
+    const updatedApps = applications.map((a) =>
+      a.id === appId ? { ...a, status: "rejected" } : a,
+    );
+    setApplications(updatedApps);
+    localStorage.setItem("medsim_applications", JSON.stringify(updatedApps));
+    toast.success("Application reject kar di.");
+  };
+
+  const STATUS_COLORS: Record<
+    string,
+    { color: string; bg: string; border: string; label: string }
+  > = {
+    pending_admin_approval: {
+      color: "#ffb800",
+      bg: "rgba(255,184,0,0.08)",
+      border: "rgba(255,184,0,0.2)",
+      label: "Awaiting Approval",
+    },
+    exam_unlocked: {
+      color: "#00e676",
+      bg: "rgba(0,230,118,0.08)",
+      border: "rgba(0,230,118,0.2)",
+      label: "Exam Unlocked",
+    },
+    pending_exam: {
+      color: "#ffb800",
+      bg: "rgba(255,184,0,0.08)",
+      border: "rgba(255,184,0,0.2)",
+      label: "Exam Pending",
+    },
+    under_review: {
+      color: "#00d4ff",
+      bg: "rgba(0,212,255,0.08)",
+      border: "rgba(0,212,255,0.2)",
+      label: "Under Review",
+    },
+    pass: {
+      color: "#00e676",
+      bg: "rgba(0,230,118,0.08)",
+      border: "rgba(0,230,118,0.2)",
+      label: "Pass ✓",
+    },
+    fail: {
+      color: "#ff3355",
+      bg: "rgba(255,51,85,0.08)",
+      border: "rgba(255,51,85,0.2)",
+      label: "Fail",
+    },
+    rejected: {
+      color: "#ff3355",
+      bg: "rgba(255,51,85,0.08)",
+      border: "rgba(255,51,85,0.2)",
+      label: "Rejected",
+    },
+    exam_submitted: {
+      color: "#9b59ff",
+      bg: "rgba(155,89,255,0.08)",
+      border: "rgba(155,89,255,0.2)",
+      label: "Exam Submitted",
+    },
+  };
+
+  const sortedApps = [...applications].sort(
+    (a, b) =>
+      new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+  );
+
+  const pendingApps = sortedApps.filter(
+    (a) => a.status === "pending_admin_approval",
+  );
+  const otherApps = sortedApps.filter(
+    (a) => a.status !== "pending_admin_approval",
+  );
+
+  const cardStyle: React.CSSProperties = {
+    background: "rgba(5, 15, 35, 0.9)",
+    border: "1px solid rgba(0, 212, 255, 0.12)",
+    borderRadius: "1rem",
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header stats */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          {
+            label: "Total Applications",
+            value: applications.length,
+            color: "#00d4ff",
+            icon: ClipboardList,
+          },
+          {
+            label: "Pending Approval",
+            value: pendingApps.length,
+            color: "#ffb800",
+            icon: Bell,
+          },
+          {
+            label: "Exam Unlocked",
+            value: applications.filter((a) => a.status === "exam_unlocked")
+              .length,
+            color: "#00e676",
+            icon: FileQuestion,
+          },
+          {
+            label: "Pass",
+            value: applications.filter((a) => a.status === "pass").length,
+            color: "#9b59ff",
+            icon: CheckCircle2,
+          },
+        ].map(({ label, value, color, icon: Icon }) => (
+          <div
+            key={label}
+            className="flex items-center gap-3 rounded-xl p-4"
+            style={cardStyle}
+          >
+            <Icon className="h-5 w-5 flex-shrink-0" style={{ color }} />
+            <div>
+              <p className="font-display font-bold" style={{ color }}>
+                {value}
+              </p>
+              <p className="text-xs" style={{ color: "rgba(150,200,255,0.4)" }}>
+                {label}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Unread notifications banner */}
+      {unreadCount > 0 && (
+        <div
+          className="rounded-xl p-3 flex items-center gap-3"
+          style={{
+            background: "rgba(255, 184, 0, 0.08)",
+            border: "1px solid rgba(255, 184, 0, 0.25)",
+          }}
+        >
+          <Bell
+            className="h-4 w-4 flex-shrink-0"
+            style={{ color: "#ffb800" }}
+          />
+          <p className="text-sm font-semibold" style={{ color: "#ffb800" }}>
+            {unreadCount} nayi application notification
+            {unreadCount !== 1 ? "s" : ""} hain
+          </p>
+        </div>
+      )}
+
+      {/* Pending Approval section */}
+      {pendingApps.length > 0 && (
+        <div>
+          <h3
+            className="font-display font-bold mb-3 flex items-center gap-2"
+            style={{ color: "#ffb800" }}
+          >
+            <Bell className="h-4 w-4" />
+            Pending Approval ({pendingApps.length})
+          </h3>
+          <div className="space-y-3">
+            {pendingApps.map((app, idx) => {
+              const result = examResults[app.id];
+              return (
+                <motion.div
+                  key={app.id}
+                  data-ocid={`admin.applications.pending.item.${idx + 1}`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="rounded-2xl p-5"
+                  style={{
+                    background: "rgba(5, 15, 35, 0.95)",
+                    border: "1.5px solid rgba(255, 184, 0, 0.3)",
+                    boxShadow: "0 0 20px rgba(255, 184, 0, 0.06)",
+                  }}
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Building2
+                          className="h-4 w-4 flex-shrink-0"
+                          style={{ color: "#00d4ff" }}
+                        />
+                        <h4
+                          className="font-display font-bold text-sm"
+                          style={{ color: "#e8f4ff" }}
+                        >
+                          {app.hospital}
+                        </h4>
+                      </div>
+                      <p
+                        className="text-sm mb-1"
+                        style={{ color: "rgba(100, 180, 255, 0.8)" }}
+                      >
+                        {app.jobTitle}
+                      </p>
+                      {app.formData?.name && (
+                        <p
+                          className="text-xs mb-1"
+                          style={{ color: "rgba(150, 200, 255, 0.6)" }}
+                        >
+                          Student:{" "}
+                          <span
+                            className="font-semibold"
+                            style={{ color: "#e8f4ff" }}
+                          >
+                            {app.formData.name}
+                          </span>
+                          {app.formData.role && ` · ${app.formData.role}`}
+                        </p>
+                      )}
+                      <div
+                        className="flex items-center gap-1 text-xs"
+                        style={{ color: "rgba(150, 200, 255, 0.4)" }}
+                      >
+                        <CalendarDays className="h-3 w-3" />
+                        <span>
+                          Applied:{" "}
+                          {new Date(app.submittedAt).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 flex-shrink-0">
+                      {/* Approve Exam button */}
+                      <Button
+                        size="sm"
+                        data-ocid={`admin.applications.approve_button.${idx + 1}`}
+                        onClick={() => handleApproveExam(app.id)}
+                        className="gap-2 rounded-xl border-0 h-9 text-xs font-bold"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #006633, #00e676)",
+                          color: "#000",
+                          boxShadow: "0 4px 12px rgba(0, 230, 118, 0.3)",
+                        }}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Approve Exam
+                      </Button>
+                      {/* Reject button */}
+                      <Button
+                        size="sm"
+                        data-ocid={`admin.applications.reject_button.${idx + 1}`}
+                        onClick={() => handleRejectApplication(app.id)}
+                        className="gap-2 rounded-xl border-0 h-9 text-xs font-semibold"
+                        style={{
+                          background: "rgba(255, 51, 85, 0.12)",
+                          border: "1px solid rgba(255,51,85,0.25)",
+                          color: "#ff3355",
+                        }}
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Exam result if available */}
+                  {result && (
+                    <div
+                      className="mt-3 rounded-xl p-3 flex items-center gap-3"
+                      style={{
+                        background:
+                          result.status === "pass"
+                            ? "rgba(0,230,118,0.06)"
+                            : "rgba(255,51,85,0.06)",
+                        border: `1px solid ${result.status === "pass" ? "rgba(0,230,118,0.15)" : "rgba(255,51,85,0.15)"}`,
+                      }}
+                    >
+                      <p
+                        className="text-xs font-semibold"
+                        style={{
+                          color:
+                            result.status === "pass" ? "#00e676" : "#ff3355",
+                        }}
+                      >
+                        Exam: {result.mcqScore}/{result.mcqTotal} MCQ ·{" "}
+                        {result.status.toUpperCase()}
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* All other applications */}
+      {otherApps.length > 0 && (
+        <div>
+          <h3
+            className="font-display font-bold mb-3"
+            style={{ color: "rgba(180, 220, 255, 0.8)" }}
+          >
+            All Applications ({otherApps.length})
+          </h3>
+          <div className="space-y-3">
+            {otherApps.map((app, idx) => {
+              const statusCfg =
+                STATUS_COLORS[app.status] || STATUS_COLORS.pending_exam;
+              const result = examResults[app.id];
+
+              return (
+                <div
+                  key={app.id}
+                  data-ocid={`admin.applications.item.${idx + 1}`}
+                  className="rounded-2xl p-4"
+                  style={{
+                    background: "rgba(5, 15, 35, 0.95)",
+                    border: `1px solid ${statusCfg.border}`,
+                  }}
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{
+                            background: statusCfg.bg,
+                            color: statusCfg.color,
+                            border: `1px solid ${statusCfg.border}`,
+                          }}
+                        >
+                          {statusCfg.label}
+                        </span>
+                      </div>
+                      <p
+                        className="font-semibold text-sm"
+                        style={{ color: "#e8f4ff" }}
+                      >
+                        {app.hospital} — {app.jobTitle}
+                      </p>
+                      {app.formData?.name && (
+                        <p
+                          className="text-xs mt-0.5"
+                          style={{ color: "rgba(150,200,255,0.5)" }}
+                        >
+                          {app.formData.name}
+                          {app.formData.role && ` · ${app.formData.role}`}
+                        </p>
+                      )}
+                      <p
+                        className="text-xs mt-0.5"
+                        style={{ color: "rgba(100, 150, 200, 0.4)" }}
+                      >
+                        {new Date(app.submittedAt).toLocaleDateString("en-IN")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {result && (
+                        <span
+                          className="text-xs font-mono px-2 py-1 rounded-lg"
+                          style={{
+                            background:
+                              result.status === "pass"
+                                ? "rgba(0,230,118,0.08)"
+                                : "rgba(255,51,85,0.08)",
+                            color:
+                              result.status === "pass" ? "#00e676" : "#ff3355",
+                          }}
+                        >
+                          MCQ: {result.mcqScore}/{result.mcqTotal}
+                        </span>
+                      )}
+                      {app.status === "exam_unlocked" && (
+                        <Button
+                          size="sm"
+                          data-ocid={`admin.applications.revoke_button.${idx + 1}`}
+                          variant="ghost"
+                          onClick={() => handleRejectApplication(app.id)}
+                          className="h-7 text-xs rounded-lg"
+                          style={{
+                            color: "rgba(255,51,85,0.6)",
+                            border: "1px solid rgba(255,51,85,0.1)",
+                          }}
+                        >
+                          Revoke
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {applications.length === 0 && (
+        <div
+          className="rounded-2xl py-16 text-center"
+          data-ocid="admin.applications.empty_state"
+          style={{ border: "2px dashed rgba(0, 212, 255, 0.1)" }}
+        >
+          <ClipboardList
+            className="mx-auto mb-3 h-10 w-10"
+            style={{ color: "rgba(0,212,255,0.2)" }}
+          />
+          <p
+            className="font-semibold"
+            style={{ color: "rgba(150, 200, 255, 0.5)" }}
+          >
+            Koi applications nahi abhi tak
+          </p>
+          <p
+            className="text-sm mt-1"
+            style={{ color: "rgba(100, 150, 200, 0.3)" }}
+          >
+            Students career page se apply karenge, woh yahaan dikhenge
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Admin Page ──────────────────────────────────────────────
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
+  const unreadAppNotifCount = (() => {
+    try {
+      const notifs: Array<{ read: boolean }> = JSON.parse(
+        localStorage.getItem("medsim_admin_notifications") || "[]",
+      );
+      return notifs.filter((n) => !n.read).length;
+    } catch {
+      return 0;
+    }
+  })();
 
   const tabContent: Record<AdminTab, React.ReactNode> = {
     dashboard: <DashboardTab />,
@@ -2913,6 +3431,7 @@ export function AdminPage() {
     security: <SecurityTab />,
     database: <DatabaseTab />,
     exams: <ExamsAdminTab />,
+    applications: <ApplicationsTab />,
   };
 
   return (
@@ -2935,7 +3454,7 @@ export function AdminPage() {
                 key={tab.id}
                 data-ocid={`admin.nav.${tab.id}_tab`}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                className={`relative flex flex-shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                   activeTab === tab.id
                     ? "bg-card text-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
@@ -2943,6 +3462,14 @@ export function AdminPage() {
               >
                 <Icon className="h-4 w-4" />
                 <span className="hidden sm:inline">{tab.label}</span>
+                {tab.id === "applications" && unreadAppNotifCount > 0 && (
+                  <span
+                    className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
+                    style={{ background: "#ffb800", color: "#000" }}
+                  >
+                    {unreadAppNotifCount}
+                  </span>
+                )}
               </button>
             );
           })}

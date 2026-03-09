@@ -478,12 +478,11 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
     setApplicationModalOpen(true);
   };
 
-  const handleApplicationSuccess = (applicationId: string) => {
+  const handleApplicationSuccess = (_applicationId: string) => {
     setApplicationModalOpen(false);
     setSelectedJob(null);
-    // Navigate to exam for this application
-    localStorage.setItem("medsim_current_exam_app", applicationId);
-    if (onNavigate) onNavigate("exam");
+    // Navigate to my-applications (exam unlocks after admin approval / 24 hours)
+    if (onNavigate) onNavigate("my-applications");
   };
 
   const cardStyle = {
