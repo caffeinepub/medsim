@@ -284,7 +284,7 @@ export function VerifyPage({ principalId }: VerifyPageProps) {
                   ? `ℹ️ ${error}`
                   : isVerified === null
                     ? "ℹ️ Backend verification requires network access. QR data shown."
-                    : "✓ Identity verified by MedSim blockchain registry"}
+                    : "✓ Identity digitally verified by MedSim system"}
               </p>
             </>
           )}

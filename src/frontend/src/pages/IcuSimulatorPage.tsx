@@ -949,7 +949,7 @@ export function IcuSimulatorPage() {
     if (!running) return;
     intervalRef.current = setInterval(() => {
       setPhaseProgress((prev) => {
-        const next = prev + 2; // 2% every 2s → full phase in ~100s
+        const next = prev + 5; // 5% every 2s → full phase in ~40s
         if (next >= 100) {
           // Advance phase
           setPhase((current) => {

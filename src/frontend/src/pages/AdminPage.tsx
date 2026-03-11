@@ -46,6 +46,7 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  Briefcase,
   Building2,
   CalendarDays,
   Check,
@@ -104,7 +105,8 @@ type AdminTab =
   | "security"
   | "database"
   | "exams"
-  | "applications";
+  | "applications"
+  | "careers";
 
 const ADMIN_TABS = [
   { id: "dashboard" as AdminTab, label: "Dashboard", icon: BarChart3 },
@@ -119,6 +121,11 @@ const ADMIN_TABS = [
     id: "applications" as AdminTab,
     label: "Applications",
     icon: ClipboardList,
+  },
+  {
+    id: "careers" as AdminTab,
+    label: "Career Jobs",
+    icon: Briefcase,
   },
 ];
 
@@ -3407,6 +3414,148 @@ function ApplicationsTab() {
   );
 }
 
+// ─── Career Jobs Tab ─────────────────────────────────────────────
+
+const DEFAULT_CAREER_JOB_IDS = [
+  "phc-intern",
+  "chc-medical-officer-jr",
+  "ngo-asha",
+  "district-hospital-mo",
+  "nhm-block-mo",
+  "apollo-jr-resident",
+  "fortis-jr-resident",
+  "care-hospital-jr",
+  "aiims-sr-resident",
+  "pgimer-sr-resident",
+  "safdarjung-sr-resident",
+  "aiims-faculty-asst-prof",
+  "pgi-faculty",
+  "mamc-faculty",
+  "aiims-professor",
+  "tata-memorial-professor",
+  "aiims-hod",
+  "jipmer-hod",
+];
+
+function CareerJobsAdminTab() {
+  const [deletedIds, setDeletedIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("medsim_deleted_jobs") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  const activeIds = DEFAULT_CAREER_JOB_IDS.filter(
+    (id) => !deletedIds.includes(id),
+  );
+  const deletedList = DEFAULT_CAREER_JOB_IDS.filter((id) =>
+    deletedIds.includes(id),
+  );
+
+  const handleDelete = (id: string) => {
+    const updated = [...deletedIds, id];
+    setDeletedIds(updated);
+    localStorage.setItem("medsim_deleted_jobs", JSON.stringify(updated));
+    toast.success("Job listing hidden from students");
+  };
+
+  const handleRestore = (id: string) => {
+    const updated = deletedIds.filter((d) => d !== id);
+    setDeletedIds(updated);
+    localStorage.setItem("medsim_deleted_jobs", JSON.stringify(updated));
+    toast.success("Job listing restored");
+  };
+
+  const cardStyle: React.CSSProperties = {
+    background: "rgba(5, 15, 35, 0.9)",
+    border: "1px solid rgba(0, 212, 255, 0.12)",
+    borderRadius: "1rem",
+    padding: "1rem",
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">
+            Career Job Listings
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {activeIds.length} active / {deletedList.length} hidden
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">
+          Active Listings
+        </h3>
+        {activeIds.map((id) => (
+          <div
+            key={id}
+            style={cardStyle}
+            className="flex items-center justify-between gap-3"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="font-mono text-xs text-cyan-400 truncate">{id}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Visible to students
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDelete(id)}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+              data-ocid={"admin.career.delete_button"}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+        {activeIds.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            All job listings have been hidden. Restore them below.
+          </div>
+        )}
+      </div>
+
+      {deletedList.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-amber-400 uppercase tracking-wider">
+            Hidden Listings (Restore)
+          </h3>
+          {deletedList.map((id) => (
+            <div
+              key={id}
+              style={{ ...cardStyle, border: "1px solid rgba(255,184,0,0.2)" }}
+              className="flex items-center justify-between gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-mono text-xs text-amber-400 truncate">
+                  {id}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Hidden from students
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleRestore(id)}
+                className="text-success hover:text-success hover:bg-success/10 flex-shrink-0"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Admin Page ──────────────────────────────────────────────
 
 export function AdminPage() {
@@ -3432,6 +3581,7 @@ export function AdminPage() {
     database: <DatabaseTab />,
     exams: <ExamsAdminTab />,
     applications: <ApplicationsTab />,
+    careers: <CareerJobsAdminTab />,
   };
 
   return (

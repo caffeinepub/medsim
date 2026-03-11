@@ -1002,15 +1002,6 @@ export function AIAssistantPage() {
               </div>
             </div>
           </form>
-          <style>{`
-            @keyframes searchGradientShift {
-              0% { background-position: 0% 50%; }
-              100% { background-position: 300% 50%; }
-            }
-            @keyframes ping {
-              75%, 100% { transform: scale(2); opacity: 0; }
-            }
-          `}</style>
         </div>
       </div>
 
@@ -1358,31 +1349,6 @@ export function AIAssistantPage() {
             decisions ke liye senior ki guidance zaruri hai
           </p>
         </div>
-
-        <style>{`
-          @keyframes chatInputAmbient {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
-          }
-          @keyframes chatGradientShift {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 400% 50%; }
-          }
-          @keyframes chatGlow {
-            0%, 100% { filter: blur(2px); }
-            50% { filter: blur(3.5px); }
-          }
-          @keyframes chatScanLine {
-            0% { left: -100%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { left: 200%; opacity: 0; }
-          }
-          @keyframes sendButtonPulse {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.05); }
-          }
-        `}</style>
       </div>
     </div>
   );

@@ -400,6 +400,17 @@ function calcProfileCompletionFromLS(): number {
 export function CareerPage({ onNavigate }: CareerPageProps) {
   const { data: profile } = useCallerUserProfile();
   const { data: performanceStats } = useMyPerformanceStats();
+  // Filter out admin-deleted jobs
+  const deletedJobIds: string[] = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("medsim_deleted_jobs") || "[]");
+    } catch {
+      return [];
+    }
+  })();
+  const ACTIVE_JOB_LISTINGS = JOB_LISTINGS.filter(
+    (j) => !deletedJobIds.includes(j.id),
+  );
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<
@@ -485,7 +496,7 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
     return Math.round((profileMatch + perfMatch + roleMatch + mbbsMatch) / 4);
   }
 
-  const filtered = JOB_LISTINGS.filter((job) => {
+  const filtered = ACTIVE_JOB_LISTINGS.filter((job) => {
     const matchesFilter = activeFilter === "All" || job.type === activeFilter;
     const matchesSearch =
       !searchQuery ||
@@ -495,7 +506,7 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
     return matchesFilter && matchesSearch;
   });
 
-  const eligibleCount = JOB_LISTINGS.filter(isEligible).length;
+  const eligibleCount = ACTIVE_JOB_LISTINGS.filter(isEligible).length;
 
   const handleApply = (job: JobListing) => {
     setSelectedJob(job);
@@ -589,7 +600,7 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
           {[
             {
               label: "Total Jobs",
-              value: JOB_LISTINGS.length,
+              value: ACTIVE_JOB_LISTINGS.length,
               color: "#00d4ff",
               icon: Briefcase,
             },

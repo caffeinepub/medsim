@@ -1368,8 +1368,35 @@ function CaseSolver({
       timestamp: BigInt(Math.round(Date.now() / 1000)) * BigInt(1_000_000),
     };
 
+    // Calculate score for localStorage persistence
+    const diagScore2 = diagnosisCorrect ? 50 : 0;
+    const totalCorrectMeds2 = patientCase.correctMedicines.length;
+    const correctMedScore2 =
+      totalCorrectMeds2 > 0
+        ? (medicinesCorrect.length / totalCorrectMeds2) * 50
+        : 0;
+    const totalScore2 = Math.round(diagScore2 + correctMedScore2);
+
     try {
       await submitAttempt.mutateAsync(attempt);
+      // Save score to localStorage for career/performance tracking
+      try {
+        const existing: Array<{
+          score: number;
+          total: number;
+          subject: string;
+          timestamp: number;
+        }> = JSON.parse(localStorage.getItem("medsim_performance") || "[]");
+        existing.push({
+          score: totalScore2,
+          total: 100,
+          subject: patientCase.subject,
+          timestamp: Date.now(),
+        });
+        localStorage.setItem("medsim_performance", JSON.stringify(existing));
+      } catch {
+        /* ignore */
+      }
       setResults({
         diagnosisCorrect,
         medicinesCorrect,
