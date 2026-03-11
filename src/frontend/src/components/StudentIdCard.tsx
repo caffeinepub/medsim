@@ -138,7 +138,7 @@ export function StudentIdCard({
   role,
   profilePhoto,
   systemId,
-  principalId,
+  principalId: _principalId,
   collegeName,
   rollNumber,
 }: StudentIdCardProps) {
@@ -148,21 +148,24 @@ export function StudentIdCard({
   const roleLabel = ROLE_LABELS[role] || role || "MBBS Student";
   const roleColor = ROLE_COLORS[role] || "#00d4ff";
 
-  const verifyUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}${window.location.pathname}#verify/${principalId}`
-      : `#verify/${principalId}`;
+  // Embed all data directly in the verify URL so QR works on any device
+  const verifyUrl = (() => {
+    const base =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${window.location.pathname}`
+        : "";
+    const params = new URLSearchParams({
+      name: name || "",
+      batch: batch || "",
+      systemId: systemId || "",
+      role: roleLabel,
+      college: collegeName || "",
+      roll: rollNumber || "",
+    });
+    return `${base}#verify/?${params.toString()}`;
+  })();
 
-  const qrData = JSON.stringify({
-    name,
-    batch,
-    systemId,
-    role: roleLabel,
-    collegeName: collegeName || "",
-    rollNumber: rollNumber || "",
-    verified: true,
-    verifyUrl,
-  });
+  const qrData = verifyUrl;
 
   // Download card as SVG-based image using canvas drawing
   const handleDownload = async () => {

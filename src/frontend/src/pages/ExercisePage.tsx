@@ -1252,6 +1252,7 @@ function CaseSolver({
   };
 
   // Build 4 diagnosis options (correct + 3 distractors)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: patientCase.id ensures options are stable per question (not reshuffled on re-render)
   const diagnosisOptions = useMemo(() => {
     const correct = patientCase.correctDiagnosis;
     const distractors = [
@@ -1269,7 +1270,7 @@ function CaseSolver({
 
     const shuffled = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
     return [correct, ...shuffled].sort(() => 0.5 - Math.random());
-  }, [patientCase.correctDiagnosis]);
+  }, [patientCase.id, patientCase.correctDiagnosis]);
 
   // Build medicine options
   const medicineOptions = useMemo(() => {
@@ -1351,6 +1352,7 @@ function CaseSolver({
         : undefined,
       wrongMedicines: medicinesWrong.map((wm) => ({
         medicineId: wm.id,
+        medicineName: wm.name,
         reason: wm.reason,
         sideEffect: wm.sideEffect,
         correctAlternative: wm.correct,
@@ -1363,7 +1365,7 @@ function CaseSolver({
           : "Galat choice. Review karein.",
         responseTime: BigInt(Date.now()) * BigInt(1_000_000),
       },
-      timestamp: BigInt(Date.now()) * BigInt(1_000_000),
+      timestamp: BigInt(Math.round(Date.now() / 1000)) * BigInt(1_000_000),
     };
 
     try {
@@ -2043,6 +2045,29 @@ export function ExercisePage({
     : undefined;
 
   if (selectedCase) {
+    // Guard: if disease data not found, show friendly error instead of crashing
+    if (!disease && !diseasesLoading) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
+          <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-8 max-w-md">
+            <h2 className="font-display text-xl font-black text-destructive mb-2">
+              Case Data Unavailable
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Is case ka disease data nahi mila. Shayad disease delete ho gayi
+              ho.
+            </p>
+            <button
+              type="button"
+              onClick={() => setSelectedCase(null)}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              Wapas Cases Par Jaayein
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <CaseSolver
         patientCase={selectedCase}

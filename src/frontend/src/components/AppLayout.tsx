@@ -50,6 +50,8 @@ type Page =
 interface AppLayoutProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
+  onGoBack?: () => void;
+  canGoBack?: boolean;
   isAdmin: boolean;
   children: React.ReactNode;
   banner?: React.ReactNode;
@@ -66,10 +68,12 @@ interface NavItem {
 // Back button: top-right fixed, shown on non-home pages
 function BackButton({
   currentPage,
-  onNavigate,
+  onGoBack,
+  canGoBack,
 }: {
   currentPage: Page;
-  onNavigate: (page: Page) => void;
+  onGoBack: () => void;
+  canGoBack: boolean;
 }) {
   if (currentPage === "home") return null;
 
@@ -77,7 +81,7 @@ function BackButton({
     <button
       type="button"
       data-ocid="nav.back_button"
-      onClick={() => onNavigate("home")}
+      onClick={onGoBack}
       className="fixed right-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
       style={{
         background: "oklch(0.22 0.06 235 / 0.85)",
@@ -85,7 +89,9 @@ function BackButton({
         backdropFilter: "blur(12px)",
         boxShadow:
           "0 0 16px oklch(0.65 0.16 196 / 0.2), 0 2px 8px oklch(0.1 0.03 235 / 0.6)",
-        color: "oklch(0.65 0.16 196)",
+        color: canGoBack
+          ? "oklch(0.65 0.16 196)"
+          : "oklch(0.65 0.16 196 / 0.5)",
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLButtonElement).style.background =
@@ -99,8 +105,8 @@ function BackButton({
         (e.currentTarget as HTMLButtonElement).style.boxShadow =
           "0 0 16px oklch(0.65 0.16 196 / 0.2), 0 2px 8px oklch(0.1 0.03 235 / 0.6)";
       }}
-      title="Back to Home"
-      aria-label="Go back to home"
+      title={canGoBack ? "Go back" : "Back to Home"}
+      aria-label={canGoBack ? "Go back" : "Go back to home"}
     >
       <ArrowLeft className="h-5 w-5" />
     </button>
@@ -181,6 +187,8 @@ const navItems: NavItem[] = [
 export function AppLayout({
   currentPage,
   onNavigate,
+  onGoBack,
+  canGoBack = false,
   isAdmin,
   children,
   banner,
@@ -203,6 +211,15 @@ export function AppLayout({
     localStorage.removeItem("medsim_login_timestamp");
     localStorage.removeItem("medsim_login_mobile");
     clear();
+  };
+
+  const handleHeaderButtonClick = () => {
+    // Bell icon: if admin alerts exist, go to admin panel; otherwise go to profile
+    if (unreadAlerts > 0 && isAdmin) {
+      handleNavigate("admin");
+    } else {
+      handleNavigate("profile");
+    }
   };
 
   const SidebarContent = () => (
@@ -389,11 +406,12 @@ export function AppLayout({
         <SidebarContent />
       </aside>
 
-      {/* Mobile sidebar overlay */}
-      <AnimatePresence>
+      {/* Mobile sidebar overlay — initial={false} prevents flicker on mount */}
+      <AnimatePresence initial={false}>
         {sidebarOpen && (
           <>
             <motion.div
+              key="sidebar-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -401,6 +419,7 @@ export function AppLayout({
               className="fixed inset-0 z-40 bg-foreground/50 backdrop-blur-sm lg:hidden"
             />
             <motion.aside
+              key="sidebar-panel"
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
@@ -451,13 +470,15 @@ export function AppLayout({
             </span>
           </div>
 
+          {/* Header right button: Bell (admin alerts) or UserCircle (profile) */}
           <button
             type="button"
-            onClick={() => handleNavigate("profile")}
+            data-ocid="nav.header_action_button"
+            onClick={handleHeaderButtonClick}
             className="flex h-9 w-9 items-center justify-center rounded-lg"
             style={{ color: "oklch(0.88 0.015 215)" }}
           >
-            {unreadAlerts > 0 ? (
+            {unreadAlerts > 0 && isAdmin ? (
               <div className="relative">
                 <Bell className="h-5 w-5" />
                 <span className="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full bg-destructive text-[8px] text-white">
@@ -478,7 +499,11 @@ export function AppLayout({
       </div>
 
       {/* Back navigation button — top-right, visible on non-home pages */}
-      <BackButton currentPage={currentPage} onNavigate={onNavigate} />
+      <BackButton
+        currentPage={currentPage}
+        onGoBack={onGoBack ?? (() => onNavigate("home"))}
+        canGoBack={canGoBack}
+      />
     </div>
   );
 }

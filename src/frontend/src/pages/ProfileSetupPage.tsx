@@ -106,6 +106,7 @@ export function ProfileSetupPage({
 
     try {
       await saveProfile.mutateAsync(profile);
+      localStorage.setItem("medsim_profile_role", form.role);
       toast.success("Profile save ho gayi! Welcome to MedSim 🎉");
       onComplete();
     } catch {

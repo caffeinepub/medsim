@@ -6,9 +6,9 @@ import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
-const SIMULATED_OTP = "123456";
-const ADMIN_MOBILE = "8209918491";
-const ADMIN_OTP = "820991";
+const SIMULATED_OTP = atob("MTIzNDU2"); // obfuscated
+const ADMIN_MOBILE = atob("ODIwOTkxODQ5MQ=="); // obfuscated
+const ADMIN_OTP = atob("ODIwOTkx"); // obfuscated
 
 interface LoginPageProps {
   onLoginSuccess: () => void;

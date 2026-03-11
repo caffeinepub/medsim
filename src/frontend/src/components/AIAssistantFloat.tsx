@@ -485,8 +485,10 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
       // 2. Backend fallback
       const patientData: PatientData = {
         id: crypto.randomUUID(),
-        age: BigInt(25),
-        gender: "unknown",
+        age: BigInt(
+          Number.parseInt(localStorage.getItem("medsim_age") || "25") || 25,
+        ),
+        gender: localStorage.getItem("medsim_gender") || "unknown",
         symptoms: [userMessage],
         history: userMessage,
         hasDisability: false,
@@ -542,7 +544,8 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
           description: d.description,
           category: d.category,
           symptoms: d.symptoms ?? [],
-          medicines: [],
+          medicines:
+            diseases.find((ld) => ld.id === d.diseaseId)?.medicines ?? [],
           diagnosticCriteria: "",
           clinicalSigns: { bp: "—", hr: "—", rr: "—", spo2: "—", temp: "—" },
           associatedDiseases: [],

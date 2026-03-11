@@ -30,9 +30,28 @@ export function VerifyPage({ principalId }: VerifyPageProps) {
   const [qrData, setQrData] = useState<QRData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Try to parse QR embedded data from localStorage as fallback
+  // Parse QR data from URL query params (new format) or localStorage (legacy)
   useEffect(() => {
-    // Parse QR JSON if stored
+    // New format: principalId starts with "embedded:" meaning data is in URL
+    if (principalId.startsWith("embedded:")) {
+      try {
+        const queryStr = principalId.slice("embedded:".length); // e.g. "?name=...&batch=..."
+        const params = new URLSearchParams(
+          queryStr.startsWith("?") ? queryStr.slice(1) : queryStr,
+        );
+        setQrData({
+          name: params.get("name") || undefined,
+          batch: params.get("batch") || undefined,
+          systemId: params.get("systemId") || undefined,
+          role: params.get("role") || undefined,
+          verified: true,
+        });
+      } catch {
+        // ignore
+      }
+      return;
+    }
+    // Legacy: try localStorage
     try {
       const raw = localStorage.getItem(`medsim_qr_data_${principalId}`);
       if (raw) {
@@ -45,6 +64,12 @@ export function VerifyPage({ principalId }: VerifyPageProps) {
   }, [principalId]);
 
   useEffect(() => {
+    // For embedded QR data, skip backend fetch entirely
+    if (principalId.startsWith("embedded:")) {
+      setIsLoading(false);
+      setIsVerified(true);
+      return;
+    }
     if (!actor) {
       // No actor available (public access, no login) — just show QR data
       setIsLoading(false);

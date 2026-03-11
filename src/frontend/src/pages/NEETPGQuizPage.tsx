@@ -652,7 +652,19 @@ function QuizSession({
           <button
             type="button"
             data-ocid="neet_pg.back_to_browse.button"
-            onClick={onBack}
+            onClick={() => {
+              if (attempts.length > 0) {
+                if (
+                  window.confirm(
+                    "Quiz mein progress hai. Kya aap exit karna chahte hain? Progress kho jayegi.",
+                  )
+                ) {
+                  onBack();
+                }
+              } else {
+                onBack();
+              }
+            }}
             className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors"
             style={{ color: "oklch(0.65 0.16 196)" }}
           >
@@ -1081,6 +1093,26 @@ export function NEETPGQuizPage({
   const handleQuizComplete = (attempts: AttemptRecord[]) => {
     setSessionAttempts(attempts);
     setQuizState("result");
+
+    // Save results to performance tracking
+    try {
+      const correct = attempts.filter((a) => a.isCorrect).length;
+      const total = attempts.length;
+      const stored = localStorage.getItem("medsim_performance");
+      const existing = stored ? JSON.parse(stored) : [];
+      const entry = {
+        subject: subject !== "all" ? subject : "Mixed",
+        chapter: chapter !== "all" ? chapter : "All Chapters",
+        score: correct,
+        total,
+        timestamp: Date.now(),
+        type: "neetpg",
+      };
+      existing.push(entry);
+      localStorage.setItem("medsim_performance", JSON.stringify(existing));
+    } catch {
+      // silently ignore storage errors
+    }
   };
 
   const handleRetry = () => {

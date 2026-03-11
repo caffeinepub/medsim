@@ -314,7 +314,8 @@ export function PerformancePage() {
             ) : (
               sortedAttempts.map((attempt, i) => {
                 const caseData = cases.find((c) => c.id === attempt.caseId);
-                const isExpanded = expandedAttempt === attempt.caseId;
+                const attemptKey = `${attempt.caseId}-${i}`;
+                const isExpanded = expandedAttempt === attemptKey;
 
                 return (
                   <motion.div
@@ -329,7 +330,7 @@ export function PerformancePage() {
                       type="button"
                       className="flex w-full items-center gap-3 p-4 text-left"
                       onClick={() =>
-                        setExpandedAttempt(isExpanded ? null : attempt.caseId)
+                        setExpandedAttempt(isExpanded ? null : attemptKey)
                       }
                     >
                       <div
@@ -428,7 +429,8 @@ export function PerformancePage() {
                                 className="rounded-lg border border-warning/20 bg-warning/5 p-3"
                               >
                                 <p className="font-medium text-warning text-xs">
-                                  Medicine ID: {wm.medicineId.slice(0, 8)}...
+                                  {(wm as any).medicineName ||
+                                    wm.medicineId.slice(0, 8)}
                                 </p>
                                 <p className="text-muted-foreground text-xs">
                                   Reason: {wm.reason}

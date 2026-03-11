@@ -133,7 +133,9 @@ export function CustomPatientPage() {
         spo2: BigInt(Number.parseInt(vitals.spo2) || 98),
         rr: BigInt(Number.parseInt(vitals.rr) || 16),
       },
-      history,
+      history:
+        history +
+        (currentMeds.trim() ? `\nCurrent Medications: ${currentMeds}` : ""),
       allergies: allergies
         .split(",")
         .map((a) => a.trim())
@@ -190,6 +192,8 @@ export function CustomPatientPage() {
 
     const sessionId = crypto.randomUUID();
     const studentId = identity?.getPrincipal().toString() || "anonymous";
+    const isCorrect =
+      selectedDiagnosis?.diseaseId === aiResult?.diagnosis[0]?.diseaseId;
 
     try {
       await createSession.mutateAsync({
@@ -209,7 +213,9 @@ export function CustomPatientPage() {
             spo2: BigInt(Number.parseInt(vitals.spo2) || 98),
             rr: BigInt(Number.parseInt(vitals.rr) || 16),
           },
-          history,
+          history:
+            history +
+            (currentMeds.trim() ? `\nCurrent Medications: ${currentMeds}` : ""),
           allergies: allergies
             .split(",")
             .map((a) => a.trim())
@@ -218,7 +224,7 @@ export function CustomPatientPage() {
           diagnosisAttempt: selectedDiagnosis.name,
           hasDisability: disability !== "None",
           outcome: {
-            isCorrect: true,
+            isCorrect,
             effectsTimeline: [],
             details: "AI-assisted diagnosis and treatment",
             responseTime: BigInt(Date.now()) * BigInt(1_000_000),
@@ -228,7 +234,7 @@ export function CustomPatientPage() {
         medicinesChosen: selectedMedicines,
         timestamp: BigInt(Date.now()) * BigInt(1_000_000),
         outcome: {
-          isCorrect: true,
+          isCorrect,
           effectsTimeline: [],
           details: "AI-assisted custom patient session",
           responseTime: BigInt(Date.now()) * BigInt(1_000_000),

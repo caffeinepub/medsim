@@ -746,9 +746,15 @@ export function AIAssistantPage() {
       // 2. Fallback to backend AI
       const patientData: PatientData = {
         id: crypto.randomUUID(),
-        age: BigInt(25),
-        gender: "unknown",
-        symptoms: [userMessage],
+        age: BigInt(
+          Number.parseInt(localStorage.getItem("medsim_age") || "25") || 25,
+        ),
+        gender: localStorage.getItem("medsim_gender") || "unknown",
+        symptoms: userMessage
+          .split(/[,،;।]+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 2)
+          .slice(0, 5),
         history: userMessage,
         hasDisability: false,
         allergies: [],
@@ -803,7 +809,8 @@ export function AIAssistantPage() {
           description: d.description,
           category: d.category,
           symptoms: d.symptoms ?? [],
-          medicines: [],
+          medicines:
+            diseases.find((ld) => ld.id === d.diseaseId)?.medicines ?? [],
           diagnosticCriteria: "",
           clinicalSigns: { bp: "—", hr: "—", rr: "—", spo2: "—", temp: "—" },
           associatedDiseases: [],

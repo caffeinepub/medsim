@@ -55,22 +55,49 @@ function getVerifyPrincipalFromHash(): string | null {
   if (typeof window === "undefined") return null;
   const hash = window.location.hash;
   if (hash.startsWith("#verify/")) {
-    return decodeURIComponent(hash.slice("#verify/".length));
+    const rest = hash.slice("#verify/".length);
+    // New format: #verify/?name=...&systemId=... (data embedded in URL)
+    if (rest.startsWith("?")) {
+      return `embedded:${rest}`;
+    }
+    return decodeURIComponent(rest);
   }
   return null;
 }
 
 function isLoginWithin30Days(): boolean {
-  const ts = localStorage.getItem("medsim_login_timestamp");
-  if (!ts) return false;
-  return Date.now() - Number.parseInt(ts, 10) < THIRTY_DAYS_MS;
+  try {
+    const ts = localStorage.getItem("medsim_login_timestamp");
+    if (!ts) return false;
+    const parsed = Number.parseInt(ts, 10);
+    if (Number.isNaN(parsed)) return false;
+    return Date.now() - parsed < THIRTY_DAYS_MS;
+  } catch {
+    return false;
+  }
 }
 
 function calcProfileScore(): number {
-  const photo = localStorage.getItem("medsim_profile_photo");
-  const cameraGranted =
-    localStorage.getItem("medsim_camera_granted") === "true";
-  return cameraGranted && photo ? 50 : 20;
+  try {
+    const keys = [
+      "medsim_profile_photo",
+      "medsim_profile_name",
+      "medsim_profile_mobile",
+      "medsim_profile_batch",
+      "medsim_profile_role",
+      "medsim_profile_college",
+      "medsim_profile_rollnumber",
+      "medsim_profile_aadhaar",
+      "medsim_profile_address",
+    ];
+    const filled = keys.filter((k) => {
+      const val = localStorage.getItem(k);
+      return val && val.trim() !== "" && val !== "null";
+    }).length;
+    return Math.round((filled / keys.length) * 100);
+  } catch {
+    return 0;
+  }
 }
 
 function LoadingScreen() {
@@ -92,11 +119,15 @@ function LoadingScreen() {
 function AppWithSeed({
   currentPage,
   handleNavigate,
+  handleGoBack,
+  canGoBack,
   isAdmin,
   children,
 }: {
   currentPage: AppPage;
   handleNavigate: (page: string) => void;
+  handleGoBack: () => void;
+  canGoBack: boolean;
   isAdmin: boolean;
   children: React.ReactNode;
 }) {
@@ -112,6 +143,8 @@ function AppWithSeed({
       <AppLayout
         currentPage={currentPage}
         onNavigate={handleNavigate}
+        onGoBack={handleGoBack}
+        canGoBack={canGoBack}
         isAdmin={isAdmin}
         banner={
           showBanner ? (
@@ -145,6 +178,8 @@ function AppMain() {
 
   const [appState, setAppState] = useState<AppState>("loading");
   const [currentPage, setCurrentPage] = useState<AppPage>("home");
+  // Navigation history stack for Back button
+  const [pageHistory, setPageHistory] = useState<AppPage[]>([]);
 
   useEffect(() => {
     if (isInitializing || profileLoading) {
@@ -153,13 +188,7 @@ function AppMain() {
     }
 
     if (!identity) {
-      // Persistent login check: if user logged in within 30 days, don't show login screen.
-      // The identity should still be in IndexedDB — if identity is null here, the
-      // auth-client is still initializing. But if isInitializing=false and identity=null
-      // we truly need to log in again unless within-30-days flag exists.
       if (isLoginWithin30Days()) {
-        // Give a brief grace period — auth client may still be loading from IDB
-        // We stay in loading state; if identity doesn't appear, fall through to login
         setAppState("loading");
         return;
       }
@@ -167,7 +196,6 @@ function AppMain() {
       return;
     }
 
-    // Check if camera permission screen should be shown
     const permissionAsked = localStorage.getItem(
       "medsim_camera_permission_asked",
     );
@@ -192,7 +220,20 @@ function AppMain() {
   }, [isInitializing, identity]);
 
   const handleNavigate = (page: string) => {
+    // Push current page to history before switching
+    setPageHistory((prev) => [...prev, currentPage]);
     setCurrentPage(page as AppPage);
+  };
+
+  const handleGoBack = () => {
+    if (pageHistory.length > 0) {
+      const newHistory = [...pageHistory];
+      const prevPage = newHistory.pop()!;
+      setPageHistory(newHistory);
+      setCurrentPage(prevPage);
+    } else {
+      setCurrentPage("home");
+    }
   };
 
   const handleCameraPermissionComplete = () => {
@@ -252,6 +293,8 @@ function AppMain() {
     <AppWithSeed
       currentPage={currentPage}
       handleNavigate={handleNavigate}
+      handleGoBack={handleGoBack}
+      canGoBack={pageHistory.length > 0}
       isAdmin={isAdmin}
     >
       {pageContent[currentPage]}

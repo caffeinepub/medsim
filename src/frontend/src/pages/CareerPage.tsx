@@ -394,7 +394,7 @@ function calcProfileCompletionFromLS(): number {
   ];
   const filled = fields.filter((f) => f && f.trim() !== "").length;
   // 6 localStorage fields + 3 from profile (name, mobile, role) — approximate
-  return Math.round((filled / 9) * 100);
+  return Math.round((filled / fields.length) * 100);
 }
 
 export function CareerPage({ onNavigate }: CareerPageProps) {
@@ -410,9 +410,33 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
 
   const mbbsComplete = localStorage.getItem("medsim_mbbs_complete") === "true";
   const profileLSScore = calcProfileCompletionFromLS();
-  const performanceScore = performanceStats
-    ? Number(performanceStats.accuracy)
-    : 0;
+  const performanceScore = (() => {
+    if (performanceStats && Number(performanceStats.accuracy) > 0) {
+      return Number(performanceStats.accuracy);
+    }
+    // Fallback: compute from localStorage performance history
+    try {
+      const stored = localStorage.getItem("medsim_performance");
+      if (stored) {
+        const entries: Array<{ score: number; total: number }> =
+          JSON.parse(stored);
+        if (entries.length > 0) {
+          const totalScore = entries.reduce(
+            (sum, e) => sum + (e.score || 0),
+            0,
+          );
+          const totalQuestions = entries.reduce(
+            (sum, e) => sum + (e.total || 1),
+            0,
+          );
+          return Math.round((totalScore / totalQuestions) * 100);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return 0;
+  })();
   const careerScore = calcCareerScore(profileLSScore, performanceScore);
   const studentRole =
     profile?.role || localStorage.getItem("medsim_profile_role") || "intern";
