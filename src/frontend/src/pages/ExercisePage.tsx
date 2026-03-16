@@ -37,11 +37,18 @@ import {
   Send,
   Star,
   Target,
+  Timer,
   TrendingUp,
   XCircle,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import React, { useState, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+  useCallback,
+} from "react";
 import { toast } from "sonner";
 import type {
   AdminAlert,
@@ -59,6 +66,7 @@ import {
   useGetAIDiagnosis,
   useSubmitCaseAttempt,
 } from "../hooks/useQueries";
+import { useSoundFeedback } from "../hooks/useSoundFeedback";
 import { MBBS_SUBJECTS, getSubjectsByYear } from "../lib/mbbs-subjects";
 import { SEED_CASES } from "../lib/seed-cases";
 
@@ -225,7 +233,7 @@ function CaseBrowser({
             Exercise Mode
           </h1>
           <p className="text-muted-foreground">
-            Apna case chunein aur diagnosis shuru karein
+            Choose a case and start the diagnosis
           </p>
         </div>
 
@@ -356,7 +364,7 @@ function CaseBrowser({
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               data-ocid="exercise.search_input"
-              placeholder="Case, disease, ya subject search karein..."
+              placeholder="Search case, disease, or subject..."
               className="pl-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -448,10 +456,10 @@ function CaseBrowser({
           >
             <Target className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
             <p className="font-semibold text-muted-foreground">
-              Koi case nahi mila
+              No cases found
             </p>
             <p className="text-sm text-muted-foreground">
-              Admin panel se cases add karein
+              Add cases from the Admin panel
             </p>
           </div>
         ) : filtered.length === 0 ? (
@@ -461,10 +469,10 @@ function CaseBrowser({
           >
             <Target className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
             <p className="font-semibold text-muted-foreground">
-              Koi case nahi mila
+              No cases found
             </p>
             <p className="text-sm text-muted-foreground">
-              Filter change karein ya search modify karein
+              Change filter or modify search
             </p>
           </div>
         ) : (
@@ -802,7 +810,7 @@ function ComprehensiveResults({
       ? "Shabash! Bahut Sahi Kiya! 🎉"
       : totalScore >= 60
         ? "Theek Hai, Par Seekhne Ki Zarurat Hai"
-        : "Kafi Galtiyan Hain — Revise Karein";
+        : "Many Errors — Please Revise";
 
   const firstCorrectMed =
     results.medicinesCorrect.length > 0
@@ -966,7 +974,7 @@ function ComprehensiveResults({
               {wm.contraindications.length > 0 && (
                 <p className="text-xs text-muted-foreground pl-6">
                   <strong className="text-foreground/80">Kyun galat:</strong>{" "}
-                  Yeh medicine contraindicated hai kyunki:{" "}
+                  This medicine is contraindicated because:{" "}
                   {wm.contraindications.slice(0, 2).join("; ")}
                 </p>
               )}
@@ -1001,7 +1009,7 @@ function ComprehensiveResults({
 
           {selectedMedicines.length === 0 && (
             <p className="text-sm text-muted-foreground italic">
-              Koi medicine select nahi ki gayi.
+              No medicine selected.
             </p>
           )}
         </div>
@@ -1070,7 +1078,7 @@ function ComprehensiveResults({
                   Revise Pharmacology:
                 </strong>{" "}
                 {results.medicinesWrong.map((wm) => wm.name).join(", ")} ke
-                contraindications aur alternatives revise karein.
+                please revise contraindications and alternatives.
               </p>
             </div>
           )}
@@ -1082,8 +1090,8 @@ function ComprehensiveResults({
               </span>
               <p className="text-foreground/80">
                 <strong className="text-success">Excellent performance!</strong>{" "}
-                Is case mein sab kuch sahi kiya. Ek harder case try karein ya
-                dusra subject explore karein.
+                All correct in this case. Try a harder case or explore another
+                subject.
               </p>
             </div>
           )}
@@ -1138,11 +1146,21 @@ function CaseSolver({
   onComplete: () => void;
 }) {
   const { identity } = useInternetIdentity();
+  const { playCorrect, playIncorrect } = useSoundFeedback();
+  const [feedbackOverlay, setFeedbackOverlay] = useState<
+    "correct" | "incorrect" | null
+  >(null);
   const submitAttempt = useSubmitCaseAttempt();
   const aiDiagnosis = useGetAIDiagnosis();
   const createAlert = useCreateAdminAlert();
 
   const [step, setStep] = useState<SolverStep>("diagnose");
+
+  // ── Diagnosis step timer (90 seconds) ──────────────────────
+  const TIMER_SECONDS = 90;
+  const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
+  const [timerExpired, setTimerExpired] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<string>("");
   const [selectedMedicines, setSelectedMedicines] = useState<string[]>([]);
   const [results, setResults] = useState<{
@@ -1169,6 +1187,29 @@ function CaseSolver({
   } | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
   const aiScrollRef = useRef<HTMLDivElement>(null);
+
+  // Start timer on "diagnose" step, stop on other steps
+  // biome-ignore lint/correctness/useExhaustiveDependencies: timerExpired intentionally excluded to avoid restart loop
+  useEffect(() => {
+    if (step === "diagnose" && !timerExpired) {
+      setTimeLeft(TIMER_SECONDS);
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            setTimerExpired(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [step]);
 
   const handleAIHelp = () => {
     // Pre-fill with case context
@@ -1245,7 +1286,7 @@ function CaseSolver({
         escalated,
       });
     } catch {
-      toast.error("AI se response nahi mila");
+      toast.error("No response from AI");
     } finally {
       setAiThinking(false);
     }
@@ -1308,11 +1349,11 @@ function CaseSolver({
         // Data-driven reason using contraindications
         let reason: string;
         if (contraindications.length > 0) {
-          reason = `Yeh medicine contraindicated hai kyunki: ${contraindications.slice(0, 2).join("; ")}`;
+          reason = `This medicine is contraindicated because: ${contraindications.slice(0, 2).join("; ")}`;
         } else if (topSideEffects.length > 0) {
-          reason = `Is case mein appropriate nahi — significant side effects: ${topSideEffects.join(", ")}`;
+          reason = `Not appropriate for this case — significant side effects: ${topSideEffects.join(", ")}`;
         } else {
-          reason = "Is case ke liye yeh medicine first-line treatment nahi hai";
+          reason = "This medicine is not first-line treatment for this case";
         }
 
         return {
@@ -1361,8 +1402,8 @@ function CaseSolver({
         isCorrect,
         effectsTimeline: [],
         details: isCorrect
-          ? "Sahi diagnosis aur treatment!"
-          : "Galat choice. Review karein.",
+          ? "Correct diagnosis and treatment!"
+          : "Incorrect choice. Please review.",
         responseTime: BigInt(Date.now()) * BigInt(1_000_000),
       },
       timestamp: BigInt(Math.round(Date.now() / 1000)) * BigInt(1_000_000),
@@ -1403,17 +1444,54 @@ function CaseSolver({
         medicinesWrong,
         missedMedicines,
       });
+      if (isCorrect) {
+        playCorrect();
+      } else {
+        playIncorrect();
+      }
+      setFeedbackOverlay(isCorrect ? "correct" : "incorrect");
+      setTimeout(() => setFeedbackOverlay(null), 1200);
       setStep("results");
     } catch {
-      toast.error("Attempt submit nahi hua. Try again.");
+      toast.error("Could not submit attempt. Try again.");
     }
   };
 
   const symptoms = disease?.symptoms.map((s) => s.name) || [];
 
   return (
-    <div className="p-4 lg:p-8">
+    <div className="relative p-4 lg:p-8">
       <div className="mx-auto max-w-5xl">
+        {/* Feedback Overlay */}
+        <AnimatePresence>
+          {feedbackOverlay && (
+            <motion.div
+              key="feedback-overlay"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              transition={{ duration: 0.2 }}
+              className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
+            >
+              <div
+                className="flex h-32 w-32 items-center justify-center rounded-full text-6xl shadow-2xl"
+                style={
+                  feedbackOverlay === "correct"
+                    ? {
+                        background: "oklch(0.45 0.15 145 / 0.9)",
+                        boxShadow: "0 0 60px oklch(0.65 0.2 145 / 0.6)",
+                      }
+                    : {
+                        background: "oklch(0.45 0.18 25 / 0.9)",
+                        boxShadow: "0 0 60px oklch(0.65 0.22 25 / 0.6)",
+                      }
+                }
+              >
+                {feedbackOverlay === "correct" ? "u2713" : "u2717"}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
@@ -1560,13 +1638,51 @@ function CaseSolver({
                   exit={{ opacity: 0, y: -10 }}
                   className="rounded-2xl border border-border bg-card p-5 shadow-xs select-none-important"
                 >
-                  <h2 className="font-display mb-1 text-lg font-bold text-foreground">
-                    Apna Diagnosis Chuno
-                  </h2>
+                  <div className="flex items-center justify-between mb-1">
+                    <h2 className="font-display text-lg font-bold text-foreground">
+                      Apna Diagnosis Chuno
+                    </h2>
+                    <div
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold"
+                      style={{
+                        background:
+                          timeLeft <= 15
+                            ? "oklch(0.55 0.22 27 / 0.15)"
+                            : timeLeft <= 30
+                              ? "oklch(0.75 0.18 70 / 0.15)"
+                              : "oklch(0.65 0.16 196 / 0.12)",
+                        border: `1px solid ${timeLeft <= 15 ? "oklch(0.55 0.22 27 / 0.5)" : timeLeft <= 30 ? "oklch(0.75 0.18 70 / 0.5)" : "oklch(0.65 0.16 196 / 0.3)"}`,
+                        color:
+                          timeLeft <= 15
+                            ? "oklch(0.55 0.22 27)"
+                            : timeLeft <= 30
+                              ? "oklch(0.75 0.18 70)"
+                              : "oklch(0.65 0.16 196)",
+                      }}
+                    >
+                      <Timer className="h-3.5 w-3.5" />
+                      <span>
+                        {Math.floor(timeLeft / 60)}:
+                        {String(timeLeft % 60).padStart(2, "0")}
+                      </span>
+                    </div>
+                  </div>
                   <p className="mb-4 text-sm text-muted-foreground">
-                    Patient ke symptoms aur history ke basis pe diagnosis select
-                    karein
+                    Select diagnosis based on patient symptoms and history
                   </p>
+                  {timerExpired && (
+                    <div
+                      className="mb-4 rounded-lg p-3 text-sm font-semibold text-center"
+                      style={{
+                        background: "oklch(0.55 0.22 27 / 0.1)",
+                        border: "1px solid oklch(0.55 0.22 27 / 0.4)",
+                        color: "oklch(0.55 0.22 27)",
+                      }}
+                    >
+                      ⏰ Time khatam! Ab bhi apna best guess select kar sakte
+                      hain.
+                    </div>
+                  )}
                   <div className="space-y-2">
                     {diagnosisOptions.map((option, idx) => (
                       <button
@@ -1605,7 +1721,7 @@ function CaseSolver({
                     disabled={!selectedDiagnosis}
                     onClick={handleDiagnosisSubmit}
                   >
-                    Diagnosis Confirm Karein →
+                    Confirm Diagnosis →
                   </Button>
                 </motion.div>
               )}
@@ -1629,7 +1745,7 @@ function CaseSolver({
 
                   {medicineOptions.length === 0 ? (
                     <p className="text-muted-foreground text-sm">
-                      Is disease ke liye medicine data available nahi
+                      No medicine data available for this disease
                     </p>
                   ) : (
                     <ScrollArea className="max-h-[460px]">
@@ -1831,9 +1947,9 @@ function CaseSolver({
                 }}
               >
                 <p className="leading-relaxed">
-                  Is case ke symptoms ke baare mein AI se guidance lo. AI
-                  directly correct answer nahi batayega — sirf clinical
-                  reasoning mein help karega.
+                  Is case ke symptoms ke baare mein AI se guidance lo. AI will
+                  not directly give the correct answer — only clinical reasoning
+                  mein help karega.
                 </p>
               </div>
             )}
@@ -1863,7 +1979,7 @@ function CaseSolver({
                   className="text-xs"
                   style={{ color: "oklch(0.65 0.02 215)" }}
                 >
-                  AI soch raha hai...
+                  AI is thinking...
                 </span>
               </div>
             )}
@@ -2081,8 +2197,8 @@ export function ExercisePage({
               Case Data Unavailable
             </h2>
             <p className="text-sm text-muted-foreground mb-4">
-              Is case ka disease data nahi mila. Shayad disease delete ho gayi
-              ho.
+              Disease data not found for this case. The disease may have been
+              deleted ho.
             </p>
             <button
               type="button"

@@ -14,7 +14,6 @@ import {
 import { motion } from "motion/react";
 import React, { useState } from "react";
 import {
-  useAllDiseases,
   useAllPatientCases,
   useMyCaseAttempts,
   useMyPerformanceStats,
@@ -78,7 +77,7 @@ function SubjectCard({
             variant="outline"
             className="text-xs border-muted-foreground/30 text-muted-foreground"
           >
-            Practice karein
+            Practice Now
           </Badge>
         )}
       </div>
@@ -112,12 +111,12 @@ function SubjectCard({
 export function PerformancePage() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [expandedAttempt, setExpandedAttempt] = useState<string | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState("all");
 
   const { data: perf, isLoading: perfLoading } = useMyPerformanceStats();
   const { data: attempts = [], isLoading: attemptsLoading } =
     useMyCaseAttempts();
   const { data: cases = [] } = useAllPatientCases();
-  useAllDiseases(); // preload for future use
 
   const totalAttempts = perf ? Number(perf.totalAttempts) : 0;
   const correctCount = perf ? Number(perf.correctCount) : 0;
@@ -126,6 +125,13 @@ export function PerformancePage() {
   const sortedAttempts = [...attempts].sort(
     (a, b) => Number(b.timestamp) - Number(a.timestamp),
   );
+  const uniqueSubjects = Array.from(
+    new Set(sortedAttempts.map((a) => a.subject).filter(Boolean)),
+  ) as string[];
+  const filteredAttempts =
+    selectedSubject === "all"
+      ? sortedAttempts
+      : sortedAttempts.filter((a) => a.subject === selectedSubject);
 
   const tabs: { id: TabType; label: string }[] = [
     { id: "overview", label: "Subject Overview" },
@@ -300,19 +306,36 @@ export function PerformancePage() {
 
         {activeTab === "history" && (
           <div className="space-y-2">
+            {!attemptsLoading && sortedAttempts.length > 0 && (
+              <div className="mb-3">
+                <select
+                  data-ocid="performance.subject.select"
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                >
+                  <option value="all">All Subjects</option>
+                  {uniqueSubjects.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {attemptsLoading ? (
               ["h1", "h2", "h3", "h4", "h5"].map((id) => (
                 <Skeleton key={id} className="h-16 rounded-xl" />
               ))
-            ) : sortedAttempts.length === 0 ? (
+            ) : filteredAttempts.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border py-16 text-center">
                 <BookOpen className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
                 <p className="font-semibold text-muted-foreground">
-                  Koi attempt nahi mila
+                  No attempts found
                 </p>
               </div>
             ) : (
-              sortedAttempts.map((attempt, i) => {
+              filteredAttempts.map((attempt, i) => {
                 const caseData = cases.find((c) => c.id === attempt.caseId);
                 const attemptKey = `${attempt.caseId}-${i}`;
                 const isExpanded = expandedAttempt === attemptKey;

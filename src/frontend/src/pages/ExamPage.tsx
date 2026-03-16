@@ -12,7 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Award,
@@ -464,6 +463,20 @@ export function ExamPage({
   const mcqCount = ROLE_MCQ_COUNT[role] || 15;
   const descCount = ROLE_DESC_COUNT[role] || 0;
 
+  // Guard: no valid application
+  if (!applicationId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-center text-white/60">
+          No valid exam found. Please apply from the career page first.
+        </p>
+        <Button onClick={() => onNavigate?.("career")}>
+          Career Page Par Jayein
+        </Button>
+      </div>
+    );
+  }
+
   // Locked screen — exam not yet unlocked by admin / 24hr
   if (!isUnlocked) {
     return (
@@ -545,7 +558,7 @@ export function ExamPage({
                 ? "Badhaai ho! Aap is position ke liye qualify kiye."
                 : result.status === "pending"
                   ? "MCQ pass ho gaya. Descriptive answers admin review ke liye hain."
-                  : "MCQ score 70% se kam hai. Dobara try karein."}
+                  : "MCQ score below 70%. Please try again."}
             </p>
 
             {/* Score breakdown */}
@@ -715,7 +728,7 @@ export function ExamPage({
           </div>
         </motion.div>
 
-        <ScrollArea className="h-auto">
+        <div className="overflow-y-auto">
           <div className="space-y-5 pb-8">
             {/* MCQ Section */}
             {mcqQuestions.length > 0 && (
@@ -1061,7 +1074,7 @@ export function ExamPage({
                 >
                   <AlertDialogHeader>
                     <AlertDialogTitle style={{ color: "#e8f4ff" }}>
-                      Exam Submit Karein?
+                      Submit Exam?
                     </AlertDialogTitle>
                     <AlertDialogDescription
                       style={{ color: "rgba(150, 200, 255, 0.6)" }}
@@ -1098,15 +1111,15 @@ export function ExamPage({
                         border: "none",
                       }}
                     >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Haan, Submit Karein
+                      <Send className="h-4 w-4 mr-2" />
+                      Yes, Submit
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
             </motion.div>
           </div>
-        </ScrollArea>
+        </div>
       </div>
     </div>
   );

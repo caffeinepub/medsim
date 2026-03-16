@@ -140,10 +140,10 @@ export function ApplicationFormModal({
   const validateStep = (s: number): boolean => {
     const newErrors: Partial<Record<keyof AppFormData, string>> = {};
     if (s === 0) {
-      if (!form.name.trim()) newErrors.name = "Naam zaroori hai";
+      if (!form.name.trim()) newErrors.name = "Name is required";
       if (!form.mobile.trim() || !/^\d{10}$/.test(form.mobile))
         newErrors.mobile = "Valid 10-digit number chahiye";
-      if (!form.role.trim()) newErrors.role = "Role zaroori hai";
+      if (!form.role.trim()) newErrors.role = "Role is required";
     }
     if (s === 1) {
       if (form.sop.trim().length < 100)
@@ -408,7 +408,7 @@ export function ApplicationFormModal({
                   className="text-xs"
                   style={{ color: "rgba(150,200,255,0.4)" }}
                 >
-                  Profile se auto-filled — zaroori ho toh edit karein
+                  Auto-filled from profile — edit if needed
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5 sm:col-span-2">

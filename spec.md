@@ -1,26 +1,39 @@
-# MedSim
+# MedSim Professional Overhaul v50
 
 ## Current State
-Exercise Mode has patient-case-based MCQ flow (diagnose → medicines → results). Questions in seed-cases.ts are clinical case scenarios, NOT NEET PG style standalone MCQs. No chapter-wise question bank exists. No standalone NEET PG practice mode exists.
+- Full-stack medical simulation platform with 18 pages
+- App has Hinglish labels in navigation and home page (e.g., "Kya Karna Hai Aaj?", "Practice Karo", "Ghar", "Naukri Dekho")
+- HomePage lacks a Hero section with a prominent CTA
+- Service worker only caches index/manifest, no offline indicator
+- No sound effects or visual cues for correct/incorrect decisions
+- Mobile layout has potential header overlap issues
+- Sidebar does not have explicit min-touch-target sizing
+- No pulse-line loading animation component
 
 ## Requested Changes (Diff)
 
 ### Add
-- `neet-pg-questions.ts` — large chapter-wise question bank covering all 19 MBBS subjects with NEET PG previous year + NEET PG-style questions. Each question has: stem, 4 options (A/B/C/D), correct answer index, detailed explanation (why correct + why each wrong option is wrong), textbook reference (latest edition), subject, chapter, difficulty (Easy/Medium/Hard).
-- `NEETPGQuizPage.tsx` — new dedicated NEET PG Practice mode with: subject/chapter filter, difficulty filter, question display (NEET PG style 4-option MCQ), answer reveal with full explanation + reference, subject-wise + chapter-wise progress tracking, score summary.
-- Navigation entry in sidebar + App.tsx routing for NEET PG Practice page.
+- Hero Section on HomePage with large "Start Clinical Practice" button and animated ECG pulse line
+- Offline Mode indicator badge (shown when navigator.onLine is false)
+- Background sync logic: queue offline scores in localStorage and flush to leaderboard on reconnect
+- Web Audio API sound effects: positive beep for correct decisions, negative tone for incorrect
+- Visual cues: green checkmark overlay and red X overlay on MCQ/case correct/incorrect answers
+- Pulse-line (ECG) CSS loading animation component
 
 ### Modify
-- `ExercisePage.tsx` — add a prominent banner/button linking to the new NEET PG Practice mode so users can switch between Clinical Cases and NEET PG MCQs.
-- `mbbs-subjects.ts` — add chapter definitions for each subject (used by NEET PG question bank and filter UI).
+- AppLayout: replace all Hinglish sub-labels with Professional Medical English. Increase nav item padding for finger-friendly touch targets (min 44px). Add offline indicator in header.
+- HomePage: Replace all Hinglish section headings and quick action labels with Professional Medical English. Add Hero section at top. Update terminology: "Kya Karna Hai Aaj?" → "Quick Access", "Practice Karo" → "Clinical Cases", "Apna Patient" → "Custom Patient Simulator", "Results Dekho" → "Clinical Proficiency", "Sab Dekho" → "View All", "Inhe Improve Karo" → "Areas Requiring Attention", "Subject-wise Performance" → "Clinical Performance by Specialty"
+- Service Worker (sw.js): Add cache-first strategy for static assets, cache JS/CSS bundles, add offline fallback page
+- LoginPage: Keep existing demo OTP with WhatsApp-style UI (already good), no change needed
 
 ### Remove
-- Nothing removed; existing clinical case exercise mode stays intact.
+- All Hinglish text from navigation labels (hinglish sub-labels) and page content
+- Casual terminology throughout the app
 
 ## Implementation Plan
-1. Add chapter data to mbbs-subjects.ts for all 19 subjects.
-2. Create neet-pg-questions.ts with 20-30 NEET PG quality questions per subject (across chapters), with full explanation + reference.
-3. Build NEETPGQuizPage.tsx with subject/chapter/difficulty filters, NEET PG MCQ UI, answer reveal with explanation panel, and score tracker.
-4. Add routing in App.tsx and nav link in sidebar/hamburger menu.
-5. Add banner in ExercisePage linking to NEET PG mode.
-6. Validate and deploy.
+1. Update AppLayout.tsx: replace hinglish labels with English medical terms, increase touch targets to 48px, add offline indicator in mobile header
+2. Update HomePage.tsx: add Hero section, replace all Hinglish with Professional Medical English
+3. Update sw.js: enhance caching strategy for offline use
+4. Create useSoundFeedback.ts hook: Web Audio API beep sounds for correct/incorrect
+5. Create OfflineIndicator.tsx component
+6. Apply sound/visual cues in ExercisePage and NEETPGQuizPage answer feedback

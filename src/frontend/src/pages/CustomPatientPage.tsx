@@ -117,7 +117,7 @@ export function CustomPatientPage() {
 
   const handleAIDiagnosis = async () => {
     if (symptoms.length === 0) {
-      toast.error("Kam se kam ek symptom add karein");
+      toast.error("Please add at least one symptom");
       return;
     }
 
@@ -255,7 +255,7 @@ export function CustomPatientPage() {
             Custom Patient Banao
           </h1>
           <p className="text-muted-foreground">
-            Apna patient create karein aur AI se diagnosis lein
+            Create your patient and get AI diagnosis
           </p>
         </div>
 
@@ -354,7 +354,7 @@ export function CustomPatientPage() {
               </div>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Custom symptom add karein..."
+                  placeholder="Add custom symptom..."
                   value={customSymptom}
                   onChange={(e) => setCustomSymptom(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addCustomSymptom()}

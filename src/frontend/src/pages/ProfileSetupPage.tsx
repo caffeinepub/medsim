@@ -83,7 +83,7 @@ export function ProfileSetupPage({
     e.preventDefault();
 
     if (!form.name || !form.mobile || !form.role) {
-      toast.error("Name, mobile, aur role zaroori hai");
+      toast.error("Name, mobile, and role are required");
       return;
     }
 
@@ -107,10 +107,20 @@ export function ProfileSetupPage({
     try {
       await saveProfile.mutateAsync(profile);
       localStorage.setItem("medsim_profile_role", form.role);
+      if (form.aadhaar) localStorage.setItem("medsim_aadhaar", form.aadhaar);
+      if (form.address) localStorage.setItem("medsim_address", form.address);
+      if (form.batch) localStorage.setItem("medsim_batch", form.batch);
+      if (form.zohoMail) localStorage.setItem("medsim_zohoMail", form.zohoMail);
+      if (form.gmail) localStorage.setItem("medsim_gmail", form.gmail);
+      if (form.collegeName)
+        localStorage.setItem("medsim_college", form.collegeName);
+      if (form.rollNumber)
+        localStorage.setItem("medsim_rollNumber", form.rollNumber);
+      if (form.name) localStorage.setItem("medsim_saved_name", form.name);
       toast.success("Profile save ho gayi! Welcome to MedSim 🎉");
       onComplete();
     } catch {
-      toast.error("Profile save nahi ho saki. Dobara try karein.");
+      toast.error("Could not save profile. Please try again.");
     }
   };
 
@@ -132,7 +142,7 @@ export function ProfileSetupPage({
                 Apna Profile Banayein
               </h1>
               <p className="text-muted-foreground">
-                Pehli baar hai — kuch zaroori jaankari bharein
+                First time? Please fill in some basic information
               </p>
             </div>
           </div>
@@ -204,7 +214,7 @@ export function ProfileSetupPage({
                     <Label htmlFor="address">Address</Label>
                     <Textarea
                       id="address"
-                      placeholder="Ghar ka pata, Sheher, State — 400001"
+                      placeholder="Home address, City, State — 400001"
                       value={form.address}
                       onChange={(e) => updateField("address")(e.target.value)}
                       rows={2}
@@ -286,7 +296,7 @@ export function ProfileSetupPage({
                       onValueChange={updateField("batch")}
                     >
                       <SelectTrigger id="batch">
-                        <SelectValue placeholder="Batch select karein" />
+                        <SelectValue placeholder="Select batch" />
                       </SelectTrigger>
                       <SelectContent>
                         {BATCHES.map((b) => (
@@ -334,7 +344,7 @@ export function ProfileSetupPage({
                     Save Ho Raha Hai...
                   </>
                 ) : (
-                  "Profile Save Karein & Shuru Karein →"
+                  "Save Profile & Continue →"
                 )}
               </Button>
             </div>

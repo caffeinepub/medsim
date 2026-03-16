@@ -1,3 +1,13 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -491,7 +501,7 @@ function QuestionCard({
             color: "oklch(0.95 0.01 215)",
           }}
         >
-          Answer Confirm Karein
+          Confirm Answer
         </Button>
       ) : (
         <AnimatePresence>
@@ -615,6 +625,7 @@ function QuizSession({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [attempts, setAttempts] = useState<AttemptRecord[]>([]);
   const [currentAnswered, setCurrentAnswered] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const progress = (currentIndex / questions.length) * 100;
 
@@ -645,120 +656,137 @@ function QuizSession({
   const q = questions[currentIndex];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-3xl space-y-4">
-        {/* Top bar */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            data-ocid="neet_pg.back_to_browse.button"
-            onClick={() => {
-              if (attempts.length > 0) {
-                if (
-                  window.confirm(
-                    "Quiz mein progress hai. Kya aap exit karna chahte hain? Progress kho jayegi.",
-                  )
-                ) {
+    <>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto max-w-3xl space-y-4">
+          {/* Top bar */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              data-ocid="neet_pg.back_to_browse.button"
+              onClick={() => {
+                if (attempts.length > 0) {
+                  setShowExitConfirm(true);
+                } else {
                   onBack();
                 }
-              } else {
-                onBack();
-              }
-            }}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors"
-            style={{ color: "oklch(0.65 0.16 196)" }}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Exit
-          </button>
-          <div className="flex-1">
-            <Progress
-              value={progress}
-              className="h-1.5"
-              style={
-                {
-                  "--progress-foreground": "oklch(0.65 0.16 196)",
-                } as React.CSSProperties
-              }
-            />
+              }}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors"
+              style={{ color: "oklch(0.65 0.16 196)" }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Exit
+            </button>
+            <div className="flex-1">
+              <Progress
+                value={progress}
+                className="h-1.5"
+                style={
+                  {
+                    "--progress-foreground": "oklch(0.65 0.16 196)",
+                  } as React.CSSProperties
+                }
+              />
+            </div>
+            <span
+              className="text-xs font-mono font-bold"
+              style={{ color: "oklch(0.65 0.16 196)" }}
+            >
+              {currentIndex + 1}/{questions.length}
+            </span>
           </div>
-          <span
-            className="text-xs font-mono font-bold"
-            style={{ color: "oklch(0.65 0.16 196)" }}
-          >
-            {currentIndex + 1}/{questions.length}
-          </span>
-        </div>
 
-        {/* Score tally */}
-        <div className="flex gap-3 text-xs">
-          <span
-            className="flex items-center gap-1 rounded-full px-2.5 py-1"
-            style={{
-              background: "oklch(0.45 0.12 145 / 0.15)",
-              color: "oklch(0.7 0.15 145)",
-            }}
-          >
-            <CheckCircle2 className="h-3 w-3" />
-            {attempts.filter((a) => a.isCorrect).length} Sahi
-          </span>
-          <span
-            className="flex items-center gap-1 rounded-full px-2.5 py-1"
-            style={{
-              background: "oklch(0.45 0.18 25 / 0.15)",
-              color: "oklch(0.7 0.18 25)",
-            }}
-          >
-            <XCircle className="h-3 w-3" />
-            {attempts.filter((a) => !a.isCorrect).length} Galat
-          </span>
-          <span
-            className="flex items-center gap-1 rounded-full px-2.5 py-1 ml-auto"
-            style={{
-              background: "oklch(0.28 0.06 230 / 0.5)",
-              color: "oklch(0.65 0.02 215)",
-            }}
-          >
-            {questions.length - currentIndex - 1} remaining
-          </span>
-        </div>
-
-        {/* Question */}
-        <AnimatePresence mode="wait">
-          <QuestionCard
-            key={q.id}
-            question={q}
-            index={currentIndex}
-            total={questions.length}
-            onAnswer={handleAnswer}
-          />
-        </AnimatePresence>
-
-        {/* Next button (shown after answer) */}
-        {currentAnswered && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Button
-              data-ocid="neet_pg.next_question.button"
-              onClick={handleNext}
-              className="w-full font-bold py-3"
+          {/* Score tally */}
+          <div className="flex gap-3 text-xs">
+            <span
+              className="flex items-center gap-1 rounded-full px-2.5 py-1"
               style={{
-                background:
-                  "linear-gradient(135deg, oklch(0.50 0.14 200), oklch(0.40 0.12 220))",
-                border: "none",
-                color: "oklch(0.95 0.01 215)",
+                background: "oklch(0.45 0.12 145 / 0.15)",
+                color: "oklch(0.7 0.15 145)",
               }}
             >
-              {currentIndex + 1 >= questions.length
-                ? "Results Dekho →"
-                : "Agla Sawaal →"}
-            </Button>
-          </motion.div>
-        )}
+              <CheckCircle2 className="h-3 w-3" />
+              {attempts.filter((a) => a.isCorrect).length} Sahi
+            </span>
+            <span
+              className="flex items-center gap-1 rounded-full px-2.5 py-1"
+              style={{
+                background: "oklch(0.45 0.18 25 / 0.15)",
+                color: "oklch(0.7 0.18 25)",
+              }}
+            >
+              <XCircle className="h-3 w-3" />
+              {attempts.filter((a) => !a.isCorrect).length} Galat
+            </span>
+            <span
+              className="flex items-center gap-1 rounded-full px-2.5 py-1 ml-auto"
+              style={{
+                background: "oklch(0.28 0.06 230 / 0.5)",
+                color: "oklch(0.65 0.02 215)",
+              }}
+            >
+              {questions.length - currentIndex - 1} remaining
+            </span>
+          </div>
+
+          {/* Question */}
+          <AnimatePresence mode="wait">
+            <QuestionCard
+              key={q.id}
+              question={q}
+              index={currentIndex}
+              total={questions.length}
+              onAnswer={handleAnswer}
+            />
+          </AnimatePresence>
+
+          {/* Next button (shown after answer) */}
+          {currentAnswered && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Button
+                data-ocid="neet_pg.next_question.button"
+                onClick={handleNext}
+                className="w-full font-bold py-3"
+                style={{
+                  background:
+                    "linear-gradient(135deg, oklch(0.50 0.14 200), oklch(0.40 0.12 220))",
+                  border: "none",
+                  color: "oklch(0.95 0.01 215)",
+                }}
+              >
+                {currentIndex + 1 >= questions.length
+                  ? "Results Dekho →"
+                  : "Agla Sawaal →"}
+              </Button>
+            </motion.div>
+          )}
+        </div>
       </div>
-    </div>
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit Quiz?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have quiz progress. Leaving will lose your progress.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-ocid="neet_pg.exit.cancel_button">
+              Rukein
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-ocid="neet_pg.exit.confirm_button"
+              onClick={onBack}
+            >
+              Yes, Exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -784,7 +812,7 @@ function ResultsSummary({
       ? { label: "Outstanding!", color: "oklch(0.7 0.15 145)" }
       : score >= 60
         ? { label: "Good Attempt!", color: "oklch(0.72 0.14 68)" }
-        : { label: "Revise Karein", color: "oklch(0.65 0.2 25)" };
+        : { label: "Revise", color: "oklch(0.65 0.2 25)" };
 
   // Subject-wise breakdown
   const subjectBreakdown = useMemo(() => {
@@ -952,7 +980,7 @@ function ResultsSummary({
                 className="font-display font-bold text-sm"
                 style={{ color: "oklch(0.92 0.015 215)" }}
               >
-                Galat Jawab — Review Karein
+                Incorrect Answer — Review
               </h3>
             </div>
             <div className="space-y-3">
@@ -1024,7 +1052,7 @@ function ResultsSummary({
             }}
           >
             <RefreshCw className="h-4 w-4" />
-            Dobara Karo
+            Try Again
           </Button>
           <Button
             data-ocid="neet_pg.browse.button"
@@ -1055,10 +1083,16 @@ export function NEETPGQuizPage({
 }) {
   const [quizState, setQuizState] = useState<QuizState>("browse");
 
-  // Filters
-  const [subject, setSubject] = useState("all");
-  const [chapter, setChapter] = useState("all");
-  const [difficulty, setDifficulty] = useState("all");
+  // Filters — persisted across navigation
+  const [subject, setSubject] = useState(
+    () => localStorage.getItem("neetpg_filter_subject") || "all",
+  );
+  const [chapter, setChapter] = useState(
+    () => localStorage.getItem("neetpg_filter_chapter") || "all",
+  );
+  const [difficulty, setDifficulty] = useState(
+    () => localStorage.getItem("neetpg_filter_difficulty") || "all",
+  );
 
   // Active session
   const [sessionQuestions, setSessionQuestions] = useState<NeetPGQuestion[]>(
@@ -1079,6 +1113,8 @@ export function NEETPGQuizPage({
   const handleSubjectChange = (v: string) => {
     setSubject(v);
     setChapter("all"); // reset chapter when subject changes
+    localStorage.setItem("neetpg_filter_subject", v);
+    localStorage.setItem("neetpg_filter_chapter", "all");
   };
 
   const handleStartQuiz = () => {
@@ -1210,8 +1246,14 @@ export function NEETPGQuizPage({
             chapter={chapter}
             difficulty={difficulty}
             onSubjectChange={handleSubjectChange}
-            onChapterChange={setChapter}
-            onDifficultyChange={setDifficulty}
+            onChapterChange={(v) => {
+              setChapter(v);
+              localStorage.setItem("neetpg_filter_chapter", v);
+            }}
+            onDifficultyChange={(v) => {
+              setDifficulty(v);
+              localStorage.setItem("neetpg_filter_difficulty", v);
+            }}
             totalCount={filteredQuestions.length}
           />
 
@@ -1231,8 +1273,8 @@ export function NEETPGQuizPage({
             }}
           >
             {filteredQuestions.length > 0
-              ? `Practice Shuru Karein — ${filteredQuestions.length} Questions`
-              : "Koi question nahi mila — filter change karein"}
+              ? `Start Practice — ${filteredQuestions.length} Questions`
+              : "No questions found — try changing the filter"}
           </Button>
 
           {/* Subject grid */}

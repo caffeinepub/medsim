@@ -43,6 +43,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
+  Award,
   BarChart3,
   Bell,
   BookOpen,
@@ -72,7 +73,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Disease, PatientCase, UserProfile } from "../backend.d";
 import { useActor } from "../hooks/useActor";
@@ -94,6 +95,7 @@ import {
   useUpdateSecurityEventStatus,
   useUpdateStudentStatus,
 } from "../hooks/useQueries";
+import { MBBS_SUBJECT_NAMES } from "../lib/mbbs-subjects";
 import { icmrDiseaseData } from "../utils/icmrSeedData";
 
 type AdminTab =
@@ -106,7 +108,8 @@ type AdminTab =
   | "database"
   | "exams"
   | "applications"
-  | "careers";
+  | "careers"
+  | "certificates";
 
 const ADMIN_TABS = [
   { id: "dashboard" as AdminTab, label: "Dashboard", icon: BarChart3 },
@@ -126,6 +129,11 @@ const ADMIN_TABS = [
     id: "careers" as AdminTab,
     label: "Career Jobs",
     icon: Briefcase,
+  },
+  {
+    id: "certificates" as AdminTab,
+    label: "Certificates",
+    icon: Award,
   },
 ];
 
@@ -618,7 +626,7 @@ function DiseaseForm({
         {/* Section 1: Basic Information */}
         <SectionCard
           title="1. Basic Information"
-          helpText="Disease ka naam, category aur ICD-10 code fill karein"
+          helpText="Fill in disease name, category, and ICD-10 code"
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
@@ -842,7 +850,7 @@ function DiseaseForm({
         {/* Section 4: Diagnostic Details */}
         <SectionCard
           title="4. Diagnostic Details"
-          helpText="Diagnostic criteria, associated diseases aur subject mapping fill karein"
+          helpText="Fill diagnostic criteria, associated diseases, and subject mapping"
         >
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -910,7 +918,7 @@ function DiseaseForm({
         {/* Section 5: Medicines note */}
         <SectionCard
           title="5. Medicines"
-          helpText="Medicines ko ICMR import se add karein ya existing disease edit karein"
+          helpText="Add medicines via ICMR import or edit existing disease"
         >
           <p className="text-sm" style={{ color: "rgba(150, 200, 255, 0.5)" }}>
             {disease?.medicines.length
@@ -1102,7 +1110,7 @@ function DiseasesTab() {
                               </AlertDialogTitle>
                               <AlertDialogDescription>
                                 "{d.name}" permanent delete ho jaayega. Undo
-                                nahi ho sakta.
+                                cannot proceed.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -1135,11 +1143,34 @@ function DiseasesTab() {
 // ─── Patient Cases Tab ────────────────────────────────────────────
 
 function CasesTab() {
-  const { data: cases = [], isLoading } = useAllPatientCases();
+  const { data: backendCases = [], isLoading } = useAllPatientCases();
+  const customCases = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("medsim_custom_cases") || "[]");
+    } catch {
+      return [];
+    }
+  }, []);
+  const cases = useMemo(
+    () => [...backendCases, ...customCases],
+    [backendCases, customCases],
+  );
   const { data: diseases = [] } = useAllDiseases();
   useAddPatientCase();
   const deleteCase = useDeletePatientCase();
   useUpdatePatientCase();
+  const [addOpen, setAddOpen] = useState(false);
+  const [caseForm, setCaseForm] = useState({
+    title: "",
+    diseaseName: "",
+    subject: "",
+    difficulty: "Medium",
+    patientAge: "",
+    patientGender: "Male",
+    chiefComplaint: "",
+    diagnosis: "",
+    management: "",
+  });
 
   const getDiagnoseName = (diseaseId: string) =>
     diseases.find((d) => d.id === diseaseId)?.name || diseaseId;
@@ -1153,12 +1184,217 @@ function CasesTab() {
     }
   };
 
+  const handleAddCase = () => {
+    if (!caseForm.title || !caseForm.subject || !caseForm.diagnosis) {
+      toast.error("Title, Subject, and Diagnosis are required");
+      return;
+    }
+    const existing: unknown[] = JSON.parse(
+      localStorage.getItem("medsim_custom_cases") || "[]",
+    );
+    const newCase = {
+      id: `custom_${Date.now()}`,
+      title: caseForm.title,
+      diseaseId: caseForm.diseaseName,
+      subject: caseForm.subject,
+      difficulty: caseForm.difficulty,
+      patientAge: Number(caseForm.patientAge) * 12 || 360,
+      patientGender: caseForm.patientGender,
+      chiefComplaint: caseForm.chiefComplaint,
+      finalDiagnosis: caseForm.diagnosis,
+      management: caseForm.management,
+      createdAt: new Date().toISOString(),
+    };
+    localStorage.setItem(
+      "medsim_custom_cases",
+      JSON.stringify([...existing, newCase]),
+    );
+    toast.success("Case add ho gaya!");
+    setAddOpen(false);
+    setCaseForm({
+      title: "",
+      diseaseName: "",
+      subject: "",
+      difficulty: "Medium",
+      patientAge: "",
+      patientGender: "Male",
+      chiefComplaint: "",
+      diagnosis: "",
+      management: "",
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {cases.length} patient cases
         </p>
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              data-ocid="admin.cases.open_modal_button"
+              className="gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add Case
+            </Button>
+          </DialogTrigger>
+          <DialogContent
+            className="max-w-lg max-h-[90vh] overflow-y-auto"
+            data-ocid="admin.cases.dialog"
+          >
+            <DialogHeader>
+              <DialogTitle>Add New Patient Case</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 pt-2">
+              <div>
+                <Label className="text-xs mb-1 block">Case Title *</Label>
+                <Input
+                  data-ocid="admin.cases.input"
+                  placeholder="e.g. 45 year old with chest pain"
+                  value={caseForm.title}
+                  onChange={(e) =>
+                    setCaseForm((p) => ({ ...p, title: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">Disease Name</Label>
+                <Input
+                  placeholder="e.g. Myocardial Infarction"
+                  value={caseForm.diseaseName}
+                  onChange={(e) =>
+                    setCaseForm((p) => ({ ...p, diseaseName: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs mb-1 block">Subject *</Label>
+                  <Select
+                    value={caseForm.subject}
+                    onValueChange={(v) =>
+                      setCaseForm((p) => ({ ...p, subject: v }))
+                    }
+                  >
+                    <SelectTrigger data-ocid="admin.cases.select">
+                      <SelectValue placeholder="Select subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MBBS_SUBJECT_NAMES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs mb-1 block">Difficulty</Label>
+                  <Select
+                    value={caseForm.difficulty}
+                    onValueChange={(v) =>
+                      setCaseForm((p) => ({ ...p, difficulty: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Easy">Easy</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs mb-1 block">
+                    Patient Age (years)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 45"
+                    value={caseForm.patientAge}
+                    onChange={(e) =>
+                      setCaseForm((p) => ({ ...p, patientAge: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs mb-1 block">Gender</Label>
+                  <Select
+                    value={caseForm.patientGender}
+                    onValueChange={(v) =>
+                      setCaseForm((p) => ({ ...p, patientGender: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">Chief Complaint</Label>
+                <Input
+                  placeholder="e.g. Severe chest pain for 2 hours"
+                  value={caseForm.chiefComplaint}
+                  onChange={(e) =>
+                    setCaseForm((p) => ({
+                      ...p,
+                      chiefComplaint: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">Diagnosis *</Label>
+                <Input
+                  placeholder="e.g. Acute STEMI"
+                  value={caseForm.diagnosis}
+                  onChange={(e) =>
+                    setCaseForm((p) => ({ ...p, diagnosis: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">Management</Label>
+                <Textarea
+                  placeholder="Treatment plan, medications, interventions..."
+                  value={caseForm.management}
+                  onChange={(e) =>
+                    setCaseForm((p) => ({ ...p, management: e.target.value }))
+                  }
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  data-ocid="admin.cases.submit_button"
+                  onClick={handleAddCase}
+                  className="flex-1"
+                >
+                  Save Case
+                </Button>
+                <Button
+                  data-ocid="admin.cases.cancel_button"
+                  variant="outline"
+                  onClick={() => setAddOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {isLoading ? (
@@ -1367,7 +1603,7 @@ function AlertsTab() {
             >
               <Bell className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
               <p className="font-semibold text-muted-foreground">
-                No alerts. Sab theek hai!
+                No alerts. All good!
               </p>
             </div>
           )}
@@ -1628,7 +1864,7 @@ function DatabaseTab() {
             setImportPreview(arr);
           }
         } catch {
-          toast.error("File parse karne mein error. Format check karein.");
+          toast.error("Error parsing file. Please check the format.");
         }
       };
       reader.readAsText(file);
@@ -1797,7 +2033,7 @@ function DatabaseTab() {
               className="text-xs"
               style={{ color: "rgba(150, 200, 255, 0.5)" }}
             >
-              CSV format mein import karein. Har row ek disease hogi.
+              Import in CSV format. Each row will be one disease.
             </p>
             <div style={codeStyle}>{CSV_SAMPLE}</div>
             <Button
@@ -1821,7 +2057,7 @@ function DatabaseTab() {
               className="text-xs"
               style={{ color: "rgba(150, 200, 255, 0.5)" }}
             >
-              JSON array format mein import karein.
+              Import in JSON array format.
             </p>
             <div style={codeStyle}>{JSON_SAMPLE}</div>
             <Button
@@ -1863,7 +2099,7 @@ function DatabaseTab() {
               className="text-sm font-medium"
               style={{ color: "rgba(150, 200, 255, 0.7)" }}
             >
-              {importFormat.toUpperCase()} file drag karein ya click karein
+              {importFormat.toUpperCase()} — drag file here or click to upload
             </p>
             <p
               className="text-xs mt-1"
@@ -1981,8 +2217,8 @@ function DatabaseTab() {
                 className="text-xs mt-1 leading-relaxed"
                 style={{ color: "rgba(150, 200, 255, 0.5)" }}
               >
-                ICMR (Indian Council of Medical Research) ke officially
-                published disease guidelines se data sync karein.
+                ICMR (Indian Council of Medical Research) ke officially sync
+                data from published disease guidelines.
               </p>
               <p
                 className="mt-2 text-xs"
@@ -2017,8 +2253,8 @@ function DatabaseTab() {
           }}
         >
           ℹ️ Ye feature ICMR ke publicly available research publications aur
-          guidelines ke basis par kaam karta hai. {icmrDiseaseData.length}{" "}
-          diseases available hain (Communicable, Non-Communicable, Zoonotic).
+          based on guidelines. {icmrDiseaseData.length} diseases available hain
+          (Communicable, Non-Communicable, Zoonotic).
         </div>
 
         <Button
@@ -2072,8 +2308,7 @@ function DatabaseTab() {
           </Badge>
         </div>
         <p className="text-xs" style={{ color: "rgba(150, 200, 255, 0.5)" }}>
-          Saare diseases ko JSON format mein export karein (backup ya migration
-          ke liye).
+          Export all diseases in JSON format (backup or migration ke liye).
         </p>
         <Button
           data-ocid="admin.database.export_button"
@@ -2288,11 +2523,11 @@ function ExamsAdminTab() {
 
   const handleAddQuestion = () => {
     if (!newQ.text?.trim()) {
-      toast.error("Question text zaroori hai");
+      toast.error("Question text is required");
       return;
     }
     if (newQ.type === "mcq" && newQ.options?.some((o) => !o.trim())) {
-      toast.error("Sabhi 4 options fill karein");
+      toast.error("Please fill all 4 options");
       return;
     }
     const q: AdminExamQuestion = {
@@ -2634,7 +2869,7 @@ function ExamsAdminTab() {
               style={{ color: "rgba(0,212,255,0.2)" }}
             />
             <p className="text-sm" style={{ color: "rgba(150,200,255,0.4)" }}>
-              Koi questions nahi. Add karein ya seed data use hoga.
+              No questions found. Add some or seed data will be used.
             </p>
           </div>
         ) : (
@@ -2745,7 +2980,7 @@ function ExamsAdminTab() {
             style={{ border: "1px dashed rgba(255,184,0,0.12)" }}
           >
             <p className="text-sm" style={{ color: "rgba(150,200,255,0.4)" }}>
-              Koi submissions nahi abi tak
+              No submissions yet
             </p>
           </div>
         ) : (
@@ -3400,7 +3635,7 @@ function ApplicationsTab() {
             className="font-semibold"
             style={{ color: "rgba(150, 200, 255, 0.5)" }}
           >
-            Koi applications nahi abhi tak
+            No applications yet
           </p>
           <p
             className="text-sm mt-1"
@@ -3556,11 +3791,263 @@ function CareerJobsAdminTab() {
   );
 }
 
+// ─── Certificates Tab ─────────────────────────────────────────────────────────
+function CertificatesAdminTab() {
+  const leaderboardRaw = localStorage.getItem("medsim_leaderboard") || "[]";
+  let allStudents: Array<{
+    id: string;
+    name: string;
+    points: number;
+    role: string;
+    isDemo?: boolean;
+  }> = [];
+  try {
+    allStudents = JSON.parse(leaderboardRaw);
+  } catch {
+    /* ignore */
+  }
+
+  // Include current user if has points
+  const mobile = localStorage.getItem("medsim_login_mobile") || "";
+  const savedName = localStorage.getItem("medsim_saved_name") || "";
+  const pts = Number(localStorage.getItem("medsim_leaderboard_points") || "0");
+  const currentUserId = `user_${mobile}`;
+  const currentUserInList = allStudents.some((s) => s.id === currentUserId);
+  if (!currentUserInList && pts > 0 && savedName) {
+    allStudents.push({
+      id: currentUserId,
+      name: savedName,
+      points: pts,
+      role: "Student (MBBS)",
+    });
+  }
+
+  const eligible = allStudents
+    .filter((s) => s.points > 500)
+    .sort((a, b) => b.points - a.points);
+
+  function getTitleForPoints(points: number) {
+    if (points > 5000) return "Senior Consultant";
+    if (points > 3000) return "Consultant";
+    if (points > 1500) return "Senior Resident";
+    if (points > 500) return "Junior Resident";
+    return "Medical Intern";
+  }
+
+  function generateCertificate(student: (typeof allStudents)[0]) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 850;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Background
+    ctx.fillStyle = "#0a0e1a";
+    ctx.fillRect(0, 0, 1200, 850);
+
+    // Outer gold border
+    ctx.strokeStyle = "#c9a227";
+    ctx.lineWidth = 8;
+    ctx.strokeRect(20, 20, 1160, 810);
+
+    // Inner gold border
+    ctx.strokeStyle = "#c9a22777";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(36, 36, 1128, 778);
+
+    // Decorative medical crosses in corners
+    const drawCross = (cx: number, cy: number, size: number) => {
+      ctx.fillStyle = "#c9a22733";
+      ctx.fillRect(cx - size / 6, cy - size / 2, size / 3, size);
+      ctx.fillRect(cx - size / 2, cy - size / 6, size, size / 3);
+    };
+    drawCross(80, 80, 50);
+    drawCross(1120, 80, 50);
+    drawCross(80, 770, 50);
+    drawCross(1120, 770, 50);
+
+    // MedSim header
+    ctx.fillStyle = "#c9a227";
+    ctx.font = "bold 28px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("MEDSIM MEDICAL SIMULATION PLATFORM", 600, 100);
+
+    // Decorative line
+    ctx.strokeStyle = "#c9a227";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(100, 120);
+    ctx.lineTo(1100, 120);
+    ctx.stroke();
+
+    // Title
+    ctx.fillStyle = "#e8d48a";
+    ctx.font = "bold 54px Georgia, serif";
+    ctx.letterSpacing = "4px";
+    ctx.fillText("CERTIFICATE OF CLINICAL EXCELLENCE", 600, 210);
+
+    // Subtitle line
+    ctx.strokeStyle = "#c9a22766";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(200, 240);
+    ctx.lineTo(1000, 240);
+    ctx.stroke();
+
+    // This certifies that
+    ctx.fillStyle = "#8899aa";
+    ctx.font = "italic 26px Georgia, serif";
+    ctx.letterSpacing = "1px";
+    ctx.fillText("This certifies that", 600, 310);
+
+    // Student name
+    ctx.fillStyle = "#00e5ff";
+    ctx.font = "bold italic 64px Georgia, serif";
+    ctx.letterSpacing = "2px";
+    ctx.fillText(student.name, 600, 400);
+
+    // Underline
+    const nameWidth = ctx.measureText(student.name).width;
+    ctx.strokeStyle = "#c9a22788";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(600 - nameWidth / 2, 415);
+    ctx.lineTo(600 + nameWidth / 2, 415);
+    ctx.stroke();
+
+    // Achievement text
+    ctx.fillStyle = "#aabbcc";
+    ctx.font = "24px Georgia, serif";
+    ctx.letterSpacing = "0.5px";
+    ctx.fillText(
+      "has demonstrated outstanding clinical competence in medical simulation",
+      600,
+      475,
+    );
+    ctx.fillText(
+      `with a score of ${student.points.toLocaleString()} points — Title: ${getTitleForPoints(student.points)}`,
+      600,
+      515,
+    );
+
+    // Date and Verification ID
+    const verifyId = `MEDSIM-CERT-${student.id.toUpperCase()}-${Date.now()}`;
+    const dateStr = new Date().toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    ctx.fillStyle = "#667788";
+    ctx.font = "18px Georgia, serif";
+    ctx.fillText(`Date: ${dateStr}`, 600, 600);
+
+    ctx.fillStyle = "#556677";
+    ctx.font = "16px monospace";
+    ctx.fillText(`Verification ID: ${verifyId}`, 600, 635);
+
+    // Decorative line
+    ctx.strokeStyle = "#c9a22766";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(100, 680);
+    ctx.lineTo(1100, 680);
+    ctx.stroke();
+
+    // Bottom text
+    ctx.fillStyle = "#c9a22788";
+    ctx.font = "italic 18px Georgia, serif";
+    ctx.letterSpacing = "1px";
+    ctx.fillText("Digitally Verified by MedSim System", 600, 720);
+
+    ctx.font = "14px Georgia, serif";
+    ctx.fillStyle = "#445566";
+    ctx.fillText(
+      "MedSim India — Medical Simulation Platform — medsim.edu",
+      600,
+      760,
+    );
+
+    // Download
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `certificate_${student.name.replace(/\s+/g, "_")}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="font-display text-xl font-bold text-foreground">
+          Certificates
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Generate clinical excellence certificates for top performers (score
+          &gt; 500 points)
+        </p>
+      </div>
+
+      {eligible.length === 0 ? (
+        <div
+          className="rounded-xl border border-dashed border-border p-12 text-center"
+          data-ocid="certificates.empty_state"
+        >
+          <p className="text-muted-foreground">
+            No students with score above 500 yet.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Students must complete ER Simulations to earn points.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {eligible.map((student, idx) => (
+            <div
+              key={student.id}
+              data-ocid={`certificates.item.${idx + 1}`}
+              className="flex items-center justify-between rounded-xl border border-border bg-card/50 px-4 py-3 gap-4"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-yellow-500/10 border border-yellow-500/20">
+                  <Award className="h-5 w-5 text-yellow-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground truncate">
+                    {student.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {student.role} • {student.points.toLocaleString()} pts •{" "}
+                    {getTitleForPoints(student.points)}
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                data-ocid={`certificates.generate_button.${idx + 1}`}
+                onClick={() => generateCertificate(student)}
+                className="flex-shrink-0 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 hover:bg-yellow-500/20"
+              >
+                <Award className="h-3.5 w-3.5 mr-1.5" />
+                Generate
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Admin Page ──────────────────────────────────────────────
 
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
-  const unreadAppNotifCount = (() => {
+  const [unreadAppNotifCount, setUnreadAppNotifCount] = useState<number>(() => {
     try {
       const notifs: Array<{ read: boolean }> = JSON.parse(
         localStorage.getItem("medsim_admin_notifications") || "[]",
@@ -3569,7 +4056,27 @@ export function AdminPage() {
     } catch {
       return 0;
     }
-  })();
+  });
+
+  // Refresh badge count when switching tabs (so it clears after visiting Applications tab)
+  const handleTabChange = (tab: AdminTab) => {
+    const wasOnApplications = activeTab === "applications";
+    setActiveTab(tab);
+    if (tab === "applications") {
+      // Will be cleared by ApplicationsTab useEffect; reset badge immediately
+      setUnreadAppNotifCount(0);
+    } else if (!wasOnApplications) {
+      // Only re-read if we weren't just on applications (to avoid restoring cleared count)
+      try {
+        const notifs: Array<{ read: boolean }> = JSON.parse(
+          localStorage.getItem("medsim_admin_notifications") || "[]",
+        );
+        setUnreadAppNotifCount(notifs.filter((n) => !n.read).length);
+      } catch {
+        /* ignore */
+      }
+    }
+  };
 
   const tabContent: Record<AdminTab, React.ReactNode> = {
     dashboard: <DashboardTab />,
@@ -3582,6 +4089,7 @@ export function AdminPage() {
     exams: <ExamsAdminTab />,
     applications: <ApplicationsTab />,
     careers: <CareerJobsAdminTab />,
+    certificates: <CertificatesAdminTab />,
   };
 
   return (
@@ -3603,7 +4111,7 @@ export function AdminPage() {
                 type="button"
                 key={tab.id}
                 data-ocid={`admin.nav.${tab.id}_tab`}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={`relative flex flex-shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                   activeTab === tab.id
                     ? "bg-card text-foreground shadow-xs"

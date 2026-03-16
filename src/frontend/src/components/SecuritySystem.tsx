@@ -1,5 +1,5 @@
 import { AlertTriangle, Eye, Shield } from "lucide-react";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useLogSecurityEvent } from "../hooks/useQueries";
 
@@ -13,10 +13,14 @@ export function SecuritySystem({ enabled = true }: SecuritySystemProps) {
   const { identity } = useInternetIdentity();
   const logEvent = useLogSecurityEvent();
 
+  const logEventRef = useRef(logEvent);
+  useEffect(() => {
+    logEventRef.current = logEvent;
+  });
   const logSecurityEvent = useCallback(
     (eventType: string, details: string) => {
       const studentId = identity?.getPrincipal().toString();
-      logEvent.mutate({
+      logEventRef.current.mutate({
         id: crypto.randomUUID(),
         eventType,
         details,
@@ -25,7 +29,7 @@ export function SecuritySystem({ enabled = true }: SecuritySystemProps) {
         timestamp: BigInt(Date.now()) * BigInt(1_000_000),
       });
     },
-    [identity, logEvent],
+    [identity],
   );
 
   useEffect(() => {

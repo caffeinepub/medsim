@@ -6,6 +6,7 @@ import {
   Activity,
   AlertTriangle,
   BellOff,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -681,18 +682,25 @@ function EcgWaveform({ hr, isCritical, color }: EcgProps) {
       for (let b = 0; b < totalBeats; b++) {
         ctx.beginPath();
         let started = false;
+        let prevScreenX = -1;
         for (const [bx, by] of beat) {
           // Position in the buffer (0 .. W)
           const bufX = b * beatWidthPx + bx - s.scrollX;
           // Wrap into [0, W)
           const screenX = ((bufX % W) + W) % W;
 
-          if (!started) {
+          // If X jumps backwards significantly, it's a wrap-around -- start new path
+          if (!started || screenX < prevScreenX - beatWidthPx * 0.5) {
+            if (started) {
+              ctx.stroke();
+              ctx.beginPath();
+            }
             ctx.moveTo(screenX, by);
             started = true;
           } else {
             ctx.lineTo(screenX, by);
           }
+          prevScreenX = screenX;
         }
         ctx.stroke();
       }
@@ -900,16 +908,24 @@ export function IcuSimulatorPage() {
     SCENARIOS_BY_MODE.icu[0].id,
   );
   const [phase, setPhase] = useState<VitalPhase>("initial");
+  const phaseRef = useRef<VitalPhase>("initial");
   const [vitals, setVitals] = useState<Vitals>(
     SCENARIOS_BY_MODE.icu[0].phases.initial,
   );
   const [practiceMode, setPracticeMode] = useState(true);
   const [alarmSilenced, setAlarmSilenced] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const [showConnectBadge, setShowConnectBadge] = useState(false);
   const [observerStepIndex, setObserverStepIndex] = useState(0);
   const [phaseProgress, setPhaseProgress] = useState(0); // 0-100
   const [running, setRunning] = useState(true);
+  // Pause auto-progression in Observer mode
+  useEffect(() => {
+    setRunning(practiceMode);
+  }, [practiceMode]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const phaseTimerRef = useRef(0);
   // Single source-of-truth HR for ECG + vitals grid
@@ -920,10 +936,16 @@ export function IcuSimulatorPage() {
     scenarios.find((s) => s.id === selectedScenarioId) ?? scenarios[0];
 
   // Reset on mode/scenario change
+  // Keep phaseRef in sync with phase state so interval can read it without stale closure
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
   useEffect(() => {
     const s = SCENARIOS_BY_MODE[mode];
     setSelectedScenarioId(s[0].id);
     setPhase("initial");
+    phaseRef.current = "initial";
     setVitals(s[0].phases.initial);
     setPhaseProgress(0);
     phaseTimerRef.current = 0;
@@ -949,6 +971,9 @@ export function IcuSimulatorPage() {
     if (!running) return;
     intervalRef.current = setInterval(() => {
       setPhaseProgress((prev) => {
+        // Check if we are already on stable (last) phase — freeze progress bar
+        if (phaseRef.current === "stable") return 100;
+
         const next = prev + 5; // 5% every 2s → full phase in ~40s
         if (next >= 100) {
           // Advance phase
@@ -960,8 +985,11 @@ export function IcuSimulatorPage() {
               "stable",
             ];
             const idx = order.indexOf(current);
-            const nextPhase = idx < order.length - 1 ? order[idx + 1] : current;
-            return nextPhase;
+            if (idx >= order.length - 1) {
+              // Already at final stable phase — do not advance
+              return current;
+            }
+            return order[idx + 1];
           });
           return 0;
         }
@@ -1041,7 +1069,8 @@ export function IcuSimulatorPage() {
       messages[action] ??
         `✓ Action "${action}" performed. Monitor patient response closely.`,
     );
-    setTimeout(() => setActionFeedback(null), 6000);
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    feedbackTimerRef.current = setTimeout(() => setActionFeedback(null), 6000);
 
     // Simulate patient response
     if (action === "Adjust Ventilator" || action === "Administer Drug") {
@@ -1673,11 +1702,11 @@ export function IcuSimulatorPage() {
                     Select an intervention:
                   </p>
                   <div className="grid grid-cols-2 gap-1.5">
-                    {PRACTICE_ACTIONS.map((action) => (
+                    {PRACTICE_ACTIONS.map((action, actionIdx) => (
                       <button
                         key={action}
                         type="button"
-                        data-ocid="icu.action.button"
+                        data-ocid={`icu.action.button.${actionIdx + 1}`}
                         onClick={() => handleAction(action)}
                         className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium text-left transition-all hover:scale-[1.03] active:scale-[0.97]"
                         style={{
@@ -1873,6 +1902,47 @@ export function IcuSimulatorPage() {
             </div>
           ))}
         </div>
+
+        {/* ── Scenario Complete Banner ── */}
+        {phase === "stable" && phaseProgress >= 100 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl p-4 flex flex-col items-center gap-3 text-center"
+            style={{
+              background: "oklch(0.65 0.18 155 / 0.1)",
+              border: "1.5px solid oklch(0.65 0.18 155 / 0.5)",
+            }}
+          >
+            <CheckCircle2
+              className="h-8 w-8"
+              style={{ color: "oklch(0.65 0.18 155)" }}
+            />
+            <div>
+              <p
+                className="font-bold text-sm"
+                style={{ color: "oklch(0.65 0.18 155)" }}
+              >
+                Scenario Complete!
+              </p>
+              <p className="text-xs opacity-60 mt-0.5">
+                Patient stabilised. Great work!
+              </p>
+            </div>
+            <Button
+              onClick={resetScenario}
+              className="mt-1"
+              style={{
+                background: "oklch(0.65 0.18 155)",
+                color: "oklch(0.12 0.04 235)",
+                fontWeight: 700,
+              }}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Restart Scenario
+            </Button>
+          </motion.div>
+        )}
 
         {/* ── Footer attribution ── */}
         <footer className="text-center py-4">

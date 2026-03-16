@@ -257,6 +257,39 @@ export function PermissionGuideModal({
                 )}
               </div>
 
+              {/* Location reason explanation */}
+              {(permissionType === "location" || permissionType === "both") && (
+                <div
+                  className="mb-4 flex items-start gap-3 rounded-xl p-3"
+                  style={{
+                    background: "rgba(0,212,255,0.06)",
+                    border: "1px solid rgba(0,212,255,0.18)",
+                  }}
+                >
+                  <MapPin
+                    className="mt-0.5 h-4 w-4 flex-shrink-0"
+                    style={{ color: "#00d4ff" }}
+                  />
+                  <div>
+                    <p
+                      className="text-xs font-bold mb-0.5"
+                      style={{ color: "#00d4ff" }}
+                    >
+                      Location kyun zaruri hai?
+                    </p>
+                    <p
+                      className="text-xs leading-relaxed"
+                      style={{ color: "rgba(200,230,255,0.75)" }}
+                    >
+                      Location ka use aapke region ke hisab se nearby hospitals,
+                      exam centers, aur career opportunities dikhane ke liye
+                      hota hai — taaki aapko sabse relevant opportunities
+                      milein.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Browser guide */}
               <div
                 className="mb-5 rounded-xl p-4"

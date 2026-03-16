@@ -164,8 +164,7 @@ const JOB_TIERS: {
     minScore: 0,
     maxScore: 30,
     tier: "Building Foundation",
-    description:
-      "Aapko aur practice ki zarurat hai. Daily exercise mode try karein.",
+    description: "You need more practice. Try daily exercise mode.",
     color: "#ff3355",
     icon: BookOpen,
     jobs: [
@@ -196,7 +195,7 @@ const JOB_TIERS: {
     minScore: 30,
     maxScore: 50,
     tier: "Junior Clinician Track",
-    description: "Junior roles ke liye ready ho rahe hain. Keep improving!",
+    description: "Getting ready for junior roles. Keep improving!",
     color: "#ffb800",
     icon: Briefcase,
     jobs: [
@@ -234,7 +233,7 @@ const JOB_TIERS: {
     minScore: 50,
     maxScore: 70,
     tier: "Clinical Resident Track",
-    description: "Residency ke liye strong candidate. Specialty choose karein!",
+    description: "Strong candidate for residency. Choose your specialty!",
     color: "#00d4ff",
     icon: Activity,
     jobs: [
@@ -429,6 +428,7 @@ function CameraModal({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [phase, setPhase] = useState<"live" | "preview">("live");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -456,9 +456,7 @@ function CameraModal({
         };
       }
     } catch {
-      setCameraError(
-        "Camera ka access nahi mila. Browser settings mein allow karein.",
-      );
+      setCameraError("Camera access denied. Please allow in browser settings.");
       setIsCameraLoading(false);
     }
   }, []);
@@ -514,6 +512,22 @@ function CameraModal({
     onPhotoSaved(capturedImage);
     toast.success("Photo save ho gayi!");
     onClose();
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (dataUrl) {
+        localStorage.setItem(PHOTO_STORAGE_KEY, dataUrl);
+        onPhotoSaved(dataUrl);
+        toast.success("Photo save ho gayi!");
+        onClose();
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleClose = () => {
@@ -591,6 +605,26 @@ function CameraModal({
                       >
                         {cameraError}
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="mt-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:opacity-80"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #0099cc, #00d4ff)",
+                          color: "#000",
+                        }}
+                      >
+                        Upload from Gallery
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                      />
                     </div>
                   ) : isCameraLoading ? (
                     <div className="flex h-full w-full items-center justify-center">
@@ -739,7 +773,7 @@ function CameraModal({
               className="text-center font-mono text-xs"
               style={{ color: "rgba(150, 200, 255, 0.4)" }}
             >
-              Camera ke saamne dekho aur shutter dabao
+              Look at the camera and press the shutter
             </p>
           )}
         </div>
@@ -782,9 +816,10 @@ interface ExtendedProfile {
   batch: string;
   collegeName: string;
   rollNumber: string;
+  bloodGroup: string;
 }
 
-// Score includes photo as a field (11 total)
+// Score includes photo as a field (12 total)
 function calcCompletion(
   form: ExtendedProfile,
   hasPhoto: boolean,
@@ -800,6 +835,7 @@ function calcCompletion(
     form.batch,
     form.collegeName,
     form.rollNumber,
+    form.bloodGroup,
     hasPhoto ? "photo" : null,
   ];
   const filled = fields.filter((f) => f && f.toString().trim() !== "").length;
@@ -872,6 +908,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
     batch: localStorage.getItem("medsim_batch") || "",
     collegeName: localStorage.getItem("medsim_college") || "",
     rollNumber: localStorage.getItem("medsim_rollNumber") || "",
+    bloodGroup: localStorage.getItem("medsim_blood_group") || "",
   });
 
   // Populate form when profile loads
@@ -897,6 +934,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
       batch: "medsim_batch",
       collegeName: "medsim_college",
       rollNumber: "medsim_rollNumber",
+      bloodGroup: "medsim_blood_group",
     };
     if (lsFields[field]) {
       localStorage.setItem(lsFields[field], value);
@@ -906,11 +944,11 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.mobile || !form.role) {
-      toast.error("Name, mobile aur role zaroori hai");
+      toast.error("Name, mobile, and role are required");
       return;
     }
     if (form.aadhaar && !/^\d{12}$/.test(form.aadhaar)) {
-      toast.error("Aadhaar 12 digits ka hona chahiye");
+      toast.error("Aadhaar must be 12 digits");
       return;
     }
 
@@ -928,10 +966,12 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
 
     try {
       await saveProfile.mutateAsync(updatedProfile);
+      // Save name to localStorage for profile score calculation
+      localStorage.setItem("medsim_saved_name", form.name);
       toast.success("Profile update ho gayi!");
       setIsEditing(false);
     } catch {
-      toast.error("Profile save nahi ho saki. Dobara try karein.");
+      toast.error("Could not save profile. Please try again.");
     }
   };
 
@@ -989,7 +1029,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
             className="font-mono text-sm"
             style={{ color: "rgba(0, 212, 255, 0.5)" }}
           >
-            Profile load ho rahi hai...
+            Loading profile...
           </p>
         </div>
       </div>
@@ -1162,37 +1202,26 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                     variant="ghost"
                     onClick={() => {
                       setIsEditing(false);
-                      if (profile) {
-                        setForm((prev) => ({
-                          ...prev,
-                          name: profile.name || "",
-                          mobile: profile.mobile || "",
-                          role: profile.role || "",
-                        }));
-                      }
+                      setForm((prev) => ({
+                        ...prev,
+                        name: profile?.name || "",
+                        mobile: profile?.mobile || "",
+                        role: profile?.role || "",
+                        aadhaar: localStorage.getItem("medsim_aadhaar") || "",
+                        address: localStorage.getItem("medsim_address") || "",
+                        zohoMail: localStorage.getItem("medsim_zohoMail") || "",
+                        gmail: localStorage.getItem("medsim_gmail") || "",
+                        batch: localStorage.getItem("medsim_batch") || "",
+                        collegeName:
+                          localStorage.getItem("medsim_college") || "",
+                        rollNumber:
+                          localStorage.getItem("medsim_rollNumber") || "",
+                      }));
                     }}
                     className="h-10 gap-2 rounded-xl border-0 font-semibold"
                     style={{ color: "rgba(180, 210, 255, 0.5)" }}
                   >
                     Cancel
-                  </Button>
-                  <Button
-                    data-ocid="profile.save_button"
-                    onClick={handleSave}
-                    disabled={saveProfile.isPending}
-                    className="h-10 gap-2 rounded-xl border-0 font-semibold"
-                    style={{
-                      background: "linear-gradient(135deg, #0099cc, #00d4ff)",
-                      color: "#000",
-                      boxShadow: "0 4px 16px rgba(0, 212, 255, 0.4)",
-                    }}
-                  >
-                    {saveProfile.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    {saveProfile.isPending ? "Saving..." : "Save Changes"}
                   </Button>
                 </>
               )}
@@ -1300,7 +1329,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                   <MonitorField label="Address" icon={MapPin}>
                     <Textarea
                       data-ocid="profile.address_textarea"
-                      placeholder="Ghar ka pata, Sheher, State — 400001"
+                      placeholder="Home address, City, State — 400001"
                       value={form.address}
                       onChange={(e) => updateField("address")(e.target.value)}
                       disabled={!isEditing}
@@ -1407,7 +1436,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                       className="h-11 rounded-xl border-0 focus-visible:ring-0"
                       style={isEditing ? inputStyle : readonlyStyle}
                     >
-                      <SelectValue placeholder="Batch select karein" />
+                      <SelectValue placeholder="Select batch" />
                     </SelectTrigger>
                     <SelectContent
                       style={{
@@ -1451,6 +1480,35 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                   />
                 </MonitorField>
 
+                <MonitorField label="Blood Group" icon={Shield}>
+                  <Select
+                    value={form.bloodGroup}
+                    onValueChange={(v) => updateField("bloodGroup")(v)}
+                  >
+                    <SelectTrigger
+                      data-ocid="profile.blood_group.select"
+                      className="rounded-xl border-0 text-sm"
+                      style={{
+                        background: "rgba(0, 10, 25, 0.6)",
+                        border: "1px solid rgba(0,212,255,0.15)",
+                        color: form.bloodGroup
+                          ? "rgba(200,230,255,0.9)"
+                          : "rgba(120,170,220,0.5)",
+                      }}
+                    >
+                      <SelectValue placeholder="Select blood group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
+                        (bg) => (
+                          <SelectItem key={bg} value={bg}>
+                            {bg}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </MonitorField>
                 {/* MBBS Completion checkbox */}
                 <div className="sm:col-span-2">
                   {/* biome-ignore lint/a11y/useKeyWithClickEvents: wrapper click delegates to checkbox */}
@@ -1508,8 +1566,8 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                         style={{ color: "rgba(100, 150, 200, 0.45)" }}
                       >
                         {mbbsComplete
-                          ? "✓ MBBS complete hai — senior job positions ke liye eligible"
-                          : "MBBS degree complete hone par tick karein (career opportunities unlock hongi)"}
+                          ? "✓ MBBS complete — eligible for senior job positions"
+                          : "Check when MBBS degree is complete (career opportunities will unlock)"}
                       </p>
                     </div>
                   </div>
@@ -1543,7 +1601,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                   ) : (
                     <>
                       <Save className="mr-2 h-5 w-5" />
-                      Save Changes
+                      Save All Changes
                     </>
                   )}
                 </Button>
@@ -1671,6 +1729,19 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
           </div>
 
           {/* ── Student ID Card Section ── */}
+          {form.name && !form.batch && (
+            <div
+              className="rounded-2xl p-4 text-center"
+              style={{
+                background: "rgba(255,184,0,0.08)",
+                border: "1px solid rgba(255,184,0,0.25)",
+              }}
+            >
+              <p className="text-sm" style={{ color: "rgba(255,184,0,0.9)" }}>
+                Fill your Batch for the ID Card (e.g., 2020-2026)
+              </p>
+            </div>
+          )}
           {form.name &&
             form.batch &&
             (() => {

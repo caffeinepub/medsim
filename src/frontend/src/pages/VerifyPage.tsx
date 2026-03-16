@@ -100,8 +100,7 @@ export function VerifyPage({ principalId }: VerifyPageProps) {
   const displayName = profile?.name || qrData?.name || "Unknown Student";
   const displayBatch = qrData?.batch || "N/A";
   const displayRole = profile?.role || qrData?.role || "MBBS Student";
-  const displaySystemId =
-    qrData?.systemId || `MED-${new Date().getFullYear()}-00000`;
+  const displaySystemId = qrData?.systemId || "N/A";
 
   return (
     <div
@@ -261,9 +260,6 @@ export function VerifyPage({ principalId }: VerifyPageProps) {
                 <InfoRow label="System ID" value={displaySystemId} mono />
                 <InfoRow label="MBBS Batch" value={displayBatch} />
                 <InfoRow label="Role" value={displayRole} />
-                {profile?.mobile && (
-                  <InfoRow label="Mobile" value={`+91 ${profile.mobile}`} />
-                )}
               </div>
 
               {/* Divider */}

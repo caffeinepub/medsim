@@ -226,7 +226,10 @@ export function MyApplicationsPage({ onNavigate }: MyApplicationsPageProps) {
                     a.status === "pending_exam" ||
                     (!!a.submittedAt &&
                       Date.now() - new Date(a.submittedAt).getTime() >
-                        24 * 60 * 60 * 1000),
+                        24 * 60 * 60 * 1000 &&
+                      a.status !== "exam_submitted" &&
+                      a.status !== "pass" &&
+                      a.status !== "fail"),
                 ).length,
                 color: "#00e676",
                 icon: FileQuestion,
@@ -288,7 +291,7 @@ export function MyApplicationsPage({ onNavigate }: MyApplicationsPageProps) {
                     className="font-display text-lg font-bold"
                     style={{ color: "rgba(150, 200, 255, 0.7)" }}
                   >
-                    Koi application nahi
+                    No applications found
                   </p>
                   <p
                     className="mt-1 text-sm"
@@ -308,7 +311,7 @@ export function MyApplicationsPage({ onNavigate }: MyApplicationsPageProps) {
                     }}
                   >
                     <TrendingUp className="h-4 w-4" />
-                    Opportunities Explore Karein
+                    Explore Opportunities
                   </Button>
                 )}
               </motion.div>

@@ -1,27 +1,26 @@
 import { Toaster } from "@/components/ui/sonner";
-import { Stethoscope } from "lucide-react";
-import type React from "react";
+import React from "react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AIAssistantFloat } from "./components/AIAssistantFloat";
 import { AppLayout } from "./components/AppLayout";
 import { CameraPermissionScreen } from "./components/CameraPermissionScreen";
+import { MedicalSpinner } from "./components/MedicalSpinner";
 import { ProfileIncompleteBanner } from "./components/ProfileIncompleteBanner";
 import { SecuritySystem } from "./components/SecuritySystem";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
-import {
-  useCallerUserProfile,
-  useIsAdmin,
-  useMyPerformanceStats,
-} from "./hooks/useQueries";
+import { useCallerUserProfile, useIsAdmin } from "./hooks/useQueries";
 import { useSeedDiseases } from "./hooks/useSeedDiseases";
 import { AIAssistantPage } from "./pages/AIAssistantPage";
 import { AdminPage } from "./pages/AdminPage";
 import { CareerPage } from "./pages/CareerPage";
 import { CustomPatientPage } from "./pages/CustomPatientPage";
+import { ERSimulationPage } from "./pages/ERSimulationPage";
 import { ExamPage } from "./pages/ExamPage";
 import { ExercisePage } from "./pages/ExercisePage";
 import { HomePage } from "./pages/HomePage";
 import { IcuSimulatorPage } from "./pages/IcuSimulatorPage";
+import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyApplicationsPage } from "./pages/MyApplicationsPage";
 import { NEETPGQuizPage } from "./pages/NEETPGQuizPage";
@@ -43,6 +42,8 @@ type AppPage =
   | "exam"
   | "my-applications"
   | "icu-simulator"
+  | "er-simulation"
+  | "leaderboard"
   | "verify"
   | "share-app";
 
@@ -79,43 +80,32 @@ function isLoginWithin30Days(): boolean {
 
 function calcProfileScore(): number {
   try {
-    const keys = [
+    const lsKeys = [
       "medsim_profile_photo",
-      "medsim_profile_name",
-      "medsim_profile_mobile",
-      "medsim_profile_batch",
-      "medsim_profile_role",
-      "medsim_profile_college",
-      "medsim_profile_rollnumber",
-      "medsim_profile_aadhaar",
-      "medsim_profile_address",
+      "medsim_batch",
+      "medsim_college",
+      "medsim_rollNumber",
+      "medsim_aadhaar",
+      "medsim_address",
+      "medsim_zohoMail",
+      "medsim_gmail",
+      "medsim_blood_group",
     ];
-    const filled = keys.filter((k) => {
+    const filledLS = lsKeys.filter((k) => {
       const val = localStorage.getItem(k);
       return val && val.trim() !== "" && val !== "null";
     }).length;
-    return Math.round((filled / keys.length) * 100);
+    const loginMobile = localStorage.getItem("medsim_login_mobile");
+    const hasName = !!localStorage.getItem("medsim_saved_name");
+    const hasMobile = !!(loginMobile && loginMobile.trim() !== "");
+    const bonusFields = [hasName, hasMobile].filter(Boolean).length;
+    const total = lsKeys.length + 2;
+    return Math.round(((filledLS + bonusFields) / total) * 100);
   } catch {
     return 0;
   }
 }
 
-function LoadingScreen() {
-  return (
-    <div className="medical-gradient flex min-h-screen flex-col items-center justify-center gap-4">
-      <div className="relative">
-        <div className="h-16 w-16 rounded-full border-4 border-white/20 border-t-white animate-spin" />
-        <Stethoscope className="absolute left-1/2 top-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 text-white" />
-      </div>
-      <div className="text-center">
-        <h1 className="font-display text-2xl font-black text-white">MedSim</h1>
-        <p className="mt-1 text-sm text-white/70">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
-// Inner component that has access to actor (for seeding)
 function AppWithSeed({
   currentPage,
   handleNavigate,
@@ -132,10 +122,32 @@ function AppWithSeed({
   children: React.ReactNode;
 }) {
   useSeedDiseases();
-  const { data: performanceStats } = useMyPerformanceStats();
 
   const profileScore = calcProfileScore();
   const showBanner = profileScore < 100;
+
+  React.useEffect(() => {
+    const ts = localStorage.getItem("medsim_login_timestamp");
+    if (!ts) return;
+    const loginTime = Number.parseInt(ts, 10);
+    if (Number.isNaN(loginTime)) return;
+    const daysLeft = Math.ceil(
+      (loginTime + 30 * 24 * 60 * 60 * 1000 - Date.now()) /
+        (24 * 60 * 60 * 1000),
+    );
+    if (daysLeft <= 5 && daysLeft > 0) {
+      const reminderKey = `medsim_expiry_reminder_${daysLeft}`;
+      if (!localStorage.getItem(reminderKey)) {
+        localStorage.setItem(reminderKey, "1");
+        setTimeout(() => {
+          toast.warning(
+            `Session expiry reminder: Your login expires in ${daysLeft} day(s). Please login again.`,
+            { duration: 8000 },
+          );
+        }, 2000);
+      }
+    }
+  }, []);
 
   return (
     <>
@@ -159,26 +171,22 @@ function AppWithSeed({
       </AppLayout>
       <AIAssistantFloat onNavigate={handleNavigate} />
       <Toaster richColors position="top-right" />
-      {/* Suppress unused variable warning */}
-      {performanceStats && null}
     </>
   );
 }
 
 function AppMain() {
-  const ADMIN_MOBILE = "8209918491";
+  const ADMIN_MOBILE = atob("ODIwOTkxODQ5MQ==");
 
   const { identity, isInitializing } = useInternetIdentity();
   const { isLoading: profileLoading } = useCallerUserProfile();
   const { data: isAdminBackend = false } = useIsAdmin();
 
-  // Admin access is granted if the stored login mobile matches the admin number
   const storedMobile = localStorage.getItem("medsim_login_mobile") ?? "";
   const isAdmin = isAdminBackend || storedMobile === ADMIN_MOBILE;
 
   const [appState, setAppState] = useState<AppState>("loading");
   const [currentPage, setCurrentPage] = useState<AppPage>("home");
-  // Navigation history stack for Back button
   const [pageHistory, setPageHistory] = useState<AppPage[]>([]);
 
   useEffect(() => {
@@ -207,7 +215,6 @@ function AppMain() {
     setAppState("app");
   }, [isInitializing, identity, profileLoading]);
 
-  // If within-30-days but identity still null after 3 seconds, show login
   useEffect(() => {
     if (!isInitializing && !identity && isLoginWithin30Days()) {
       const timer = setTimeout(() => {
@@ -220,7 +227,6 @@ function AppMain() {
   }, [isInitializing, identity]);
 
   const handleNavigate = (page: string) => {
-    // Push current page to history before switching
     setPageHistory((prev) => [...prev, currentPage]);
     setCurrentPage(page as AppPage);
   };
@@ -241,7 +247,6 @@ function AppMain() {
   };
 
   const handleLoginSuccess = () => {
-    // Save persistent login timestamp (30 days)
     localStorage.setItem("medsim_login_timestamp", Date.now().toString());
     setAppState("loading");
   };
@@ -259,16 +264,16 @@ function AppMain() {
     exam: <ExamPage onNavigate={handleNavigate} />,
     "my-applications": <MyApplicationsPage onNavigate={handleNavigate} />,
     "icu-simulator": <IcuSimulatorPage />,
+    "er-simulation": <ERSimulationPage />,
+    leaderboard: <LeaderboardPage onNavigate={handleNavigate} />,
     verify: <VerifyPage principalId="" />,
     "share-app": <ShareAppPage />,
   };
 
-  // Loading
   if (appState === "loading") {
-    return <LoadingScreen />;
+    return <MedicalSpinner />;
   }
 
-  // Not authenticated
   if (appState === "login") {
     return (
       <>
@@ -278,7 +283,6 @@ function AppMain() {
     );
   }
 
-  // Camera permission screen (first time only)
   if (appState === "camera-permission") {
     return (
       <>
@@ -288,7 +292,6 @@ function AppMain() {
     );
   }
 
-  // Full app
   return (
     <AppWithSeed
       currentPage={currentPage}
@@ -303,7 +306,6 @@ function AppMain() {
 }
 
 export default function App() {
-  // Check for verify hash before rendering the main app (public page, no login needed)
   const verifyPrincipalId = getVerifyPrincipalFromHash();
   if (verifyPrincipalId) {
     return (

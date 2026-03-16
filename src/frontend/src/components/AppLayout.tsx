@@ -18,9 +18,11 @@ import {
   Share2,
   Shield,
   Stethoscope,
+  Trophy,
   User,
   UserCircle,
   Users,
+  Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
@@ -30,6 +32,7 @@ import {
   useCallerUserProfile,
   useUnresolvedAdminAlerts,
 } from "../hooks/useQueries";
+import { OfflineIndicator } from "./OfflineIndicator";
 
 type Page =
   | "home"
@@ -44,6 +47,8 @@ type Page =
   | "exam"
   | "my-applications"
   | "icu-simulator"
+  | "er-simulation"
+  | "leaderboard"
   | "verify"
   | "share-app";
 
@@ -60,7 +65,7 @@ interface AppLayoutProps {
 interface NavItem {
   id: Page;
   label: string;
-  hinglish: string;
+  sublabel: string;
   icon: React.FC<{ className?: string }>;
   adminOnly?: boolean;
 }
@@ -117,68 +122,80 @@ const navItems: NavItem[] = [
   {
     id: "profile",
     label: "My Profile",
-    hinglish: "Mera Profile",
+    sublabel: "My Profile",
     icon: User,
   },
-  { id: "home", label: "Home", hinglish: "Ghar", icon: Home },
+  { id: "home", label: "Home", sublabel: "Dashboard", icon: Home },
   {
     id: "exercise",
     label: "Exercise Mode",
-    hinglish: "Clinical Cases",
+    sublabel: "Clinical Cases",
     icon: BookOpen,
   },
   {
     id: "neet-pg" as Page,
     label: "NEET PG Practice",
-    hinglish: "MCQ Bank",
+    sublabel: "Question Bank",
     icon: GraduationCap,
   },
   {
     id: "icu-simulator" as Page,
     label: "ICU Simulator",
-    hinglish: "ICU Practice",
+    sublabel: "Intensive Care Unit",
     icon: Activity,
+  },
+  {
+    id: "er-simulation" as Page,
+    label: "ER Simulation",
+    sublabel: "Emergency Medicine",
+    icon: Zap,
   },
   {
     id: "custom-patient",
     label: "Custom Patient",
-    hinglish: "Apna Patient",
+    sublabel: "Custom Simulator",
     icon: Users,
+  },
+  {
+    id: "leaderboard" as Page,
+    label: "Leaderboard",
+    sublabel: "Rankings",
+    icon: Trophy,
   },
   {
     id: "performance",
     label: "Performance",
-    hinglish: "Results Dekho",
+    sublabel: "Analytics",
     icon: BarChart3,
   },
   {
     id: "career",
     label: "Career",
-    hinglish: "Naukri Dekho",
+    sublabel: "Opportunities",
     icon: Briefcase,
   },
   {
     id: "my-applications",
     label: "My Applications",
-    hinglish: "Meri Apply",
+    sublabel: "Applications",
     icon: ClipboardList,
   },
   {
     id: "ai-assistant",
     label: "AI Assistant",
-    hinglish: "AI Sahayta",
+    sublabel: "Clinical AI",
     icon: Brain,
   },
   {
     id: "share-app" as Page,
     label: "Share App",
-    hinglish: "Doston Ko Bhejo",
+    sublabel: "Refer & Install",
     icon: Share2,
   },
   {
     id: "admin",
     label: "Admin Panel",
-    hinglish: "Admin",
+    sublabel: "Administration",
     icon: Shield,
     adminOnly: true,
   },
@@ -207,14 +224,12 @@ export function AppLayout({
   };
 
   const handleLogout = () => {
-    // Clear persistent login data on manual logout
     localStorage.removeItem("medsim_login_timestamp");
     localStorage.removeItem("medsim_login_mobile");
     clear();
   };
 
   const handleHeaderButtonClick = () => {
-    // Bell icon: if admin alerts exist, go to admin panel; otherwise go to profile
     if (unreadAlerts > 0 && isAdmin) {
       handleNavigate("admin");
     } else {
@@ -293,7 +308,7 @@ export function AppLayout({
       )}
 
       {/* Nav */}
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -311,7 +326,7 @@ export function AppLayout({
                     ? "nav.share_app_link"
                     : undefined
               }
-              className="group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium transition-all"
+              className="group flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all"
               style={
                 isActive
                   ? {
@@ -335,7 +350,7 @@ export function AppLayout({
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
               <span className="flex-1 text-base">{item.label}</span>
-              <span className="text-xs opacity-60">{item.hinglish}</span>
+              <span className="text-xs opacity-60">{item.sublabel}</span>
               {hasAlert && (
                 <Badge
                   variant="destructive"
@@ -406,7 +421,7 @@ export function AppLayout({
         <SidebarContent />
       </aside>
 
-      {/* Mobile sidebar overlay — initial={false} prevents flicker on mount */}
+      {/* Mobile sidebar overlay */}
       <AnimatePresence initial={false}>
         {sidebarOpen && (
           <>
@@ -451,13 +466,14 @@ export function AppLayout({
             type="button"
             data-ocid="nav.hamburger_button"
             onClick={() => setSidebarOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg"
+            className="flex h-10 w-10 items-center justify-center rounded-lg"
             style={{ color: "oklch(0.88 0.015 215)" }}
           >
             <Menu className="h-5 w-5" />
           </button>
 
           <div className="flex items-center gap-2">
+            <OfflineIndicator />
             <Stethoscope
               className="h-5 w-5"
               style={{ color: "oklch(0.65 0.16 196)" }}
@@ -475,7 +491,7 @@ export function AppLayout({
             type="button"
             data-ocid="nav.header_action_button"
             onClick={handleHeaderButtonClick}
-            className="flex h-9 w-9 items-center justify-center rounded-lg"
+            className="flex h-10 w-10 items-center justify-center rounded-lg"
             style={{ color: "oklch(0.88 0.015 215)" }}
           >
             {unreadAlerts > 0 && isAdmin ? (
@@ -495,10 +511,10 @@ export function AppLayout({
         {banner}
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto pb-4">{children}</main>
       </div>
 
-      {/* Back navigation button — top-right, visible on non-home pages */}
+      {/* Back navigation button */}
       <BackButton
         currentPage={currentPage}
         onGoBack={onGoBack ?? (() => onNavigate("home"))}

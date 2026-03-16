@@ -12,13 +12,19 @@ export function ProfileIncompleteBanner({
   profileScore,
   onNavigateToProfile,
 }: ProfileIncompleteBannerProps) {
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(
+    () => localStorage.getItem("medsim_banner_dismissed") === "true",
+  );
 
   const cameraGranted =
     localStorage.getItem("medsim_camera_granted") === "true";
 
   // Show only if profile incomplete
-  if (profileScore >= 100 || dismissed) return null;
+  if (profileScore >= 100) {
+    if (!dismissed) localStorage.setItem("medsim_banner_dismissed", "true");
+    return null;
+  }
+  if (dismissed) return null;
 
   const requestCamera = async () => {
     try {
@@ -62,12 +68,12 @@ export function ProfileIncompleteBanner({
             className="text-xs font-medium truncate"
             style={{ color: "rgba(255, 220, 100, 0.9)" }}
           >
-            Aapka profile{" "}
+            Your profile is{" "}
             <strong style={{ color: "#ffb800" }}>
               {profileScore}% complete
-            </strong>{" "}
-            hai. {!cameraGranted && "Camera allow karein aur "}
-            baaki details fill karein.
+            </strong>
+            . {!cameraGranted && "Allow camera and "}
+            Fill in the remaining details.
           </p>
         </div>
 
@@ -105,7 +111,10 @@ export function ProfileIncompleteBanner({
           <button
             type="button"
             data-ocid="banner.dismiss_button"
-            onClick={() => setDismissed(true)}
+            onClick={() => {
+              setDismissed(true);
+              localStorage.setItem("medsim_banner_dismissed", "true");
+            }}
             className="flex h-6 w-6 items-center justify-center rounded-full transition-all hover:bg-white/10"
             style={{ color: "rgba(255, 220, 100, 0.5)" }}
             aria-label="Dismiss banner"

@@ -53,7 +53,7 @@ const QUICK_SUGGESTIONS = [
   "TB ki diagnosis kaise hoti hai?",
   "Diabetes management?",
   "Hypertension ki medicines?",
-  "Dengue aur Typhoid mein kya farak hai?",
+  "What is the difference between Dengue and Typhoid?",
 ];
 
 // ─── Confidence color helper ──────────────────────────────────────
@@ -552,7 +552,7 @@ function AIMessageBubble({
             >
               <HelpCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
               <div className="space-y-1">
-                <p className="font-semibold">Aur detail mein batao</p>
+                <p className="font-semibold">Tell me more details</p>
                 <p className="opacity-80">
                   Disease ka naam, symptoms, ya medicines likhein taaki AI
                   better answer de sake.
@@ -800,7 +800,7 @@ export function AIAssistantPage() {
       const aiMsg: AIMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: result.reasoning || "Koi jawab nahi mila.",
+        content: result.reasoning || "No answer found.",
         responseType: "backend",
         diseases: result.diagnosis.map((d) => ({
           id: d.diseaseId,
@@ -826,7 +826,7 @@ export function AIAssistantPage() {
       const errorMsg: AIMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: "Kuch error aa gaya. Dobara try karein.",
+        content: "An error occurred. Please try again.",
         probability: 0,
         escalated: false,
         timestamp: Date.now(),
@@ -997,7 +997,7 @@ export function AIAssistantPage() {
                   disabled={!searchQuery.trim() || diseasesLoading}
                 >
                   <Sparkles className="h-3 w-3" />
-                  Khojo
+                  Search
                 </button>
               </div>
             </div>
@@ -1051,7 +1051,7 @@ export function AIAssistantPage() {
                   style={{ color: "oklch(0.55 0.02 230)" }}
                 >
                   {diseases.length > 0
-                    ? `${diseases.length} Indian diseases loaded. Search bar use karo ya niche chat karo.`
+                    ? `${diseases.length} Indian diseases loaded. Use the search bar or chat below.`
                     : "Koi bhi medical sawaal poochho — symptoms, diseases, medicines..."}
                 </p>
               </div>

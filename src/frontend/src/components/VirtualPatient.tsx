@@ -765,7 +765,7 @@ export function VirtualPatient({
         {/* Active symptom badges — up to 6 */}
         {symptoms.length > 0 && (
           <div className="mt-2 flex flex-wrap justify-center gap-1">
-            {symptoms.slice(0, 6).map((s) => (
+            {symptoms.slice(0, 6).map((s, sIdx) => (
               <span
                 key={s}
                 className="rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider animate-alert-blink"
@@ -773,7 +773,7 @@ export function VirtualPatient({
                   background: "rgba(255, 51, 85, 0.12)",
                   border: "1px solid rgba(255, 51, 85, 0.4)",
                   color: "#ff7095",
-                  animationDelay: `${Math.random() * 0.8}s`,
+                  animationDelay: `${sIdx * 0.1}s`,
                 }}
               >
                 ⚠ {s}

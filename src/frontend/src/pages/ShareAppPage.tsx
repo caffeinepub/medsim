@@ -34,7 +34,7 @@ ${appUrl}`;
       toast.success("Link copy ho gaya! 🔗");
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast.error("Copy nahi ho saka. Link manually copy karein.");
+      toast.error("Could not copy. Please copy the link manually.");
     }
   };
 
@@ -45,7 +45,7 @@ ${appUrl}`;
 
   const handleNativeShare = async () => {
     if (!("share" in navigator)) {
-      toast.error("Aapka browser native share support nahi karta.");
+      toast.error("Your browser does not support native sharing.");
       return;
     }
     try {
@@ -139,7 +139,7 @@ ${appUrl}`;
                   className="text-xs"
                   style={{ color: "oklch(var(--muted-foreground))" }}
                 >
-                  Home screen pe add karein — browser bar nahi aayega
+                  Add to home screen — no browser bar
                 </p>
               </div>
               <Button
@@ -250,7 +250,7 @@ ${appUrl}`;
             className="mb-1 text-sm font-semibold"
             style={{ color: "oklch(var(--foreground))" }}
           >
-            Scan karein → MedSim khulega
+            Scan to open MedSim
           </p>
           <p
             className="text-center text-xs"
@@ -300,13 +300,13 @@ ${appUrl}`;
             className="text-sm font-semibold"
             style={{ color: "oklch(var(--foreground))" }}
           >
-            Share Karein
+            Share
           </p>
           <p
             className="text-xs"
             style={{ color: "oklch(var(--muted-foreground))" }}
           >
-            Apne friends ko invite karein
+            Invite your friends
           </p>
         </div>
 

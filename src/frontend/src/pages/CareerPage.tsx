@@ -18,7 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ApplicationFormModal } from "../components/ApplicationFormModal";
 import {
   useCallerUserProfile,
@@ -384,30 +384,40 @@ function calcCareerScore(
 }
 
 function calcProfileCompletionFromLS(): number {
-  const fields = [
+  const lsFields = [
     localStorage.getItem("medsim_aadhaar"),
     localStorage.getItem("medsim_address"),
     localStorage.getItem("medsim_zohoMail"),
     localStorage.getItem("medsim_gmail"),
     localStorage.getItem("medsim_batch"),
     localStorage.getItem("medsim_profile_photo"),
+    localStorage.getItem("medsim_college"),
+    localStorage.getItem("medsim_rollNumber"),
   ];
-  const filled = fields.filter((f) => f && f.trim() !== "").length;
-  // 6 localStorage fields + 3 from profile (name, mobile, role) — approximate
-  return Math.round((filled / fields.length) * 100);
+  const filledLS = lsFields.filter(
+    (f) => f && f.trim() !== "" && f !== "null",
+  ).length;
+  const hasName = !!(localStorage.getItem("medsim_saved_name") || "").trim();
+  const hasMobile = !!(
+    localStorage.getItem("medsim_login_mobile") || ""
+  ).trim();
+  const hasRole = !!(localStorage.getItem("medsim_role") || "").trim();
+  const bonusCount = [hasName, hasMobile, hasRole].filter(Boolean).length;
+  const total = lsFields.length + 3; // 11 total
+  return Math.round(((filledLS + bonusCount) / total) * 100);
 }
 
 export function CareerPage({ onNavigate }: CareerPageProps) {
   const { data: profile } = useCallerUserProfile();
   const { data: performanceStats } = useMyPerformanceStats();
   // Filter out admin-deleted jobs
-  const deletedJobIds: string[] = (() => {
+  const deletedJobIds = useMemo<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem("medsim_deleted_jobs") || "[]");
     } catch {
       return [];
     }
-  })();
+  }, []);
   const ACTIVE_JOB_LISTINGS = JOB_LISTINGS.filter(
     (j) => !deletedJobIds.includes(j.id),
   );
@@ -661,7 +671,7 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
             />
             <Input
               data-ocid="career.search_input"
-              placeholder="Hospital, position, ya location search karein..."
+              placeholder="Search hospital, position, or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-10 border-0 pl-9 focus-visible:ring-0"
@@ -731,7 +741,7 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
         )}
 
         {/* Job listings */}
-        <ScrollArea className="h-auto">
+        <div>
           <AnimatePresence mode="popLayout">
             {filtered.length === 0 ? (
               <motion.div
@@ -746,7 +756,7 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
                   style={{ color: "#00d4ff" }}
                 />
                 <p style={{ color: "rgba(150, 200, 255, 0.5)" }}>
-                  Koi job nahi mili is filter se. Search change karein.
+                  No jobs found for this filter. Try a different search.
                 </p>
               </motion.div>
             ) : (
@@ -1052,7 +1062,7 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
               </div>
             )}
           </AnimatePresence>
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Application form modal */}

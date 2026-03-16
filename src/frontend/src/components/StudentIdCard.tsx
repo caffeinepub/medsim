@@ -2,7 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Download, Shield, Stethoscope } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface StudentIdCardProps {
   name: string;
@@ -48,90 +49,6 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-// ─── Simple decorative QR-like matrix (visual only) ──────────────────────────
-function QrMatrix({
-  data,
-  size = 80,
-  color = "#00d4ff",
-}: { data: string; size?: number; color?: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const cells = 21; // 21×21 grid like a QR version 1
-    const cellSize = Math.floor(size / cells);
-    const totalSize = cellSize * cells;
-    canvas.width = totalSize;
-    canvas.height = totalSize;
-
-    // Background transparent
-    ctx.clearRect(0, 0, totalSize, totalSize);
-
-    // Generate a deterministic bit pattern from data string
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) {
-      hash = (hash * 31 + data.charCodeAt(i)) >>> 0;
-    }
-
-    const isFilled = (r: number, c: number): boolean => {
-      // Finder patterns (top-left, top-right, bottom-left)
-      const inFinderPattern = (
-        row: number,
-        col: number,
-        or: number,
-        oc: number,
-      ) => {
-        const dr = row - or;
-        const dc = col - oc;
-        if (dr < 0 || dr > 6 || dc < 0 || dc > 6) return false;
-        if (dr === 0 || dr === 6 || dc === 0 || dc === 6) return true;
-        if (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4) return true;
-        return false;
-      };
-      if (inFinderPattern(r, c, 0, 0)) return true;
-      if (inFinderPattern(r, c, 0, cells - 7)) return true;
-      if (inFinderPattern(r, c, cells - 7, 0)) return true;
-      // Timing patterns
-      if (r === 6 && c >= 8 && c <= cells - 9) return c % 2 === 0;
-      if (c === 6 && r >= 8 && r <= cells - 9) return r % 2 === 0;
-      // Data bits — pseudo-random from hash + position
-      const seed = (hash ^ (r * 137 + c * 29 + r * c * 7)) >>> 0;
-      return (seed >> (r % 23)) % 3 !== 0;
-    };
-
-    ctx.fillStyle = color;
-    for (let r = 0; r < cells; r++) {
-      for (let c = 0; c < cells; c++) {
-        if (isFilled(r, c)) {
-          const x = c * cellSize;
-          const y = r * cellSize;
-          const radius = Math.max(0, cellSize * 0.15);
-          ctx.beginPath();
-          ctx.roundRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1, radius);
-          ctx.fill();
-        }
-      }
-    }
-  }, [data, size, color]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        display: "block",
-        width: size,
-        height: size,
-        imageRendering: "pixelated",
-      }}
-      aria-label="Identity verification QR code"
-    />
-  );
-}
-
 export function StudentIdCard({
   name,
   batch,
@@ -167,68 +84,297 @@ export function StudentIdCard({
 
   const qrData = verifyUrl;
 
-  // Download card as SVG-based image using canvas drawing
+  // Download card as canvas-based image
   const handleDownload = async () => {
-    if (!cardRef.current || isDownloading) return;
+    if (isDownloading) return;
     setIsDownloading(true);
     try {
-      // Serialize the card element to SVG via foreignObject
-      const cardEl = cardRef.current;
-      const width = cardEl.offsetWidth || 420;
-      const height = cardEl.offsetHeight || 260;
+      const W = 800;
+      const H = 480;
+      const canvas = document.createElement("canvas");
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("No canvas context");
 
-      const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${width * 2}" height="${height * 2}">
-          <defs>
-            <style>
-              body { margin: 0; padding: 0; background: rgb(3,10,28); }
-            </style>
-          </defs>
-          <rect width="${width * 2}" height="${height * 2}" fill="rgb(3,10,28)"/>
-          <foreignObject width="${width}" height="${height}" transform="scale(2)">
-            <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden;">
-              ${cardEl.outerHTML}
-            </div>
-          </foreignObject>
-        </svg>`;
+      // Background gradient
+      const bg = ctx.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, "#030a1c");
+      bg.addColorStop(0.5, "#050f2a");
+      bg.addColorStop(1, "#030c20");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
 
-      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
+      // Grid pattern
+      ctx.strokeStyle = "rgba(0,212,255,0.04)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 32) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+      for (let y = 0; y < H; y += 32) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
 
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = width * 2;
-        canvas.height = height * 2;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.fillStyle = "rgb(3,10,28)";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
+      // Border
+      ctx.strokeStyle = "rgba(0,212,255,0.4)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(4, 4, W - 8, H - 8, 16);
+      ctx.stroke();
+
+      // Header bar
+      ctx.fillStyle = "rgba(0,212,255,0.08)";
+      ctx.fillRect(4, 4, W - 8, 52);
+      ctx.fillStyle = "#00d4ff";
+      ctx.font = "bold 20px monospace";
+      ctx.fillText("MedSim", 24, 36);
+      ctx.fillStyle = "rgba(0,212,255,0.5)";
+      ctx.font = "11px monospace";
+      ctx.fillText("STUDENT IDENTITY CARD", 24, 52);
+      ctx.fillStyle = "rgba(0,212,255,0.2)";
+      ctx.font = "bold 12px monospace";
+      ctx.fillText("OFFICIAL", W - 100, 36);
+
+      // Divider
+      ctx.strokeStyle = "rgba(0,212,255,0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(24, 64);
+      ctx.lineTo(W - 24, 64);
+      ctx.stroke();
+
+      // Photo area (left)
+      const photoSize = 100;
+      const photoX = 24;
+      const photoY = 80;
+      ctx.strokeStyle = `${roleColor}80`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(photoX, photoY, photoSize, photoSize, 10);
+      ctx.stroke();
+
+      // Try to draw profile photo
+      if (profilePhoto) {
+        try {
+          await new Promise<void>((resolve) => {
+            const pImg = new Image();
+            pImg.crossOrigin = "anonymous";
+            pImg.onload = () => {
+              ctx.save();
+              ctx.beginPath();
+              ctx.roundRect(photoX, photoY, photoSize, photoSize, 10);
+              ctx.clip();
+              ctx.drawImage(pImg, photoX, photoY, photoSize, photoSize);
+              ctx.restore();
+              resolve();
+            };
+            pImg.onerror = () => resolve();
+            pImg.src = profilePhoto;
+            setTimeout(() => resolve(), 3000);
+          });
+        } catch {
+          /* skip */
         }
-        URL.revokeObjectURL(url);
-        const dataUrl = canvas.toDataURL("image/png");
+      } else {
+        // Initials fallback
+        ctx.fillStyle = `${roleColor}20`;
+        ctx.beginPath();
+        ctx.roundRect(photoX, photoY, photoSize, photoSize, 10);
+        ctx.fill();
+        ctx.fillStyle = roleColor;
+        ctx.font = "bold 36px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(getInitials(name), photoX + photoSize / 2, photoY + 62);
+        ctx.textAlign = "left";
+      }
+
+      // Role badge under photo
+      ctx.fillStyle = `${roleColor}25`;
+      ctx.beginPath();
+      ctx.roundRect(photoX, photoY + photoSize + 8, photoSize, 20, 4);
+      ctx.fill();
+      ctx.fillStyle = roleColor;
+      ctx.font = "bold 9px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        (role || "STUDENT").toUpperCase().slice(0, 12),
+        photoX + photoSize / 2,
+        photoY + photoSize + 22,
+      );
+      ctx.textAlign = "left";
+
+      // Info text (right of photo)
+      const infoX = photoX + photoSize + 20;
+      const infoW = W - infoX - 160; // leave space for QR on right
+
+      // Name
+      ctx.fillStyle = "#e8f4ff";
+      ctx.font = "bold 22px sans-serif";
+      const displayName = name || "—";
+      ctx.fillText(
+        displayName.length > 22 ? `${displayName.slice(0, 22)}…` : displayName,
+        infoX,
+        104,
+      );
+
+      // Role label
+      ctx.fillStyle = "rgba(150,200,255,0.65)";
+      ctx.font = "13px monospace";
+      ctx.fillText(roleLabel, infoX, 124);
+
+      // System ID box
+      ctx.fillStyle = "rgba(0,212,255,0.07)";
+      ctx.beginPath();
+      ctx.roundRect(infoX, 134, Math.min(infoW, 200), 28, 6);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0,212,255,0.45)";
+      ctx.font = "10px monospace";
+      ctx.fillText("ID:", infoX + 8, 152);
+      ctx.fillStyle = "#00d4ff";
+      ctx.font = "bold 13px monospace";
+      ctx.fillText(systemId, infoX + 30, 152);
+
+      // College
+      ctx.fillStyle = "rgba(0,212,255,0.08)";
+      ctx.beginPath();
+      ctx.roundRect(infoX, 174, infoW, 44, 8);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0,212,255,0.45)";
+      ctx.font = "9px monospace";
+      ctx.fillText("COLLEGE / UNIVERSITY", infoX + 10, 190);
+      ctx.fillStyle = "#e8f4ff";
+      ctx.font = "bold 13px sans-serif";
+      const cName = collegeName || "—";
+      ctx.fillText(
+        cName.length > 38 ? `${cName.slice(0, 38)}…` : cName,
+        infoX + 10,
+        208,
+      );
+
+      // Batch + Roll
+      const halfW = (infoW - 8) / 2;
+      ctx.fillStyle = "rgba(0,212,255,0.06)";
+      ctx.beginPath();
+      ctx.roundRect(infoX, 228, halfW, 44, 8);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0,212,255,0.4)";
+      ctx.font = "9px monospace";
+      ctx.fillText("BATCH", infoX + 10, 244);
+      ctx.fillStyle = "#e8f4ff";
+      ctx.font = "bold 13px monospace";
+      ctx.fillText(batch || "—", infoX + 10, 262);
+
+      ctx.fillStyle = "rgba(0,212,255,0.06)";
+      ctx.beginPath();
+      ctx.roundRect(infoX + halfW + 8, 228, halfW, 44, 8);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0,212,255,0.4)";
+      ctx.font = "9px monospace";
+      ctx.fillText("ROLL NO.", infoX + halfW + 18, 244);
+      ctx.fillStyle = "#e8f4ff";
+      ctx.font = "bold 13px monospace";
+      ctx.fillText((rollNumber || "—").slice(0, 12), infoX + halfW + 18, 262);
+
+      // QR Code (right side)
+      const qrX = W - 150;
+      const qrY = 80;
+      const qrSize = 120;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&bgcolor=000000&color=00d4ff&format=png`;
+      try {
+        await new Promise<void>((resolve) => {
+          const qImg = new Image();
+          qImg.crossOrigin = "anonymous";
+          qImg.onload = () => {
+            ctx.fillStyle = "#000000";
+            ctx.beginPath();
+            ctx.roundRect(qrX, qrY, qrSize, qrSize, 8);
+            ctx.fill();
+            ctx.drawImage(qImg, qrX, qrY, qrSize, qrSize);
+            resolve();
+          };
+          qImg.onerror = () => {
+            // Skip QR gracefully
+            ctx.fillStyle = "rgba(0,212,255,0.1)";
+            ctx.beginPath();
+            ctx.roundRect(qrX, qrY, qrSize, qrSize, 8);
+            ctx.fill();
+            ctx.fillStyle = "rgba(0,212,255,0.4)";
+            ctx.font = "10px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText("QR Code", qrX + qrSize / 2, qrY + qrSize / 2 - 6);
+            ctx.fillText(
+              "Unavailable",
+              qrX + qrSize / 2,
+              qrY + qrSize / 2 + 10,
+            );
+            ctx.textAlign = "left";
+            resolve();
+          };
+          qImg.src = qrUrl;
+          setTimeout(() => resolve(), 5000);
+        });
+      } catch {
+        /* skip QR */
+      }
+
+      ctx.fillStyle = "rgba(0,212,255,0.4)";
+      ctx.font = "9px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("SCAN TO VERIFY", qrX + qrSize / 2, qrY + qrSize + 16);
+      ctx.textAlign = "left";
+
+      // Bottom bar
+      ctx.strokeStyle = "rgba(0,212,255,0.15)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(24, H - 36);
+      ctx.lineTo(W - 24, H - 36);
+      ctx.stroke();
+      const issuedDateStr = new Date().toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      ctx.fillStyle = "rgba(0,212,255,0.3)";
+      ctx.font = "9px monospace";
+      ctx.fillText(`ISSUED: ${issuedDateStr}`, 24, H - 18);
+      ctx.textAlign = "right";
+      ctx.fillText("medsim.caffeine.ai", W - 24, H - 18);
+      ctx.textAlign = "left";
+
+      // Digitally Verified badge
+      ctx.fillStyle = "rgba(0,230,118,0.1)";
+      ctx.beginPath();
+      ctx.roundRect(W - 210, H - 32, 185, 20, 4);
+      ctx.fill();
+      ctx.fillStyle = "#00e676";
+      ctx.font = "bold 9px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("✓ DIGITALLY VERIFIED BY MEDSIM SYSTEM", W - 117, H - 18);
+      ctx.textAlign = "left";
+
+      // Download
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          setIsDownloading(false);
+          return;
+        }
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.download = `MedSim-ID-${systemId}.png`;
-        link.href = dataUrl;
+        link.href = url;
         link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         setIsDownloading(false);
-      };
-      img.onerror = () => {
-        // Fallback: direct SVG download
-        URL.revokeObjectURL(url);
-        const fallbackBlob = new Blob([svg], { type: "image/svg+xml" });
-        const fallbackUrl = URL.createObjectURL(fallbackBlob);
-        const link = document.createElement("a");
-        link.download = `MedSim-ID-${systemId}.svg`;
-        link.href = fallbackUrl;
-        link.click();
-        URL.revokeObjectURL(fallbackUrl);
-        setIsDownloading(false);
-      };
-      img.src = url;
-    } catch (err) {
-      console.error("Download failed:", err);
+      }, "image/png");
+    } catch (_err) {
+      toast.error("Download failed. Please try again.");
       setIsDownloading(false);
     }
   };
@@ -392,8 +538,8 @@ export function StudentIdCard({
                     src={profilePhoto}
                     alt={name}
                     className="h-full w-full object-cover"
-                    style={{ transform: "scaleX(-1)" }}
                     crossOrigin="anonymous"
+                    style={{ transform: "scaleX(-1)" }}
                   />
                 ) : (
                   <span>{getInitials(name)}</span>
@@ -539,7 +685,14 @@ export function StudentIdCard({
                   boxShadow: "0 0 16px rgba(0, 212, 255, 0.1)",
                 }}
               >
-                <QrMatrix data={qrData} size={80} color="#00d4ff" />
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}&bgcolor=000000&color=00d4ff&format=png`}
+                  alt="Scan to verify student"
+                  width={80}
+                  height={80}
+                  style={{ display: "block", borderRadius: 4 }}
+                  aria-label="Identity verification QR code"
+                />
               </div>
               <p
                 className="font-mono text-[9px] uppercase tracking-wider text-center"
