@@ -26,8 +26,11 @@ import { AnimatePresence, motion } from "motion/react";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import type { AIResult, Diagnosis } from "../backend.d";
+import { DiagnosticTray } from "../components/DiagnosticTray";
 import { EffectsTimeline } from "../components/EffectsTimeline";
+import { PatientDistressAvatar } from "../components/PatientDistressAvatar";
 import { VirtualPatient } from "../components/VirtualPatient";
+import { VirtualStethoscope } from "../components/VirtualStethoscope";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useAllDiseases,
@@ -99,6 +102,7 @@ export function CustomPatientPage() {
   const [selectedMedicines, setSelectedMedicines] = useState<string[]>([]);
   const [showTimeline, setShowTimeline] = useState(false);
   const [aiAlertSent, setAiAlertSent] = useState(false);
+  const [showStethoscope, setShowStethoscope] = useState(false);
 
   const totalAgeMonths = ageYears * 12 + ageMonths;
 
@@ -488,6 +492,106 @@ export function CustomPatientPage() {
                   animate={{ opacity: 1, y: 0 }}
                   className="rounded-2xl border border-primary/30 bg-primary/5 p-5"
                 >
+                  {/* Patient distress avatar + diagnostic tools */}
+                  <div
+                    className="mb-4 flex items-start gap-4 p-3 rounded-xl border"
+                    style={{
+                      background: "oklch(0.1 0.03 235 / 0.5)",
+                      borderColor: "oklch(0.3 0.08 235)",
+                    }}
+                  >
+                    <PatientDistressAvatar
+                      spo2={Number(vitals.spo2)}
+                      hasAnemia={symptoms.some(
+                        (s) =>
+                          s.toLowerCase().includes("anemia") ||
+                          s.toLowerCase().includes("pallor"),
+                      )}
+                      hasJaundice={symptoms.some(
+                        (s) =>
+                          s.toLowerCase().includes("jaundice") ||
+                          s.toLowerCase().includes("yellow"),
+                      )}
+                      hasRespiratoryDistress={symptoms.some(
+                        (s) =>
+                          s.toLowerCase().includes("shortness") ||
+                          s.toLowerCase().includes("breath"),
+                      )}
+                      label={`${ageYears}y ${gender}`}
+                    />
+                    <div className="flex-1 space-y-2">
+                      <p className="text-sm font-semibold text-foreground">
+                        Patient Condition Indicators
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <DiagnosticTray
+                          data={{
+                            scenarioType: symptoms.some((s) =>
+                              s.toLowerCase().includes("chest"),
+                            )
+                              ? "cardiac"
+                              : symptoms.some(
+                                    (s) =>
+                                      s.toLowerCase().includes("breath") ||
+                                      s.toLowerCase().includes("cough"),
+                                  )
+                                ? "respiratory"
+                                : symptoms.some((s) =>
+                                      s.toLowerCase().includes("jaundice"),
+                                    )
+                                  ? "hepatic"
+                                  : "normal",
+                            spo2: Number(vitals.spo2),
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowStethoscope((v) => !v)}
+                          className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors"
+                          style={{
+                            borderColor: showStethoscope
+                              ? "oklch(0.5 0.18 196 / 0.5)"
+                              : "oklch(0.3 0.06 235)",
+                            background: showStethoscope
+                              ? "oklch(0.2 0.08 196 / 0.3)"
+                              : "transparent",
+                            color: showStethoscope
+                              ? "oklch(0.7 0.15 196)"
+                              : "oklch(0.5 0.05 235)",
+                          }}
+                        >
+                          🩺 Stethoscope
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {showStethoscope && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-4"
+                    >
+                      <VirtualStethoscope
+                        conditionOverrides={{
+                          hasCardiac: symptoms.some((s) =>
+                            s.toLowerCase().includes("chest"),
+                          ),
+                          hasRespiratory: symptoms.some(
+                            (s) =>
+                              s.toLowerCase().includes("breath") ||
+                              s.toLowerCase().includes("cough"),
+                          ),
+                          hasWheeze: symptoms.some(
+                            (s) =>
+                              s.toLowerCase().includes("wheeze") ||
+                              s.toLowerCase().includes("asthma"),
+                          ),
+                        }}
+                      />
+                    </motion.div>
+                  )}
+
                   <div className="mb-4 flex items-center gap-2">
                     <Brain className="h-5 w-5 text-primary" />
                     <h3 className="font-display text-lg font-bold text-foreground">

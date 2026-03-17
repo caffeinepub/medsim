@@ -19,9 +19,14 @@ import {
   Stethoscope,
   Zap,
 } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { DiagnosticTray } from "../components/DiagnosticTray";
+import { PatientDistressAvatar } from "../components/PatientDistressAvatar";
+import { VirtualStethoscope } from "../components/VirtualStethoscope";
+import { useICUAmbientSound } from "../hooks/useICUAmbientSound";
 
 // ─── Scenario data ────────────────────────────────────────────────
 interface Scenario {
@@ -744,6 +749,7 @@ export function ERSimulationPage() {
   const [sessionComplete, setSessionComplete] = useState(false);
   const [observerStep, setObserverStep] = useState(0);
   const [listening, setListening] = useState(false);
+  const [showStethoscope, setShowStethoscope] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const observerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const responseIdxRef = useRef(0);
@@ -753,6 +759,46 @@ export function ERSimulationPage() {
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
 
   const isCritical = (label: string) => scenario.criticals.includes(label);
+
+  // Determine patient condition for ambient sounds and avatar
+  const hasRespiratory =
+    ["ards", "anaphylaxis"].includes(scenario.id) || scenario.vitals.spo2 < 92;
+  const hasCardiac = ["acs", "stroke"].includes(scenario.id);
+  const hasPain = ["trauma", "acs"].includes(scenario.id);
+  const hasCough = hasRespiratory;
+  const hasMoan = hasPain;
+
+  const {
+    muted,
+    toggleMute,
+    start: startSound,
+    stop: stopSound,
+  } = useICUAmbientSound({
+    hasCough,
+    hasMoan,
+    autoStart: false,
+  });
+
+  // Get diagnostic tray scenario type
+  function getDiagScenarioType():
+    | "cardiac"
+    | "respiratory"
+    | "hepatic"
+    | "renal"
+    | "trauma"
+    | "sepsis"
+    | "normal" {
+    if (hasCardiac) return "cardiac";
+    if (hasRespiratory) return "respiratory";
+    if (scenario.id === "sepsis") return "sepsis";
+    if (scenario.id === "trauma") return "trauma";
+    return "normal";
+  }
+
+  // Stop ambient sound on unmount
+  useEffect(() => {
+    return () => stopSound();
+  }, [stopSound]);
 
   // Auto-advance observer steps
   useEffect(() => {
@@ -783,6 +829,7 @@ export function ERSimulationPage() {
     setChatMessages([
       { id: "p-0", role: "patient", text: scenario.patientOpener },
     ]);
+    startSound();
 
     // Request permissions
     navigator.mediaDevices
@@ -978,6 +1025,37 @@ export function ERSimulationPage() {
                 Observer
               </button>
             </div>
+
+            {/* Mute button */}
+            {started && (
+              <button
+                type="button"
+                data-ocid="er.mute_toggle"
+                onClick={toggleMute}
+                title={muted ? "Unmute ambient sounds" : "Mute ambient sounds"}
+                className="flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs transition-colors"
+                style={{
+                  borderColor: muted
+                    ? "oklch(0.4 0.05 235)"
+                    : "oklch(0.4 0.15 196 / 0.5)",
+                  background: muted
+                    ? "oklch(0.13 0.03 235)"
+                    : "oklch(0.15 0.05 196 / 0.2)",
+                  color: muted
+                    ? "oklch(0.45 0.05 235)"
+                    : "oklch(0.65 0.15 196)",
+                }}
+              >
+                {muted ? (
+                  <VolumeX className="h-3.5 w-3.5" />
+                ) : (
+                  <Volume2 className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">
+                  {muted ? "Muted" : "Sound On"}
+                </span>
+              </button>
+            )}
           </div>
         </motion.div>
 
@@ -989,7 +1067,12 @@ export function ERSimulationPage() {
             borderColor: "oklch(0.3 0.06 235)",
           }}
         >
-          <div className="text-2xl">😣</div>
+          <div className="flex-shrink-0">
+            <PatientDistressAvatar
+              spo2={scenario.vitals.spo2}
+              hasRespiratoryDistress={hasRespiratory}
+            />
+          </div>
           <div className="flex-1 min-w-0">
             <p
               className="font-bold text-sm"
@@ -1068,6 +1151,60 @@ export function ERSimulationPage() {
                   critical={isCritical("HR")}
                 />
               </div>
+
+              {/* Diagnostic tools row */}
+              <div className="flex gap-2 flex-wrap">
+                <DiagnosticTray
+                  data={{
+                    scenarioType: getDiagScenarioType(),
+                    hr: scenario.vitals.hr,
+                    rhythm: scenario.rhythm,
+                    spo2: scenario.vitals.spo2,
+                  }}
+                />
+                <button
+                  type="button"
+                  data-ocid="er.stethoscope_toggle"
+                  onClick={() => setShowStethoscope((v) => !v)}
+                  className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors"
+                  style={{
+                    borderColor: showStethoscope
+                      ? "oklch(0.5 0.18 196 / 0.5)"
+                      : "oklch(0.3 0.06 235)",
+                    background: showStethoscope
+                      ? "oklch(0.2 0.08 196 / 0.3)"
+                      : "oklch(0.13 0.03 235)",
+                    color: showStethoscope
+                      ? "oklch(0.7 0.15 196)"
+                      : "oklch(0.5 0.05 235)",
+                  }}
+                >
+                  <Stethoscope className="h-3.5 w-3.5" />
+                  Stethoscope
+                </button>
+              </div>
+
+              {/* Stethoscope panel */}
+              <AnimatePresence>
+                {showStethoscope && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <VirtualStethoscope
+                      conditionOverrides={{
+                        hasCardiac,
+                        hasRespiratory,
+                        hasWheeze:
+                          scenario.id === "anaphylaxis" ||
+                          scenario.id === "ards",
+                      }}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Vitals grid */}
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -1286,8 +1423,15 @@ export function ERSimulationPage() {
                 className="px-4 py-3 border-b flex items-center gap-3"
                 style={{ borderColor: "oklch(0.25 0.06 235)" }}
               >
-                <div className="text-2xl">😣</div>
-                <div>
+                <PatientDistressAvatar
+                  spo2={scenario.vitals.spo2}
+                  hasRespiratoryDistress={hasRespiratory}
+                  hasAnemia={
+                    scenario.id === "trauma" || scenario.id === "sepsis"
+                  }
+                  label={`${scenario.age}y ${scenario.gender}`}
+                />
+                <div className="flex-1 min-w-0">
                   <p
                     className="font-bold text-sm"
                     style={{ color: "oklch(0.9 0.02 235)" }}
@@ -1295,14 +1439,14 @@ export function ERSimulationPage() {
                     Patient
                   </p>
                   <p
-                    className="text-xs"
+                    className="text-xs truncate"
                     style={{ color: "oklch(0.55 0.06 235)" }}
                   >
-                    {scenario.age}y {scenario.gender} • {scenario.chief}
+                    {scenario.chief}
                   </p>
                 </div>
                 <Badge
-                  className="ml-auto text-[10px]"
+                  className="flex-shrink-0 text-[10px]"
                   style={{
                     background: "oklch(0.25 0.15 25 / 0.3)",
                     color: "oklch(0.7 0.18 25)",

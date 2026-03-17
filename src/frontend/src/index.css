@@ -1,0 +1,559 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque[opsz,wdth,wght].woff2")
+    format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/assets/fonts/PlusJakartaSans[wght].woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Sora";
+  src: url("/assets/fonts/Sora[wght].woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Prevent horizontal scroll on mobile */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* MedSim: Deep Navy + Teal accent - dark clinical precision */
+    --background: 0.14 0.04 230;
+    --foreground: 0.92 0.015 215;
+
+    --card: 0.18 0.05 235;
+    --card-foreground: 0.92 0.015 215;
+
+    --popover: 0.18 0.05 235;
+    --popover-foreground: 0.92 0.015 215;
+
+    /* Bright teal primary */
+    --primary: 0.65 0.16 196;
+    --primary-foreground: 0.99 0 0;
+
+    --secondary: 0.25 0.055 230;
+    --secondary-foreground: 0.88 0.02 215;
+
+    --muted: 0.22 0.05 230;
+    --muted-foreground: 0.62 0.04 225;
+
+    /* Teal accent */
+    --accent: 0.25 0.055 230;
+    --accent-foreground: 0.88 0.02 215;
+
+    --destructive: 0.65 0.22 27;
+    --destructive-foreground: 0.99 0 0;
+
+    --border: 0.28 0.05 235;
+    --input: 0.28 0.05 235;
+    --ring: 0.65 0.16 196;
+
+    /* Medical success/warning */
+    --success: 0.65 0.16 152;
+    --success-foreground: 0.99 0 0;
+    --warning: 0.78 0.16 68;
+    --warning-foreground: 0.15 0 0;
+
+    /* Charts */
+    --chart-1: 0.65 0.16 196;
+    --chart-2: 0.65 0.16 152;
+    --chart-3: 0.65 0.22 27;
+    --chart-4: 0.78 0.16 68;
+    --chart-5: 0.65 0.15 280;
+
+    /* Sidebar */
+    --sidebar: 0.18 0.05 235;
+    --sidebar-foreground: 0.92 0.015 215;
+    --sidebar-primary: 0.65 0.16 196;
+    --sidebar-primary-foreground: 0.99 0 0;
+    --sidebar-accent: 0.25 0.055 230;
+    --sidebar-accent-foreground: 0.88 0.02 215;
+    --sidebar-border: 0.28 0.05 235;
+    --sidebar-ring: 0.65 0.14 200;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-weight: 700;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  }
+
+  .font-body {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+
+  .text-success {
+    color: oklch(var(--success));
+  }
+
+  .bg-success {
+    background-color: oklch(var(--success));
+  }
+
+  .text-warning {
+    color: oklch(var(--warning));
+  }
+
+  .bg-warning {
+    background-color: oklch(var(--warning));
+  }
+
+  .select-none-important {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    user-select: none !important;
+  }
+
+  .medical-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.18 0.05 235) 0%,
+      oklch(0.22 0.07 215) 50%,
+      oklch(0.19 0.06 200) 100%
+    );
+  }
+
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -4px oklch(0.65 0.16 196 / 20%), 0 4px 8px -2px
+      oklch(0.65 0.16 196 / 10%);
+  }
+
+  .shadow-medical {
+    box-shadow: 0 8px 25px -4px oklch(0.65 0.16 196 / 20%), 0 4px 8px -2px
+      oklch(0.65 0.16 196 / 10%);
+  }
+
+  .shadow-xs {
+    box-shadow: 0 1px 3px 0 oklch(0 0 0 / 20%);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scaleY(1) scaleX(1);
+  }
+  50% {
+    transform: scaleY(1.03) scaleX(0.99);
+  }
+}
+
+/* Login theme animations */
+@keyframes theme-gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes particle-drift {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0.4;
+  }
+  33% {
+    transform: translateY(-30px) translateX(15px) scale(1.1);
+    opacity: 0.7;
+  }
+  66% {
+    transform: translateY(-60px) translateX(-10px) scale(0.9);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-100px) translateX(5px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes particle-drift-2 {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.8);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-50px) translateX(-20px) scale(1.2);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-120px) translateX(10px) scale(0.7);
+    opacity: 0;
+  }
+}
+
+@keyframes particle-drift-3 {
+  0% {
+    transform: translateY(10px) translateX(0) scale(1);
+    opacity: 0.2;
+  }
+  40% {
+    transform: translateY(-20px) translateX(25px) scale(1.3);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-80px) translateX(-15px) scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes ecg-scroll {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ecg-line-move {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes heart-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.2);
+  }
+  30% {
+    transform: scale(0.95);
+  }
+  45% {
+    transform: scale(1.1);
+  }
+  60% {
+    transform: scale(1);
+  }
+}
+
+@keyframes monitor-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px 2px oklch(0.65 0.2 220 / 40%), 0 0 24px 8px
+      oklch(0.65 0.2 220 / 15%);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px oklch(0.65 0.2 220 / 60%), 0 0 36px 12px
+      oklch(0.65 0.2 220 / 25%);
+  }
+}
+
+@keyframes vital-pulse {
+  0%,
+  100% {
+    text-shadow: 0 0 6px currentColor;
+  }
+  50% {
+    text-shadow: 0 0 14px currentColor, 0 0 28px currentColor;
+  }
+}
+
+@keyframes alert-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes constellation-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.4);
+  }
+}
+
+@keyframes wave-breathe {
+  0%,
+  100% {
+    transform: scaleY(1) translateY(0);
+  }
+  50% {
+    transform: scaleY(1.15) translateY(-5px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes timeline-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out forwards;
+}
+
+/* Security overlay */
+.security-blur-overlay {
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(20px);
+  background: oklch(0.18 0.05 235 / 95%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.animate-theme-gradient {
+  background-size: 200% 200%;
+  animation: theme-gradient-shift 8s ease infinite;
+}
+
+.animate-particle-1 {
+  animation: particle-drift 6s ease-in-out infinite;
+}
+
+.animate-particle-2 {
+  animation: particle-drift-2 8s ease-in-out infinite;
+}
+
+.animate-particle-3 {
+  animation: particle-drift-3 7s ease-in-out infinite;
+}
+
+.animate-ecg-scroll {
+  animation: ecg-scroll 3s linear infinite;
+}
+
+.animate-ecg-line {
+  animation: ecg-line-move 4s linear infinite;
+}
+
+.animate-heart-pulse {
+  animation: heart-pulse 1.2s ease-in-out infinite;
+}
+
+.animate-monitor-glow {
+  animation: monitor-glow 3s ease-in-out infinite;
+}
+
+.animate-vital-pulse {
+  animation: vital-pulse 2s ease-in-out infinite;
+}
+
+.animate-alert-blink {
+  animation: alert-blink 1.5s ease-in-out infinite;
+}
+
+.animate-constellation {
+  animation: constellation-twinkle 3s ease-in-out infinite;
+}
+
+.animate-wave {
+  animation: wave-breathe 3s ease-in-out infinite;
+}
+
+/* AI Assistant dark theme overrides */
+.ai-textarea {
+  background: oklch(0.22 0.05 230 / 0.6) !important;
+  color: oklch(0.88 0.015 215) !important;
+}
+
+.ai-textarea::placeholder {
+  color: oklch(0.52 0.04 230) !important;
+  opacity: 1;
+}
+
+/* No print */
+@media print {
+  body {
+    display: none !important;
+  }
+}
+
+/* AI Assistant animated search bar keyframes */
+@keyframes searchGradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+@keyframes chatInputAmbient {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes chatGradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 400% 50%;
+  }
+}
+
+@keyframes chatGlow {
+  0%,
+  100% {
+    filter: blur(2px);
+  }
+  50% {
+    filter: blur(3.5px);
+  }
+}
+
+@keyframes chatScanLine {
+  0% {
+    left: -100%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 200%;
+    opacity: 0;
+  }
+}
+
+@keyframes sendButtonPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* ICU Monitor alarm animation */
+@keyframes alarmFlash {
+  0%,
+  100% {
+    border-color: transparent;
+    box-shadow: none;
+  }
+  50% {
+    border-color: #ff0000;
+    box-shadow: 0 0 30px #ff0000, 0 0 60px rgba(255, 0, 0, 0.3);
+  }
+}
+
+.icu-alarm-border {
+  animation: alarmFlash 0.5s infinite;
+}

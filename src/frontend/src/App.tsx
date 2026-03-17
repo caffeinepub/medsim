@@ -15,6 +15,7 @@ import { AIAssistantPage } from "./pages/AIAssistantPage";
 import { AdminPage } from "./pages/AdminPage";
 import { CareerPage } from "./pages/CareerPage";
 import { CustomPatientPage } from "./pages/CustomPatientPage";
+import { DrugReferencePage } from "./pages/DrugReferencePage";
 import { ERSimulationPage } from "./pages/ERSimulationPage";
 import { ExamPage } from "./pages/ExamPage";
 import { ExercisePage } from "./pages/ExercisePage";
@@ -45,7 +46,8 @@ type AppPage =
   | "er-simulation"
   | "leaderboard"
   | "verify"
-  | "share-app";
+  | "share-app"
+  | "drug-reference";
 
 type AppState = "loading" | "login" | "camera-permission" | "app";
 
@@ -268,6 +270,7 @@ function AppMain() {
     leaderboard: <LeaderboardPage onNavigate={handleNavigate} />,
     verify: <VerifyPage principalId="" />,
     "share-app": <ShareAppPage />,
+    "drug-reference": <DrugReferencePage />,
   };
 
   if (appState === "loading") {

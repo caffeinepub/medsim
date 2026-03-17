@@ -1,3 +1,6 @@
+import { ECGAnalysisPanel } from "@/components/ECGAnalysisPanel";
+import { IcuMonitorCanvas } from "@/components/IcuMonitorCanvas";
+import { TwelveLeadECGModal } from "@/components/TwelveLeadECGModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  Pause,
   Play,
   Plug,
   RefreshCw,
@@ -21,11 +25,11 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 type SimMode = "icu" | "ot" | "emergency";
-
 type VitalPhase = "initial" | "deteriorating" | "responding" | "stable";
+type Pathology = "normal" | "stemi" | "afib";
 
 interface Vitals {
   hr: number;
@@ -68,7 +72,7 @@ interface Scenario {
   >;
 }
 
-// ─── Scenarios ────────────────────────────────────────────────────────────────
+// ─── ICU Scenarios ──────────────────────────────────────────────────────────
 
 const ICU_SCENARIOS: Scenario[] = [
   {
@@ -234,10 +238,10 @@ const ICU_SCENARIOS: Scenario[] = [
     idealSteps: [
       "12-lead ECG within 10 minutes. Identify STEMI pattern (ST elevation ≥1 mm in ≥2 contiguous leads).",
       "Dual antiplatelet: Aspirin 325 mg + Clopidogrel 600 mg (or Ticagrelor 180 mg) immediately.",
-      "Activate catheterization lab — target door-to-balloon time < 90 minutes (PCI centre).",
+      "Activate catheterisation lab — target door-to-balloon time < 90 minutes (PCI centre).",
       "If PCI unavailable within 120 min, fibrinolysis with Tenecteplase (weight-based dosing).",
       "Anticoagulation: UFH 60 U/kg IV bolus + 12 U/kg/h infusion (max 4000 U bolus).",
-      "GTN for ongoing ischemic pain if SBP > 90 mmHg. Oxygen if SpO2 < 90%.",
+      "GTN for ongoing ischaemic pain if SBP > 90 mmHg. Oxygen if SpO2 < 90%.",
       "Treat complete heart block with transcutaneous pacing; avoid atropine in Mobitz II.",
       "Post-PCI: Statin high-intensity, Beta-blocker, ACE inhibitor, DAPT for ≥ 12 months.",
     ],
@@ -330,19 +334,100 @@ const OT_SCENARIOS: Scenario[] = [
     ],
     idealSteps: [
       "Mallampati class III/IV + receding chin — anticipate difficult intubation. Call for senior help.",
-      "Pre-oxygenate 100% O2 for ≥ 3 minutes (target SpO2 100%). Position 20° head-up for RSI.",
-      "RSI: Propofol 2 mg/kg + Suxamethonium 1.5 mg/kg (or Rocuronium 1.2 mg/kg for CICV plan).",
-      "Use video laryngoscope (McGrath/C-MAC) as primary device. Have bougie + supraglottic backup.",
-      "Sellick's manoeuvre (cricoid pressure) during RSI to reduce aspiration risk.",
-      "If failed intubation × 3: insert LMA ProSeal / iGEL, oxygenate, wake patient if possible.",
-      "CICO (Can't Intubate Can't Oxygenate): Front-of-neck access — emergency scalpel-bougie-tube.",
-      "Confirm tube with EtCO2 waveform (gold standard) + bilateral chest auscultation.",
+      "Pre-oxygenate 3 min with 100% O2, 15 L/min. Nil position (modified ramped).",
+      "RSI: Propofol 2 mg/kg + Suxamethonium 1.5 mg/kg — apply cricoid pressure throughout.",
+      "Plan A: Direct laryngoscopy with Macintosh blade + BURP manoeuvre.",
+      "Plan B: Video laryngoscope (Glidescope/McGrath). Have bougie ready.",
+      "Plan C: Second-generation supraglottic airway (i-gel) as bridge if both fail.",
+      "Plan D: Surgical airway (cricothyroidotomy) if CICO situation.",
+      "Declare CICO early — do not delay surgical airway. Oxygenation is priority over intubation.",
     ],
     criticalThresholds: {
-      spo2: { min: 94 },
-      hr: { max: 120 },
+      spo2: { min: 92 },
+      hr: { max: 130 },
       sbp: { min: 90 },
-      etco2: { min: 30, max: 45 },
+    },
+  },
+  {
+    id: "malignant-hyperthermia",
+    name: "Malignant Hyperthermia",
+    age: 31,
+    gender: "Male",
+    complaint: "Generalised muscle rigidity, rising temperature during GA",
+    diagnosis: "Malignant Hyperthermia (Halothane-Triggered)",
+    phases: {
+      initial: {
+        hr: 118,
+        spo2: 96,
+        sbp: 145,
+        dbp: 88,
+        temp: 38.8,
+        rr: 20,
+        etco2: 55,
+      },
+      deteriorating: {
+        hr: 152,
+        spo2: 88,
+        sbp: 168,
+        dbp: 95,
+        temp: 41.2,
+        rr: 28,
+        etco2: 72,
+      },
+      responding: {
+        hr: 105,
+        spo2: 95,
+        sbp: 135,
+        dbp: 82,
+        temp: 39.5,
+        rr: 18,
+        etco2: 48,
+      },
+      stable: {
+        hr: 88,
+        spo2: 99,
+        sbp: 118,
+        dbp: 72,
+        temp: 37.8,
+        rr: 14,
+        etco2: 38,
+      },
+    },
+    ventilator: { tv: 550, rr: 20, fio2: 100, peep: 5, pip: 26 },
+    drugs: [
+      {
+        name: "Dantrolene",
+        dose: "2.5 mg/kg IV bolus",
+        rate: "Repeat PRN",
+        status: "running",
+      },
+      {
+        name: "Sodium Bicarb",
+        dose: "1 mEq/kg IV",
+        rate: "Bolus",
+        status: "running",
+      },
+      {
+        name: "Insulin/Dextrose",
+        dose: "10 U + 50 mL 50% Dex",
+        rate: "IV",
+        status: "running",
+      },
+    ],
+    idealSteps: [
+      "STOP all triggering agents (volatile anaesthetics, suxamethonium) immediately.",
+      "Call for help. Switch to TIVA (Propofol infusion). Hyperventilate with 100% O2 — 3× minute volume.",
+      "Dantrolene 2.5 mg/kg IV STAT. Repeat every 5 min until symptoms resolve (max 10 mg/kg).",
+      "Active cooling — ice packs to axilla/groin, cold IV saline, bladder irrigation.",
+      "Treat hyperkalaemia: Calcium gluconate 10 mL 10% IV + Insulin/Dextrose.",
+      "Sodium bicarbonate 1–2 mEq/kg for severe metabolic acidosis (pH < 7.1).",
+      "Send ABG, CK, electrolytes, coagulation every 30 min. Target temp < 38°C.",
+      "Admit to ICU post-op. MH hotline (UK: 07947 609 601). Genetic counselling for family.",
+    ],
+    criticalThresholds: {
+      temp: { max: 39 },
+      hr: { max: 140 },
+      spo2: { min: 92 },
     },
   },
 ];
@@ -533,245 +618,15 @@ const SCENARIOS_BY_MODE: Record<SimMode, Scenario[]> = {
   emergency: EMERGENCY_SCENARIOS,
 };
 
-// ─── ECG Waveform (Canvas-based, smooth scroll) ───────────────────────────────
+// ─── Status colours ────────────────────────────────────────────────────────────
 
-/**
- * Generates one full ECG beat cycle as an array of [x, y] sample points.
- * x goes from 0 to `beatWidthPx`. y is centred on `mid`.
- */
-function generateBeat(
-  beatWidthPx: number,
-  mid: number,
-  amplitude: number,
-  isCritical: boolean,
-): [number, number][] {
-  const pts: [number, number][] = [];
-  const steps = Math.max(60, Math.round(beatWidthPx * 1.5));
+const STATUS_COLORS: Record<string, string> = {
+  normal: "oklch(0.65 0.18 155)",
+  warning: "oklch(0.75 0.18 70)",
+  critical: "oklch(0.55 0.22 27)",
+};
 
-  for (let i = 0; i <= steps; i++) {
-    const p = i / steps; // 0..1 within one beat
-    let y = mid;
-
-    if (p < 0.08) {
-      // Flat baseline start
-      y = mid;
-    } else if (p < 0.14) {
-      // P wave (small hump)
-      const t = (p - 0.08) / 0.06;
-      y = mid - Math.sin(Math.PI * t) * amplitude * 0.18;
-    } else if (p < 0.22) {
-      // PR segment
-      y = mid;
-    } else if (p < 0.25) {
-      // Q dip
-      const t = (p - 0.22) / 0.03;
-      y = mid + Math.sin(Math.PI * t) * amplitude * 0.12;
-    } else if (p < 0.3) {
-      // R spike (tall)
-      const t = (p - 0.25) / 0.05;
-      const rHeight = isCritical ? amplitude * 0.55 : amplitude * 0.72;
-      y = mid - Math.sin(Math.PI * t) * rHeight;
-    } else if (p < 0.33) {
-      // S dip
-      const t = (p - 0.3) / 0.03;
-      y = mid + Math.sin(Math.PI * t) * amplitude * 0.15;
-    } else if (p < 0.42) {
-      // ST segment (slightly elevated if critical/STEMI)
-      const stElev = isCritical ? -amplitude * 0.08 : 0;
-      y = mid + stElev;
-    } else if (p < 0.58) {
-      // T wave
-      const t = (p - 0.42) / 0.16;
-      const tHeight = isCritical ? amplitude * 0.28 : amplitude * 0.22;
-      y = mid - Math.sin(Math.PI * t) * tHeight;
-    } else {
-      // TP segment (flat until next beat)
-      y = mid;
-    }
-
-    pts.push([(i / steps) * beatWidthPx, y]);
-  }
-
-  return pts;
-}
-
-interface EcgProps {
-  hr: number;
-  isCritical: boolean;
-  color: string;
-}
-
-function EcgWaveform({ hr, isCritical, color }: EcgProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  // scrollX tracks how many pixels we've scrolled across the pre-rendered buffer
-  const stateRef = useRef({
-    hr,
-    isCritical,
-    color,
-    scrollX: 0,
-    lastTs: 0,
-  });
-  const rafRef = useRef<number>(0);
-
-  // Always keep latest props readable inside the RAF loop
-  stateRef.current.hr = hr;
-  stateRef.current.isCritical = isCritical;
-  stateRef.current.color = color;
-
-  const drawFrame = useCallback((ts: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const W = canvas.width;
-    const H = canvas.height;
-    const s = stateRef.current;
-
-    // Speed: ~25 mm/s standard paper speed → ~150 px/s looks good on screen
-    const dt = s.lastTs ? (ts - s.lastTs) / 1000 : 0;
-    s.lastTs = ts;
-    const speed = 150 + (s.hr / 60 - 1) * 20; // slightly faster for high HR
-    s.scrollX = (s.scrollX + speed * dt) % W;
-
-    // ── Build the full-width waveform buffer ──────────────────────────────────
-    // beatWidthPx = how many canvas pixels one heartbeat occupies
-    const beatWidthPx = Math.max(30, (60 / s.hr) * speed);
-
-    // How many complete beats fit in one screen width (with a little extra)
-    const mid = H / 2;
-    const amplitude = H * 0.82;
-
-    // Clear
-    ctx.clearRect(0, 0, W, H);
-
-    // Dark background (same as monitor)
-    ctx.fillStyle = "rgba(15, 20, 40, 0)"; // transparent so parent bg shows
-    ctx.fillRect(0, 0, W, H);
-
-    // ── Draw the scrolling ECG line ───────────────────────────────────────────
-    // Strategy: draw beats filling [−beatWidthPx .. W + beatWidthPx]
-    // then shift by scrollX so the waveform moves left-to-right continuously.
-
-    const beat = generateBeat(beatWidthPx, mid, amplitude, s.isCritical);
-
-    // Glow pass (thick, low opacity)
-    const glowColor = s.color.replace("oklch", "oklch").trim();
-    ctx.save();
-    ctx.strokeStyle = glowColor;
-    ctx.lineWidth = s.isCritical ? 6 : 5;
-    ctx.globalAlpha = 0.25;
-    ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 12;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-
-    /**
-     * Draw beats by computing absolute screen X for each point and
-     * starting a new sub-path whenever the X jumps backwards (wrap around).
-     * This prevents diagonal lines crossing the screen.
-     */
-    const drawBeats = (alpha: number, lw: number) => {
-      ctx.globalAlpha = alpha;
-      ctx.lineWidth = lw;
-
-      const totalBeats = Math.ceil(W / beatWidthPx) + 2;
-      // We render a buffer 2× the screen width worth of beats
-      // and slide it by scrollX so the waveform scrolls smoothly.
-
-      for (let b = 0; b < totalBeats; b++) {
-        ctx.beginPath();
-        let started = false;
-        let prevScreenX = -1;
-        for (const [bx, by] of beat) {
-          // Position in the buffer (0 .. W)
-          const bufX = b * beatWidthPx + bx - s.scrollX;
-          // Wrap into [0, W)
-          const screenX = ((bufX % W) + W) % W;
-
-          // If X jumps backwards significantly, it's a wrap-around -- start new path
-          if (!started || screenX < prevScreenX - beatWidthPx * 0.5) {
-            if (started) {
-              ctx.stroke();
-              ctx.beginPath();
-            }
-            ctx.moveTo(screenX, by);
-            started = true;
-          } else {
-            ctx.lineTo(screenX, by);
-          }
-          prevScreenX = screenX;
-        }
-        ctx.stroke();
-      }
-    };
-
-    drawBeats(0.22, s.isCritical ? 7 : 5); // glow layer
-    ctx.restore();
-
-    ctx.save();
-    ctx.strokeStyle = glowColor;
-    ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 6;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    drawBeats(1, s.isCritical ? 2.5 : 2); // crisp line
-    ctx.restore();
-
-    // ── Fade edges (left & right 8%) ─────────────────────────────────────────
-    const fadeW = W * 0.08;
-    const gradL = ctx.createLinearGradient(0, 0, fadeW, 0);
-    gradL.addColorStop(0, "rgba(13,18,38,1)");
-    gradL.addColorStop(1, "rgba(13,18,38,0)");
-    ctx.fillStyle = gradL;
-    ctx.fillRect(0, 0, fadeW, H);
-
-    const gradR = ctx.createLinearGradient(W - fadeW, 0, W, 0);
-    gradR.addColorStop(0, "rgba(13,18,38,0)");
-    gradR.addColorStop(1, "rgba(13,18,38,1)");
-    ctx.fillStyle = gradR;
-    ctx.fillRect(W - fadeW, 0, fadeW, H);
-
-    rafRef.current = requestAnimationFrame(drawFrame);
-  }, []);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: hr and isCritical intentionally trigger canvas scroll reset
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    // Size canvas to its CSS display size
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width || 600;
-      canvas.height = rect.height || 90;
-    };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(canvas);
-
-    // Reset scroll when HR or critical state changes
-    stateRef.current.scrollX = 0;
-    stateRef.current.lastTs = 0;
-
-    rafRef.current = requestAnimationFrame(drawFrame);
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      ro.disconnect();
-    };
-  }, [drawFrame, hr, isCritical]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ display: "block", width: "100%", height: "90px" }}
-      role="img"
-      aria-label="ECG waveform monitor"
-    />
-  );
-}
-
-// ─── Vital Card ───────────────────────────────────────────────────────────────
+// ─── VitalCard ────────────────────────────────────────────────────────────────
 
 interface VitalCardProps {
   label: string;
@@ -781,12 +636,6 @@ interface VitalCardProps {
   trend?: "up" | "down" | "stable";
   sublabel?: string;
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  normal: "oklch(0.65 0.18 155)",
-  warning: "oklch(0.75 0.18 70)",
-  critical: "oklch(0.55 0.22 27)",
-};
 
 function VitalCard({
   label,
@@ -798,7 +647,6 @@ function VitalCard({
 }: VitalCardProps) {
   const color = STATUS_COLORS[status];
   const isCritical = status === "critical";
-
   return (
     <div
       className="relative flex flex-col items-start rounded-xl p-3 gap-1 overflow-hidden"
@@ -806,7 +654,7 @@ function VitalCard({
         background: "oklch(0.18 0.05 235)",
         border: `1px solid ${color}${isCritical ? "" : " / 0.35"}`,
         boxShadow: isCritical
-          ? `0 0 18px ${color} / 0.3, inset 0 0 8px ${color} / 0.08`
+          ? `0 0 18px ${color} / 0.3`
           : `0 0 8px ${color} / 0.15`,
         animation: isCritical
           ? "alert-blink 1.5s ease-in-out infinite"
@@ -900,18 +748,39 @@ function interpolateVitals(a: Vitals, b: Vitals, t: number): Vitals {
   };
 }
 
+function playCuffSound() {
+  try {
+    const ctx = new AudioContext();
+    const duration = 2;
+    const bufferSize = ctx.sampleRate * duration;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize) * 0.3;
+    }
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 200;
+    filter.Q.value = 0.5;
+    source.connect(filter);
+    filter.connect(ctx.destination);
+    source.start();
+    setTimeout(() => ctx.close(), duration * 1000 + 100);
+  } catch (_e) {}
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export function IcuSimulatorPage() {
   const [mode, setMode] = useState<SimMode>("icu");
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>(
-    SCENARIOS_BY_MODE.icu[0].id,
+    ICU_SCENARIOS[0].id,
   );
   const [phase, setPhase] = useState<VitalPhase>("initial");
   const phaseRef = useRef<VitalPhase>("initial");
-  const [vitals, setVitals] = useState<Vitals>(
-    SCENARIOS_BY_MODE.icu[0].phases.initial,
-  );
+  const [vitals, setVitals] = useState<Vitals>(ICU_SCENARIOS[0].phases.initial);
   const [practiceMode, setPracticeMode] = useState(true);
   const [alarmSilenced, setAlarmSilenced] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
@@ -920,26 +789,33 @@ export function IcuSimulatorPage() {
   );
   const [showConnectBadge, setShowConnectBadge] = useState(false);
   const [observerStepIndex, setObserverStepIndex] = useState(0);
-  const [phaseProgress, setPhaseProgress] = useState(0); // 0-100
+  const [phaseProgress, setPhaseProgress] = useState(0);
   const [running, setRunning] = useState(true);
-  // Pause auto-progression in Observer mode
-  useEffect(() => {
-    setRunning(practiceMode);
-  }, [practiceMode]);
+  const liveHrRef = useRef<number>(ICU_SCENARIOS[0].phases.initial.hr);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const phaseTimerRef = useRef(0);
-  // Single source-of-truth HR for ECG + vitals grid
-  const liveHrRef = useRef<number>(SCENARIOS_BY_MODE.icu[0].phases.initial.hr);
+
+  // ── New: clinical controls ──────────────────────────────────────────────────
+  const [pathology, setPathology] = useState<Pathology>("normal");
+  const [frozen, setFrozen] = useState(false);
+  const [show12Lead, setShow12Lead] = useState(false);
+  const [nibpRunning, setNibpRunning] = useState(false);
+  const [nibpSystolic, setNibpSystolic] = useState(120);
+  const [nibpDiastolic, setNibpDiastolic] = useState(80);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [alarmActive, setAlarmActive] = useState(false);
 
   const scenarios = SCENARIOS_BY_MODE[mode];
   const scenario =
     scenarios.find((s) => s.id === selectedScenarioId) ?? scenarios[0];
 
-  // Reset on mode/scenario change
-  // Keep phaseRef in sync with phase state so interval can read it without stale closure
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+
+  useEffect(() => {
+    setRunning(practiceMode);
+  }, [practiceMode]);
 
   useEffect(() => {
     const s = SCENARIOS_BY_MODE[mode];
@@ -966,17 +842,13 @@ export function IcuSimulatorPage() {
     setObserverStepIndex(0);
   }, [selectedScenarioId, scenarios]);
 
-  // Vitals auto-update with smooth interpolation
   useEffect(() => {
     if (!running) return;
     intervalRef.current = setInterval(() => {
       setPhaseProgress((prev) => {
-        // Check if we are already on stable (last) phase — freeze progress bar
         if (phaseRef.current === "stable") return 100;
-
-        const next = prev + 5; // 5% every 2s → full phase in ~40s
+        const next = prev + 5;
         if (next >= 100) {
-          // Advance phase
           setPhase((current) => {
             const order: VitalPhase[] = [
               "initial",
@@ -985,18 +857,13 @@ export function IcuSimulatorPage() {
               "stable",
             ];
             const idx = order.indexOf(current);
-            if (idx >= order.length - 1) {
-              // Already at final stable phase — do not advance
-              return current;
-            }
+            if (idx >= order.length - 1) return current;
             return order[idx + 1];
           });
           return 0;
         }
         return next;
       });
-
-      // Smooth vitals with noise — keep liveHrRef in sync for ECG
       setVitals((curr) => {
         const noise = (range: number) => (Math.random() - 0.5) * range;
         const newHr = Math.max(30, Math.min(200, curr.hr + noise(4)));
@@ -1012,13 +879,11 @@ export function IcuSimulatorPage() {
         };
       });
     }, 2000);
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [running]);
 
-  // Update vitals target when phase changes
   useEffect(() => {
     const order: VitalPhase[] = [
       "initial",
@@ -1027,57 +892,59 @@ export function IcuSimulatorPage() {
       "stable",
     ];
     const idx = order.indexOf(phase);
-    const targetPhase = phase;
     const sourcePhase = idx > 0 ? order[idx - 1] : phase;
-    const target = scenario.phases[targetPhase];
-    const source = scenario.phases[sourcePhase];
-
-    // Set to interpolated midpoint
-    const interpolated = interpolateVitals(source, target, 0.5);
+    const interpolated = interpolateVitals(
+      scenario.phases[sourcePhase],
+      scenario.phases[phase],
+      0.5,
+    );
     liveHrRef.current = interpolated.hr;
     setVitals(interpolated);
   }, [phase, scenario]);
 
-  const hasCritical = Object.entries(vitals).some(([key, val]) => {
-    return (
+  const hasCritical = Object.entries(vitals).some(
+    ([key, val]) =>
       getVitalStatus(
         key as keyof Vitals,
         val as number,
         scenario.criticalThresholds,
-      ) === "critical"
-    );
-  });
+      ) === "critical",
+  );
 
-  const handleAction = (action: string) => {
-    const messages: Record<string, string> = {
-      "Adjust Ventilator":
-        "✓ Tidal volume adjusted to lung-protective settings (6 mL/kg IBW). PEEP optimised.",
-      "Administer Drug":
-        "✓ Drug administered as per protocol. Monitor for therapeutic response and adverse effects.",
-      Defibrillate:
-        phase === "deteriorating"
-          ? "✓ 200J biphasic delivered. Check rhythm. Resume CPR immediately after shock."
-          : "⚠ Rhythm not shockable currently. Continue monitoring and ABCDE assessment.",
-      "Increase O2":
-        "✓ FiO2 increased to 100%. Monitor SpO2 and EtCO2. Consider NIV or intubation if not responding.",
-      "Fluid Bolus":
-        "✓ 500 mL crystalloid bolus initiated. Reassess BP, HR, and urine output at 30 minutes.",
-      "Alert Senior":
-        "✓ Senior registrar and attending notified. Crash trolley requested. Team assembled.",
-    };
-    setActionFeedback(
-      messages[action] ??
-        `✓ Action "${action}" performed. Monitor patient response closely.`,
-    );
-    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-    feedbackTimerRef.current = setTimeout(() => setActionFeedback(null), 6000);
-
-    // Simulate patient response
-    if (action === "Adjust Ventilator" || action === "Administer Drug") {
-      setPhase("responding");
-      setPhaseProgress(0);
-    }
-  };
+  const handleAction = useCallback(
+    (action: string) => {
+      const messages: Record<string, string> = {
+        "Adjust Ventilator":
+          "✓ Tidal volume adjusted to lung-protective settings (6 mL/kg IBW). PEEP optimised.",
+        "Administer Drug":
+          "✓ Drug administered as per protocol. Monitor for therapeutic response and adverse effects.",
+        Defibrillate:
+          phase === "deteriorating"
+            ? "✓ 200J biphasic delivered. Check rhythm. Resume CPR immediately after shock."
+            : "⚠ Rhythm not shockable currently. Continue monitoring and ABCDE assessment.",
+        "Increase O2":
+          "✓ FiO2 increased to 100%. Monitor SpO2 and EtCO2. Consider NIV or intubation if not responding.",
+        "Fluid Bolus":
+          "✓ 500 mL crystalloid bolus initiated. Reassess BP, HR, and urine output at 30 minutes.",
+        "Alert Senior":
+          "✓ Senior registrar and attending notified. Crash trolley requested. Team assembled.",
+      };
+      setActionFeedback(
+        messages[action] ??
+          `✓ Action "${action}" performed. Monitor patient response closely.`,
+      );
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = setTimeout(
+        () => setActionFeedback(null),
+        6000,
+      );
+      if (action === "Adjust Ventilator" || action === "Administer Drug") {
+        setPhase("responding");
+        setPhaseProgress(0);
+      }
+    },
+    [phase],
+  );
 
   const resetScenario = () => {
     setPhase("initial");
@@ -1087,6 +954,22 @@ export function IcuSimulatorPage() {
     setAlarmSilenced(false);
     setActionFeedback(null);
     setObserverStepIndex(0);
+  };
+
+  const handleStartBP = () => {
+    if (nibpRunning) return;
+    setNibpRunning(true);
+    playCuffSound();
+    setTimeout(() => {
+      const newSys =
+        pathology === "stemi"
+          ? 90 + Math.random() * 20
+          : 110 + Math.random() * 30;
+      const newDia = newSys * 0.6 + Math.random() * 10;
+      setNibpSystolic(Math.round(newSys));
+      setNibpDiastolic(Math.round(newDia));
+      setNibpRunning(false);
+    }, 5000);
   };
 
   const PRACTICE_ACTIONS = [
@@ -1106,10 +989,9 @@ export function IcuSimulatorPage() {
     "Alert Senior": <AlertTriangle className="h-4 w-4" />,
   };
 
-  const ecgColor =
-    hasCritical && !alarmSilenced
-      ? "oklch(0.55 0.22 27)"
-      : "oklch(0.65 0.18 155)";
+  const hrVal = Math.round(vitals.hr);
+  const spo2Val = Math.round(vitals.spo2);
+  const rrVal = Math.round(vitals.rr);
 
   return (
     <div
@@ -1151,9 +1033,7 @@ export function IcuSimulatorPage() {
             <p className="text-xs opacity-50">Live Clinical Simulation</p>
           </div>
         </div>
-
         <div className="flex items-center gap-2">
-          {/* Running indicator */}
           <button
             type="button"
             onClick={() => setRunning((r) => !r)}
@@ -1179,8 +1059,6 @@ export function IcuSimulatorPage() {
             />
             {running ? "LIVE" : "PAUSED"}
           </button>
-
-          {/* Connect device */}
           <div className="relative">
             <Button
               size="sm"
@@ -1227,7 +1105,7 @@ export function IcuSimulatorPage() {
 
       {/* ── Critical Alarm Banner ── */}
       <AnimatePresence>
-        {hasCritical && !alarmSilenced && (
+        {(hasCritical || alarmActive) && !alarmSilenced && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -1237,7 +1115,7 @@ export function IcuSimulatorPage() {
             style={{
               background: "oklch(0.55 0.22 27 / 0.2)",
               borderBottom: "1px solid oklch(0.55 0.22 27 / 0.5)",
-              animation: "alert-blink 1.5s ease-in-out infinite",
+              animation: "alert-blink 0.5s ease-in-out infinite",
             }}
           >
             <div className="flex items-center gap-2">
@@ -1249,7 +1127,9 @@ export function IcuSimulatorPage() {
                 className="text-sm font-bold"
                 style={{ color: "oklch(0.55 0.22 27)" }}
               >
-                CRITICAL VITALS ALERT — Immediate intervention required
+                {alarmActive
+                  ? "⚠ SpO₂ CRITICAL — SpO₂ below 90% — Immediate intervention required"
+                  : "CRITICAL VITALS ALERT — Immediate intervention required"}
               </span>
             </div>
             <Button
@@ -1407,78 +1287,387 @@ export function IcuSimulatorPage() {
           </div>
         </motion.div>
 
-        {/* ── ECG Monitor ── */}
+        {/* ── HIGH-FIDELITY ICU MONITOR ── */}
         <div
-          className="rounded-xl overflow-hidden animate-monitor-glow"
+          data-ocid="icu.monitor_panel"
+          className={`rounded-2xl overflow-hidden ${alarmActive && !alarmSilenced ? "icu-alarm-border" : ""}`}
           style={{
-            background: "oklch(0.13 0.04 235)",
-            border: `2px solid ${hasCritical && !alarmSilenced ? "oklch(0.55 0.22 27 / 0.6)" : "oklch(0.65 0.16 196 / 0.3)"}`,
+            background: "#000000",
+            border:
+              alarmActive && !alarmSilenced
+                ? "3px solid #ff0000"
+                : "2px solid oklch(0.28 0.05 235)",
+            boxShadow:
+              alarmActive && !alarmSilenced
+                ? "0 0 30px #ff0000, 0 0 60px rgba(255,0,0,0.3)"
+                : "0 0 40px oklch(0.12 0.04 235 / 0.8)",
+            animation:
+              alarmActive && !alarmSilenced
+                ? "alarmFlash 0.5s infinite"
+                : "none",
           }}
         >
+          {/* Digital vitals header — neon style */}
           <div
-            className="flex items-center justify-between px-4 py-2"
-            style={{ borderBottom: "1px solid oklch(0.65 0.16 196 / 0.15)" }}
+            className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 justify-between"
+            style={{
+              background: "#000",
+              borderBottom: "1px solid rgba(0,255,65,0.1)",
+            }}
           >
-            <div className="flex items-center gap-2">
+            <div style={{ fontFamily: "'Courier New', monospace" }}>
+              <span style={{ color: "rgba(0,255,65,0.5)", fontSize: 9 }}>
+                HR
+              </span>
               <span
-                className="h-2 w-2 rounded-full"
                 style={{
-                  background: ecgColor,
-                  animation: "pulse-glow 1s ease-in-out infinite",
-                  boxShadow: `0 0 6px ${ecgColor}`,
+                  color:
+                    vitals.hr > 100 || vitals.hr < 50 ? "#ff4040" : "#00ff41",
+                  fontSize: 28,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  textShadow: "0 0 12px #00ff41",
+                  display: "block",
                 }}
-              />
-              <span
-                className="text-xs font-mono font-semibold tracking-widest"
-                style={{ color: ecgColor }}
               >
-                ECG — {scenario.name}
+                {hrVal}
+              </span>
+              <span style={{ color: "rgba(0,255,65,0.4)", fontSize: 9 }}>
+                bpm
               </span>
             </div>
+            <div style={{ fontFamily: "'Courier New', monospace" }}>
+              <span style={{ color: "rgba(255,255,0,0.5)", fontSize: 9 }}>
+                SpO₂
+              </span>
+              <span
+                style={{
+                  color:
+                    spo2Val < 90
+                      ? "#ff4040"
+                      : spo2Val < 94
+                        ? "#ffaa00"
+                        : "#ffff00",
+                  fontSize: 28,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  textShadow: "0 0 12px #ffff00",
+                  display: "block",
+                }}
+              >
+                {spo2Val}
+              </span>
+              <span style={{ color: "rgba(255,255,0,0.4)", fontSize: 9 }}>
+                %
+              </span>
+            </div>
+            <div style={{ fontFamily: "'Courier New', monospace" }}>
+              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 9 }}>
+                RESP
+              </span>
+              <span
+                style={{
+                  color: "#ffffff",
+                  fontSize: 28,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  textShadow: "0 0 10px #fff",
+                  display: "block",
+                }}
+              >
+                {rrVal}
+              </span>
+              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 9 }}>
+                bpm
+              </span>
+            </div>
+            <div style={{ fontFamily: "'Courier New', monospace" }}>
+              <span style={{ color: "rgba(0,220,255,0.5)", fontSize: 9 }}>
+                NIBP
+              </span>
+              <span
+                style={{
+                  color: nibpRunning ? "#888888" : "#00dcff",
+                  fontSize: 22,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  textShadow: "0 0 10px #00dcff",
+                  display: "block",
+                }}
+              >
+                {nibpRunning ? "---/---" : `${nibpSystolic}/${nibpDiastolic}`}
+              </span>
+              <span style={{ color: "rgba(0,220,255,0.4)", fontSize: 9 }}>
+                mmHg
+              </span>
+            </div>
+            <div style={{ fontFamily: "'Courier New', monospace" }}>
+              <span style={{ color: "rgba(150,120,255,0.5)", fontSize: 9 }}>
+                EtCO₂
+              </span>
+              <span
+                style={{
+                  color: "#9966ff",
+                  fontSize: 28,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  textShadow: "0 0 10px #9966ff",
+                  display: "block",
+                }}
+              >
+                {Math.round(vitals.etco2)}
+              </span>
+              <span style={{ color: "rgba(150,120,255,0.4)", fontSize: 9 }}>
+                mmHg
+              </span>
+            </div>
+            <div style={{ fontFamily: "'Courier New', monospace" }}>
+              <span style={{ color: "rgba(255,180,0,0.5)", fontSize: 9 }}>
+                TEMP
+              </span>
+              <span
+                style={{
+                  color: "#ffb400",
+                  fontSize: 28,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  textShadow: "0 0 10px #ffb400",
+                  display: "block",
+                }}
+              >
+                {vitals.temp.toFixed(1)}
+              </span>
+              <span style={{ color: "rgba(255,180,0,0.4)", fontSize: 9 }}>
+                °C
+              </span>
+            </div>
+          </div>
+
+          {/* Canvas waveforms */}
+          <div className="relative" style={{ height: 320, background: "#000" }}>
+            <IcuMonitorCanvas
+              heartRate={vitals.hr}
+              spo2={vitals.spo2}
+              respirationRate={vitals.rr}
+              pathology={pathology}
+              frozen={frozen}
+              audioEnabled={audioEnabled && !alarmSilenced}
+              onAlarmChange={setAlarmActive}
+            />
+            {/* Frozen overlay */}
+            {frozen && (
+              <div
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ background: "rgba(0,0,0,0.4)", pointerEvents: "none" }}
+              >
+                <span
+                  style={{
+                    fontFamily: "'Courier New', monospace",
+                    color: "#00dcff",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    textShadow: "0 0 12px #00dcff",
+                    letterSpacing: 4,
+                  }}
+                >
+                  ❄ FREEZE FRAME
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Pathology Toggles ── */}
+          <div
+            className="flex flex-wrap gap-2 px-4 py-2"
+            style={{
+              background: "rgba(0,0,0,0.8)",
+              borderTop: "1px solid rgba(0,255,65,0.1)",
+            }}
+          >
             <span
-              className="font-display text-lg font-black tabular-nums"
               style={{
-                color: ecgColor,
-                textShadow: `0 0 16px ${ecgColor}`,
+                color: "rgba(255,255,255,0.4)",
+                fontSize: 11,
+                fontFamily: "monospace",
+                alignSelf: "center",
               }}
             >
-              {Math.round(vitals.hr)}{" "}
-              <span className="text-xs font-normal opacity-70">bpm</span>
+              RHYTHM:
             </span>
+            {(["normal", "stemi", "afib"] as Pathology[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                data-ocid={`icu.pathology.${p}_toggle`}
+                onClick={() => setPathology(p)}
+                className="rounded-full px-3 py-1 text-xs font-bold transition-all"
+                style={{
+                  background:
+                    pathology === p
+                      ? p === "normal"
+                        ? "rgba(0,255,65,0.2)"
+                        : p === "stemi"
+                          ? "rgba(255,0,0,0.2)"
+                          : "rgba(255,180,0,0.2)"
+                      : "rgba(255,255,255,0.06)",
+                  border:
+                    pathology === p
+                      ? p === "normal"
+                        ? "1px solid #00ff41"
+                        : p === "stemi"
+                          ? "1px solid #ff4040"
+                          : "1px solid #ffaa00"
+                      : "1px solid rgba(255,255,255,0.15)",
+                  color:
+                    pathology === p
+                      ? p === "normal"
+                        ? "#00ff41"
+                        : p === "stemi"
+                          ? "#ff4040"
+                          : "#ffaa00"
+                      : "rgba(255,255,255,0.5)",
+                  fontFamily: "monospace",
+                }}
+              >
+                {p === "normal"
+                  ? "Normal Sinus"
+                  : p === "stemi"
+                    ? "⚠ STEMI"
+                    : "~ AFib"}
+              </button>
+            ))}
           </div>
-          <div className="px-2 py-1">
-            <EcgWaveform
-              hr={vitals.hr}
-              isCritical={hasCritical && !alarmSilenced}
-              color={ecgColor}
-            />
+
+          {/* ── Monitor Control Bar ── */}
+          <div
+            className="flex flex-wrap gap-2 px-4 py-2"
+            style={{
+              background: "rgba(0,0,0,0.9)",
+              borderTop: "1px solid rgba(0,255,65,0.1)",
+            }}
+          >
+            <button
+              type="button"
+              data-ocid="icu.freeze_button"
+              onClick={() => setFrozen((f) => !f)}
+              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold transition-all"
+              style={{
+                background: frozen
+                  ? "rgba(0,220,255,0.2)"
+                  : "rgba(255,255,255,0.06)",
+                border: frozen
+                  ? "1px solid #00dcff"
+                  : "1px solid rgba(255,255,255,0.15)",
+                color: frozen ? "#00dcff" : "rgba(255,255,255,0.6)",
+                fontFamily: "monospace",
+              }}
+            >
+              {frozen ? (
+                <Play className="h-3.5 w-3.5" />
+              ) : (
+                <Pause className="h-3.5 w-3.5" />
+              )}
+              {frozen ? "Resume" : "❄ Freeze"}
+            </button>
+
+            <button
+              type="button"
+              data-ocid="icu.start_bp_button"
+              onClick={handleStartBP}
+              disabled={nibpRunning}
+              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold transition-all disabled:opacity-50"
+              style={{
+                background: nibpRunning
+                  ? "rgba(0,220,255,0.15)"
+                  : "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(0,220,255,0.4)",
+                color: "#00dcff",
+                fontFamily: "monospace",
+              }}
+            >
+              {nibpRunning ? (
+                <span style={{ animation: "alert-blink 0.8s infinite" }}>
+                  💓 Measuring…
+                </span>
+              ) : (
+                "💓 Start BP"
+              )}
+            </button>
+
+            <button
+              type="button"
+              data-ocid="icu.view_12lead_button"
+              onClick={() => setShow12Lead(true)}
+              className="flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold transition-all"
+              style={{
+                background: "rgba(255,100,100,0.12)",
+                border: "1px solid rgba(255,100,100,0.4)",
+                color: "#ff9090",
+                fontFamily: "monospace",
+              }}
+            >
+              📊 View 12-Lead
+            </button>
+
+            <button
+              type="button"
+              data-ocid="icu.audio_toggle"
+              onClick={() => setAudioEnabled((a) => !a)}
+              className="rounded px-3 py-1.5 text-xs font-bold transition-all"
+              style={{
+                background: audioEnabled
+                  ? "rgba(0,255,65,0.1)"
+                  : "rgba(255,255,255,0.05)",
+                border: audioEnabled
+                  ? "1px solid rgba(0,255,65,0.35)"
+                  : "1px solid rgba(255,255,255,0.12)",
+                color: audioEnabled ? "#00ff41" : "rgba(255,255,255,0.4)",
+                fontFamily: "monospace",
+              }}
+            >
+              {audioEnabled ? "🔊 Sound On" : "🔇 Sound Off"}
+            </button>
           </div>
         </div>
 
+        {/* ── ECG Analysis Panel ── */}
+        <ECGAnalysisPanel
+          pathology={pathology}
+          heartRate={vitals.hr}
+          spo2={vitals.spo2}
+          nibpSystolic={nibpSystolic}
+          nibpDiastolic={nibpDiastolic}
+        />
+
         {/* ── Vitals Grid ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+          data-ocid="icu.vitals_panel"
+        >
           <VitalCard
-            label="HR"
-            value={String(Math.round(vitals.hr))}
+            label="Heart Rate"
+            value={String(hrVal)}
             unit="bpm"
             status={getVitalStatus(
               "hr",
               vitals.hr,
               scenario.criticalThresholds,
             )}
+            trend={vitals.hr > 100 ? "up" : vitals.hr < 60 ? "down" : "stable"}
           />
           <VitalCard
             label="SpO₂"
-            value={String(Math.round(vitals.spo2))}
+            value={String(spo2Val)}
             unit="%"
             status={getVitalStatus(
               "spo2",
               vitals.spo2,
               scenario.criticalThresholds,
             )}
+            trend={vitals.spo2 < 94 ? "down" : "stable"}
           />
           <VitalCard
-            label="BP"
+            label="Blood Pressure"
             value={`${Math.round(vitals.sbp)}/${Math.round(vitals.dbp)}`}
             unit="mmHg"
             status={getVitalStatus(
@@ -1486,27 +1675,29 @@ export function IcuSimulatorPage() {
               vitals.sbp,
               scenario.criticalThresholds,
             )}
-            sublabel={`MAP: ${Math.round((vitals.sbp + 2 * vitals.dbp) / 3)}`}
+            sublabel={`MAP: ${Math.round((vitals.sbp + 2 * vitals.dbp) / 3)} mmHg`}
           />
           <VitalCard
-            label="Temp"
-            value={vitals.temp.toFixed(1)}
+            label="Temperature"
+            value={String(vitals.temp.toFixed(1))}
             unit="°C"
             status={getVitalStatus(
               "temp",
               vitals.temp,
               scenario.criticalThresholds,
             )}
+            trend={vitals.temp > 38 ? "up" : "stable"}
           />
           <VitalCard
-            label="RR"
-            value={String(Math.round(vitals.rr))}
-            unit="/min"
+            label="Resp. Rate"
+            value={String(rrVal)}
+            unit="bpm"
             status={getVitalStatus(
               "rr",
               vitals.rr,
               scenario.criticalThresholds,
             )}
+            trend={vitals.rr > 25 ? "up" : "stable"}
           />
           <VitalCard
             label="EtCO₂"
@@ -1526,55 +1717,87 @@ export function IcuSimulatorPage() {
               (vitals.sbp + 2 * vitals.dbp) / 3 < 65 ? "critical" : "normal"
             }
           />
+          <VitalCard
+            label="Pulse Pressure"
+            value={String(Math.round(vitals.sbp - vitals.dbp))}
+            unit="mmHg"
+            status={vitals.sbp - vitals.dbp < 20 ? "warning" : "normal"}
+          />
         </div>
 
-        {/* ── Bottom 3-col layout ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Ventilator Panel */}
-          {scenario.ventilator && (
-            <div
-              className="rounded-xl p-4"
-              style={{
-                background: "oklch(0.18 0.05 235)",
-                border: "1px solid oklch(0.65 0.16 196 / 0.2)",
-              }}
+        {/* ── Phase Progress ── */}
+        <div
+          className="rounded-xl p-4"
+          style={{
+            background: "oklch(0.18 0.05 235)",
+            border: "1px solid oklch(0.65 0.16 196 / 0.2)",
+          }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span
+              className="text-xs font-semibold"
+              style={{ color: "oklch(0.88 0.015 215)" }}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <Wind
-                  className="h-4 w-4"
-                  style={{ color: "oklch(0.65 0.16 196)" }}
-                />
-                <h3
-                  className="font-display text-sm font-bold"
-                  style={{ color: "oklch(0.65 0.16 196)" }}
+              Phase Progression
+            </span>
+            <span className="text-xs opacity-50">
+              {phase} →{" "}
+              {phase === "stable"
+                ? "—"
+                : ["initial", "deteriorating", "responding", "stable"][
+                    Math.min(
+                      3,
+                      [
+                        "initial",
+                        "deteriorating",
+                        "responding",
+                        "stable",
+                      ].indexOf(phase) + 1,
+                    )
+                  ]}
+            </span>
+          </div>
+          <div
+            className="relative h-2 rounded-full overflow-hidden"
+            style={{ background: "oklch(0.22 0.05 235)" }}
+          >
+            <motion.div
+              className="absolute inset-y-0 left-0 rounded-full"
+              animate={{ width: `${phaseProgress}%` }}
+              transition={{ duration: 1.8, ease: "linear" }}
+              style={{
+                background:
+                  phase === "deteriorating"
+                    ? "oklch(0.55 0.22 27)"
+                    : phase === "stable"
+                      ? "oklch(0.65 0.18 155)"
+                      : "oklch(0.65 0.16 196)",
+              }}
+            />
+          </div>
+          <div className="flex justify-between mt-2">
+            {["initial", "deteriorating", "responding", "stable"].map(
+              (p, i) => (
+                <span
+                  key={p}
+                  className="text-xs font-semibold capitalize"
+                  style={{
+                    color:
+                      phase === p
+                        ? "oklch(0.65 0.16 196)"
+                        : "oklch(0.88 0.015 215 / 0.35)",
+                    fontSize: "0.65rem",
+                  }}
                 >
-                  Ventilator
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "Tidal Vol", value: `${scenario.ventilator.tv} mL` },
-                  { label: "Set RR", value: `${scenario.ventilator.rr}/min` },
-                  { label: "FiO₂", value: `${scenario.ventilator.fio2}%` },
-                  { label: "PEEP", value: `${scenario.ventilator.peep} cmH₂O` },
-                  { label: "PIP", value: `${scenario.ventilator.pip} cmH₂O` },
-                  { label: "Mode", value: "A/C-VC" },
-                ].map((item) => (
-                  <div key={item.label} className="flex flex-col">
-                    <span className="text-xs opacity-50">{item.label}</span>
-                    <span
-                      className="font-display text-sm font-bold tabular-nums"
-                      style={{ color: "oklch(0.75 0.18 70)" }}
-                    >
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+                  {i + 1}. {p}
+                </span>
+              ),
+            )}
+          </div>
+        </div>
 
-          {/* Drug Infusions */}
+        {/* ── Ventilator ── */}
+        {scenario.ventilator && (
           <div
             className="rounded-xl p-4"
             style={{
@@ -1582,388 +1805,300 @@ export function IcuSimulatorPage() {
               border: "1px solid oklch(0.65 0.16 196 / 0.2)",
             }}
           >
-            <div className="flex items-center gap-2 mb-3">
-              <Syringe
-                className="h-4 w-4"
-                style={{ color: "oklch(0.65 0.16 196)" }}
-              />
-              <h3
-                className="font-display text-sm font-bold"
-                style={{ color: "oklch(0.65 0.16 196)" }}
-              >
-                Drug Infusions
-              </h3>
-            </div>
-            <div className="space-y-2">
-              {scenario.drugs.map((drug) => (
+            <h3
+              className="text-sm font-bold mb-3 flex items-center gap-2"
+              style={{ color: "oklch(0.65 0.16 196)" }}
+            >
+              <Wind className="h-4 w-4" /> Ventilator Settings
+            </h3>
+            <div className="grid grid-cols-5 gap-2">
+              {(
+                [
+                  ["TV", `${scenario.ventilator.tv} mL`],
+                  ["RR", `${scenario.ventilator.rr} /min`],
+                  ["FiO₂", `${scenario.ventilator.fio2}%`],
+                  ["PEEP", `${scenario.ventilator.peep} cmH₂O`],
+                  ["PIP", `${scenario.ventilator.pip} cmH₂O`],
+                ] as [string, string][]
+              ).map(([label, val]) => (
                 <div
-                  key={drug.name}
-                  className="flex items-start justify-between rounded-lg px-2 py-1.5 gap-2"
+                  key={label}
+                  className="flex flex-col items-center rounded-lg p-2"
                   style={{ background: "oklch(0.15 0.04 235)" }}
                 >
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-xs font-semibold truncate"
-                      style={{ color: "oklch(0.88 0.015 215)" }}
-                    >
-                      {drug.name}
-                    </p>
-                    <p className="text-xs opacity-50 truncate">
-                      {drug.dose} · {drug.rate}
-                    </p>
-                  </div>
+                  <span className="text-xs opacity-50">{label}</span>
                   <span
-                    className="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
-                    style={{
-                      background:
-                        drug.status === "running"
-                          ? "oklch(0.65 0.18 155 / 0.15)"
-                          : drug.status === "completed"
-                            ? "oklch(0.65 0.16 196 / 0.1)"
-                            : "oklch(0.55 0.22 27 / 0.15)",
-                      color:
-                        drug.status === "running"
-                          ? "oklch(0.65 0.18 155)"
-                          : drug.status === "completed"
-                            ? "oklch(0.65 0.16 196)"
-                            : "oklch(0.55 0.22 27)",
-                    }}
+                    className="font-mono text-sm font-bold"
+                    style={{ color: "oklch(0.65 0.16 196)" }}
                   >
-                    {drug.status}
+                    {val}
                   </span>
                 </div>
               ))}
             </div>
           </div>
+        )}
 
-          {/* Practice / Observer Toggle */}
-          <div
-            className="rounded-xl p-4"
-            style={{
-              background: "oklch(0.18 0.05 235)",
-              border: "1px solid oklch(0.65 0.16 196 / 0.2)",
-            }}
+        {/* ── Drugs ── */}
+        <div
+          className="rounded-xl p-4"
+          style={{
+            background: "oklch(0.18 0.05 235)",
+            border: "1px solid oklch(0.65 0.16 196 / 0.2)",
+          }}
+        >
+          <h3
+            className="text-sm font-bold mb-3 flex items-center gap-2"
+            style={{ color: "oklch(0.65 0.16 196)" }}
           >
-            {/* Toggle */}
-            <div className="flex gap-2 mb-3">
-              <button
-                type="button"
-                data-ocid="icu.practice_toggle"
-                onClick={() => setPracticeMode(true)}
-                className="flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-all"
-                style={
-                  practiceMode
-                    ? {
-                        background: "oklch(0.65 0.16 196 / 0.2)",
-                        border: "1px solid oklch(0.65 0.16 196 / 0.5)",
-                        color: "oklch(0.65 0.16 196)",
-                      }
-                    : {
-                        border: "1px solid oklch(0.65 0.16 196 / 0.15)",
-                        color: "oklch(0.88 0.015 215 / 0.5)",
-                      }
-                }
+            <Syringe className="h-4 w-4" /> Drug Infusion Panel
+          </h3>
+          <div className="space-y-2">
+            {scenario.drugs.map((drug) => (
+              <div
+                key={drug.name}
+                className="flex items-start justify-between rounded-lg px-2 py-1.5 gap-2"
+                style={{ background: "oklch(0.15 0.04 235)" }}
               >
-                <Play className="h-3.5 w-3.5" />
-                Practice
-              </button>
-              <button
-                type="button"
-                onClick={() => setPracticeMode(false)}
-                className="flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-all"
-                style={
-                  !practiceMode
-                    ? {
-                        background: "oklch(0.75 0.18 70 / 0.15)",
-                        border: "1px solid oklch(0.75 0.18 70 / 0.5)",
-                        color: "oklch(0.75 0.18 70)",
-                      }
-                    : {
-                        border: "1px solid oklch(0.75 0.18 70 / 0.15)",
-                        color: "oklch(0.88 0.015 215 / 0.5)",
-                      }
-                }
-              >
-                <Eye className="h-3.5 w-3.5" />
-                Observe
-              </button>
-            </div>
-
-            <AnimatePresence mode="wait">
-              {practiceMode ? (
-                <motion.div
-                  key="practice"
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 8 }}
-                  className="space-y-2"
-                >
-                  <p className="text-xs opacity-50 mb-2">
-                    Select an intervention:
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="text-xs font-semibold truncate"
+                    style={{ color: "oklch(0.88 0.015 215)" }}
+                  >
+                    {drug.name}
                   </p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {PRACTICE_ACTIONS.map((action, actionIdx) => (
-                      <button
-                        key={action}
-                        type="button"
-                        data-ocid={`icu.action.button.${actionIdx + 1}`}
-                        onClick={() => handleAction(action)}
-                        className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium text-left transition-all hover:scale-[1.03] active:scale-[0.97]"
-                        style={{
-                          background: "oklch(0.22 0.055 235)",
-                          border: "1px solid oklch(0.65 0.16 196 / 0.2)",
-                          color: "oklch(0.88 0.015 215)",
-                        }}
-                      >
-                        <span style={{ color: "oklch(0.65 0.16 196)" }}>
-                          {ACTION_ICONS[action]}
-                        </span>
-                        {action}
-                      </button>
-                    ))}
-                  </div>
-
-                  <AnimatePresence>
-                    {actionFeedback && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        className="mt-2 rounded-lg p-2 text-xs"
-                        style={{
-                          background: actionFeedback.startsWith("⚠")
-                            ? "oklch(0.75 0.18 70 / 0.1)"
-                            : "oklch(0.65 0.18 155 / 0.1)",
-                          border: `1px solid ${actionFeedback.startsWith("⚠") ? "oklch(0.75 0.18 70 / 0.35)" : "oklch(0.65 0.18 155 / 0.35)"}`,
-                          color: actionFeedback.startsWith("⚠")
-                            ? "oklch(0.75 0.18 70)"
-                            : "oklch(0.65 0.18 155)",
-                        }}
-                      >
-                        {actionFeedback}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="observer"
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -8 }}
-                  className="space-y-1"
-                >
-                  <p className="text-xs opacity-50 mb-2">
-                    Ideal management steps:
+                  <p className="text-xs opacity-50 truncate">
+                    {drug.dose} · {drug.rate}
                   </p>
-                  <ScrollArea className="h-[210px] pr-2">
-                    <div className="space-y-2">
-                      {scenario.idealSteps.map((step, i) => (
-                        <button
-                          key={step.slice(0, 40)}
-                          type="button"
-                          onClick={() => setObserverStepIndex(i)}
-                          className="flex items-start gap-2 w-full text-left rounded-lg p-2 transition-all"
-                          style={{
-                            background:
-                              i === observerStepIndex
-                                ? "oklch(0.65 0.16 196 / 0.12)"
-                                : i < observerStepIndex
-                                  ? "oklch(0.65 0.18 155 / 0.08)"
-                                  : "transparent",
-                            border:
-                              i === observerStepIndex
-                                ? "1px solid oklch(0.65 0.16 196 / 0.35)"
-                                : "1px solid transparent",
-                          }}
-                        >
-                          <span
-                            className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-                            style={{
-                              background:
-                                i < observerStepIndex
-                                  ? "oklch(0.65 0.18 155)"
-                                  : i === observerStepIndex
-                                    ? "oklch(0.65 0.16 196)"
-                                    : "oklch(0.28 0.05 235)",
-                              color:
-                                i <= observerStepIndex
-                                  ? "white"
-                                  : "oklch(0.88 0.015 215 / 0.5)",
-                            }}
-                          >
-                            {i < observerStepIndex ? "✓" : i + 1}
-                          </span>
-                          <span
-                            className="text-xs leading-relaxed"
-                            style={{
-                              color:
-                                i === observerStepIndex
-                                  ? "oklch(0.92 0.015 215)"
-                                  : i < observerStepIndex
-                                    ? "oklch(0.65 0.18 155)"
-                                    : "oklch(0.88 0.015 215 / 0.55)",
-                            }}
-                          >
-                            {step}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                  <div className="flex gap-2 mt-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        setObserverStepIndex((i) => Math.max(0, i - 1))
-                      }
-                      disabled={observerStepIndex === 0}
-                      className="flex-1 text-xs"
-                      style={{ color: "oklch(0.65 0.16 196)" }}
-                    >
-                      ← Prev
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        setObserverStepIndex((i) =>
-                          Math.min(scenario.idealSteps.length - 1, i + 1),
-                        )
-                      }
-                      disabled={
-                        observerStepIndex === scenario.idealSteps.length - 1
-                      }
-                      className="flex-1 text-xs"
-                      style={{ color: "oklch(0.65 0.16 196)" }}
-                    >
-                      Next →
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+                <span
+                  className="text-xs font-bold px-1.5 py-0.5 rounded shrink-0"
+                  style={{
+                    background:
+                      drug.status === "running"
+                        ? "oklch(0.65 0.18 155 / 0.15)"
+                        : drug.status === "completed"
+                          ? "oklch(0.65 0.16 196 / 0.1)"
+                          : "oklch(0.55 0.22 27 / 0.15)",
+                    color:
+                      drug.status === "running"
+                        ? "oklch(0.65 0.18 155)"
+                        : drug.status === "completed"
+                          ? "oklch(0.65 0.16 196)"
+                          : "oklch(0.55 0.22 27)",
+                  }}
+                >
+                  {drug.status}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* ── Phase Progress ── */}
+        {/* ── Practice / Observer ── */}
         <div
-          className="rounded-xl p-3 flex items-center gap-4"
+          className="rounded-xl p-4"
           style={{
             background: "oklch(0.18 0.05 235)",
-            border: "1px solid oklch(0.65 0.16 196 / 0.15)",
+            border: "1px solid oklch(0.65 0.16 196 / 0.2)",
           }}
         >
-          <span className="text-xs opacity-50 shrink-0">Case Progress</span>
-          {(
-            ["initial", "deteriorating", "responding", "stable"] as VitalPhase[]
-          ).map((ph, i) => (
-            <div key={ph} className="flex items-center gap-2 flex-1">
-              <div
-                className="flex-1 h-1.5 rounded-full overflow-hidden"
-                style={{ background: "oklch(0.25 0.05 230)" }}
+          <div className="flex gap-2 mb-3">
+            <button
+              type="button"
+              data-ocid="icu.practice_toggle"
+              onClick={() => setPracticeMode(true)}
+              className="flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-all"
+              style={
+                practiceMode
+                  ? {
+                      background: "oklch(0.65 0.16 196 / 0.2)",
+                      border: "1px solid oklch(0.65 0.16 196 / 0.5)",
+                      color: "oklch(0.65 0.16 196)",
+                    }
+                  : {
+                      border: "1px solid oklch(0.65 0.16 196 / 0.15)",
+                      color: "oklch(0.88 0.015 215 / 0.5)",
+                    }
+              }
+            >
+              <Play className="h-3.5 w-3.5" /> Practice
+            </button>
+            <button
+              type="button"
+              onClick={() => setPracticeMode(false)}
+              className="flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-all"
+              style={
+                !practiceMode
+                  ? {
+                      background: "oklch(0.75 0.18 70 / 0.15)",
+                      border: "1px solid oklch(0.75 0.18 70 / 0.5)",
+                      color: "oklch(0.75 0.18 70)",
+                    }
+                  : {
+                      border: "1px solid oklch(0.75 0.18 70 / 0.15)",
+                      color: "oklch(0.88 0.015 215 / 0.5)",
+                    }
+              }
+            >
+              <Eye className="h-3.5 w-3.5" /> Observe
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {practiceMode ? (
+              <motion.div
+                key="practice"
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 8 }}
+                className="space-y-2"
               >
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width:
-                      ph === phase
-                        ? `${phaseProgress}%`
-                        : [
-                              "initial",
-                              "deteriorating",
-                              "responding",
-                              "stable",
-                            ].indexOf(phase) > i
-                          ? "100%"
-                          : "0%",
-                    background:
-                      ph === "deteriorating"
-                        ? "oklch(0.55 0.22 27)"
-                        : ph === "stable"
-                          ? "oklch(0.65 0.18 155)"
-                          : "oklch(0.65 0.16 196)",
-                  }}
-                />
-              </div>
-              <span
-                className="text-xs shrink-0 capitalize"
-                style={{
-                  color:
-                    ph === phase
-                      ? "oklch(0.88 0.015 215)"
-                      : "oklch(0.88 0.015 215 / 0.4)",
-                  fontWeight: ph === phase ? 700 : 400,
-                }}
+                <p className="text-xs opacity-50 mb-2">
+                  Select an intervention:
+                </p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {PRACTICE_ACTIONS.map((action, actionIdx) => (
+                    <button
+                      key={action}
+                      type="button"
+                      data-ocid={`icu.action.button.${actionIdx + 1}`}
+                      onClick={() => handleAction(action)}
+                      className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium text-left transition-all hover:scale-[1.03] active:scale-[0.97]"
+                      style={{
+                        background: "oklch(0.22 0.055 235)",
+                        border: "1px solid oklch(0.65 0.16 196 / 0.2)",
+                        color: "oklch(0.88 0.015 215)",
+                      }}
+                    >
+                      <span style={{ color: "oklch(0.65 0.16 196)" }}>
+                        {ACTION_ICONS[action]}
+                      </span>
+                      {action}
+                    </button>
+                  ))}
+                </div>
+                <AnimatePresence>
+                  {actionFeedback && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      className="mt-2 rounded-lg p-2 text-xs"
+                      style={{
+                        background: actionFeedback.startsWith("⚠")
+                          ? "oklch(0.75 0.18 70 / 0.1)"
+                          : "oklch(0.65 0.18 155 / 0.1)",
+                        border: `1px solid ${actionFeedback.startsWith("⚠") ? "oklch(0.75 0.18 70 / 0.35)" : "oklch(0.65 0.18 155 / 0.35)"}`,
+                        color: actionFeedback.startsWith("⚠")
+                          ? "oklch(0.75 0.18 70)"
+                          : "oklch(0.65 0.18 155)",
+                      }}
+                    >
+                      {actionFeedback}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="observer"
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                className="space-y-1"
               >
-                {ph}
-              </span>
-            </div>
-          ))}
+                <p className="text-xs opacity-50 mb-2">
+                  Ideal management steps:
+                </p>
+                <ScrollArea className="h-[210px] pr-2">
+                  <div className="space-y-2">
+                    {scenario.idealSteps.map((step, i) => (
+                      <button
+                        key={step.slice(0, 40)}
+                        type="button"
+                        onClick={() => setObserverStepIndex(i)}
+                        className="flex items-start gap-2 w-full text-left rounded-lg p-2 transition-all"
+                        style={{
+                          background:
+                            i === observerStepIndex
+                              ? "oklch(0.65 0.16 196 / 0.12)"
+                              : i < observerStepIndex
+                                ? "oklch(0.65 0.18 155 / 0.08)"
+                                : "transparent",
+                          border:
+                            i === observerStepIndex
+                              ? "1px solid oklch(0.65 0.16 196 / 0.35)"
+                              : "1px solid transparent",
+                        }}
+                      >
+                        <span
+                          className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                          style={{
+                            background:
+                              i < observerStepIndex
+                                ? "oklch(0.65 0.18 155)"
+                                : i === observerStepIndex
+                                  ? "oklch(0.65 0.16 196)"
+                                  : "oklch(0.22 0.055 235)",
+                            color:
+                              i <= observerStepIndex
+                                ? "white"
+                                : "oklch(0.88 0.015 215 / 0.5)",
+                          }}
+                        >
+                          {i < observerStepIndex ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            i + 1
+                          )}
+                        </span>
+                        <p
+                          className="text-xs"
+                          style={{
+                            color:
+                              i <= observerStepIndex
+                                ? "oklch(0.88 0.015 215)"
+                                : "oklch(0.88 0.015 215 / 0.5)",
+                          }}
+                        >
+                          {step}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* ── Scenario Complete Banner ── */}
-        {phase === "stable" && phaseProgress >= 100 && (
+        {/* ── Restart button when stable ── */}
+        {phase === "stable" && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl p-4 flex flex-col items-center gap-3 text-center"
-            style={{
-              background: "oklch(0.65 0.18 155 / 0.1)",
-              border: "1.5px solid oklch(0.65 0.18 155 / 0.5)",
-            }}
+            className="flex justify-center"
           >
-            <CheckCircle2
-              className="h-8 w-8"
-              style={{ color: "oklch(0.65 0.18 155)" }}
-            />
-            <div>
-              <p
-                className="font-bold text-sm"
-                style={{ color: "oklch(0.65 0.18 155)" }}
-              >
-                Scenario Complete!
-              </p>
-              <p className="text-xs opacity-60 mt-0.5">
-                Patient stabilised. Great work!
-              </p>
-            </div>
             <Button
+              data-ocid="icu.restart_button"
               onClick={resetScenario}
-              className="mt-1"
-              style={{
-                background: "oklch(0.65 0.18 155)",
-                color: "oklch(0.12 0.04 235)",
-                fontWeight: 700,
-              }}
+              className="gap-2 px-8 py-2 font-bold"
+              style={{ background: "oklch(0.65 0.16 196)", color: "white" }}
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Restart Scenario
+              <RefreshCw className="h-4 w-4" /> Restart Scenario
             </Button>
           </motion.div>
         )}
-
-        {/* ── Footer attribution ── */}
-        <footer className="text-center py-4">
-          <p
-            className="text-xs"
-            style={{ color: "oklch(0.88 0.015 215 / 0.3)" }}
-          >
-            © {new Date().getFullYear()}. Built with love using{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "oklch(0.65 0.16 196)" }}
-            >
-              caffeine.ai
-            </a>
-          </p>
-        </footer>
       </div>
+
+      {/* ── 12-Lead ECG Modal ── */}
+      <TwelveLeadECGModal
+        open={show12Lead}
+        onClose={() => setShow12Lead(false)}
+        pathology={pathology}
+        heartRate={vitals.hr}
+      />
     </div>
   );
 }
-
-export default IcuSimulatorPage;

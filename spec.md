@@ -1,39 +1,41 @@
-# MedSim Professional Overhaul v50
+# MedSim — ICU Simulator & ECG Panel Re-Engineering
 
 ## Current State
-- Full-stack medical simulation platform with 18 pages
-- App has Hinglish labels in navigation and home page (e.g., "Kya Karna Hai Aaj?", "Practice Karo", "Ghar", "Naukri Dekho")
-- HomePage lacks a Hero section with a prominent CTA
-- Service worker only caches index/manifest, no offline indicator
-- No sound effects or visual cues for correct/incorrect decisions
-- Mobile layout has potential header overlap issues
-- Sidebar does not have explicit min-touch-target sizing
-- No pulse-line loading animation component
+IcuSimulatorPage.tsx exists with a canvas-based ECG waveform, basic vitals display, ventilator panel, drug panel, practice/observer modes, and scenario selection. The ECG is functional but not clinically realistic — background is not pitch black, waveforms lack fading tails, there is no 12-lead view, no NIBP logic with sound, no freeze-frame, and no ECG interpretation panel.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Hero Section on HomePage with large "Start Clinical Practice" button and animated ECG pulse line
-- Offline Mode indicator badge (shown when navigator.onLine is false)
-- Background sync logic: queue offline scores in localStorage and flush to leaderboard on reconnect
-- Web Audio API sound effects: positive beep for correct decisions, negative tone for incorrect
-- Visual cues: green checkmark overlay and red X overlay on MCQ/case correct/incorrect answers
-- Pulse-line (ECG) CSS loading animation component
+- Pitch black (#000000) background for the entire ICU monitor display
+- Neon Green ECG (Lead II), Neon Yellow SpO2 pleth wave, White respiration — all drawn procedurally with Canvas API, sweeping left-to-right with fading phosphor tail effect
+- Dynamic R-R interval physics: intervals shorten/lengthen in real-time as HR slider changes
+- Audio beep at every R-wave peak (Web Audio API sharp electronic tone)
+- SpO2 < 90% red flashing alarm with critical alarm tone
+- "View 12-Lead" button opening a modal with 3×4 grid of all 12 leads (I, II, III, aVR, aVL, aVF, V1–V6)
+- Correct anatomical lead morphology per lead (inverted P/QRS in aVR, R-wave progression V1–V6, etc.)
+- Pink-tinted 1mm/5mm medical ECG grid background in 12-lead view
+- Pathology toggles: Normal Sinus, STEMI (ST elevation), AFib (irregularly irregular R-R)
+- Freeze Frame button to pause all waveforms for detailed analysis
+- "Start BP" button with cuff inflation sound (Web Audio), 5-second delay before updating BP digital display
+- ECG Interpretation/Analysis panel showing AI-driven explanation based on current pathology (ACLS/NEET PG guidelines)
 
 ### Modify
-- AppLayout: replace all Hinglish sub-labels with Professional Medical English. Increase nav item padding for finger-friendly touch targets (min 44px). Add offline indicator in header.
-- HomePage: Replace all Hinglish section headings and quick action labels with Professional Medical English. Add Hero section at top. Update terminology: "Kya Karna Hai Aaj?" → "Quick Access", "Practice Karo" → "Clinical Cases", "Apna Patient" → "Custom Patient Simulator", "Results Dekho" → "Clinical Proficiency", "Sab Dekho" → "View All", "Inhe Improve Karo" → "Areas Requiring Attention", "Subject-wise Performance" → "Clinical Performance by Specialty"
-- Service Worker (sw.js): Add cache-first strategy for static assets, cache JS/CSS bundles, add offline fallback page
-- LoginPage: Keep existing demo OTP with WhatsApp-style UI (already good), no change needed
+- Replace existing ECG canvas rendering with new high-fidelity multi-channel canvas renderer
+- Update vitals display panel to match ICU monitor aesthetic (dark background, neon digit colors)
+- Integrate pathology state (Normal/STEMI/AFib) into existing scenario/phase system
 
 ### Remove
-- All Hinglish text from navigation labels (hinglish sub-labels) and page content
-- Casual terminology throughout the app
+- Old basic ECG drawing logic (replaced by new procedural multi-channel renderer)
 
 ## Implementation Plan
-1. Update AppLayout.tsx: replace hinglish labels with English medical terms, increase touch targets to 48px, add offline indicator in mobile header
-2. Update HomePage.tsx: add Hero section, replace all Hinglish with Professional Medical English
-3. Update sw.js: enhance caching strategy for offline use
-4. Create useSoundFeedback.ts hook: Web Audio API beep sounds for correct/incorrect
-5. Create OfflineIndicator.tsx component
-6. Apply sound/visual cues in ExercisePage and NEETPGQuizPage answer feedback
+1. Create `IcuMonitorCanvas.tsx` component — multi-channel canvas renderer with phosphor tail effect, dynamic physics for R-R interval, beep audio, alarm logic
+2. Create `TwelveLeadECGModal.tsx` — full 12-lead view with pink grid, anatomically correct morphology per lead, pathology-aware rendering
+3. Create `ECGAnalysisPanel.tsx` — static AI-driven interpretation text based on current pathology state (Normal/STEMI/AFib)
+4. Update `IcuSimulatorPage.tsx` to:
+   - Use new IcuMonitorCanvas for main display
+   - Add pathology toggle buttons (Normal Sinus / STEMI / AFib)
+   - Add Freeze Frame button
+   - Add NIBP "Start BP" button with cuff sound + 5s delay
+   - Add "View 12-Lead" button
+   - Add ECGAnalysisPanel
+   - Apply pitch black monitor background

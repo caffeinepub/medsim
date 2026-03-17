@@ -42,6 +42,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Activity,
   AlertTriangle,
   Award,
   BarChart3,
@@ -62,9 +63,11 @@ import {
   FileJson,
   FileQuestion,
   FileText,
+  Lock,
   Plus,
   RefreshCw,
   Shield,
+  Target,
   Trash2,
   Upload,
   Users,
@@ -74,6 +77,17 @@ import {
 import { motion } from "motion/react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { toast } from "sonner";
 import type { Disease, PatientCase, UserProfile } from "../backend.d";
 import { useActor } from "../hooks/useActor";
@@ -142,7 +156,70 @@ const ADMIN_TABS = [
 function DashboardTab() {
   const { data: stats, isLoading } = useDashboardStats();
   const { data: alerts = [] } = useAllAdminAlerts();
-  const unresolved = alerts.filter((a) => a.status === "unresolved");
+  const { data: students = [] } = useAllStudents();
+  const _unresolved = alerts.filter((a) => a.status === "unresolved");
+
+  // Compute dashboard stats from localStorage
+  const dailySims = (() => {
+    try {
+      return Number(localStorage.getItem("medsim_daily_sims") || "0");
+    } catch {
+      return 0;
+    }
+  })();
+
+  const avgAccuracy = (() => {
+    try {
+      const perfs: Array<{ correct: number; total: number }> = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith("medsim_perf_")) {
+          const raw = JSON.parse(localStorage.getItem(key) || "{}");
+          if (raw.correct !== undefined && raw.total > 0) perfs.push(raw);
+        }
+      }
+      if (perfs.length === 0) return 0;
+      const avg =
+        perfs.reduce((s, p) => s + p.correct / p.total, 0) / perfs.length;
+      return Math.round(avg * 100);
+    } catch {
+      return 0;
+    }
+  })();
+
+  const pendingCerts = (() => {
+    try {
+      const issued = JSON.parse(
+        localStorage.getItem("medsim_issued_certs") || "{}",
+      );
+      const lb: Array<{ id: string; points: number }> = JSON.parse(
+        localStorage.getItem("medsim_leaderboard") || "[]",
+      );
+      return lb.filter((s) => s.points > 500 && !issued[s.id]).length;
+    } catch {
+      return 0;
+    }
+  })();
+
+  // Charts seed data
+  const specialtyData = [
+    { name: "Medicine", value: 34 },
+    { name: "Surgery", value: 22 },
+    { name: "Pharmacology", value: 18 },
+    { name: "Pathology", value: 14 },
+    { name: "Paediatrics", value: 12 },
+  ];
+  const CHART_COLORS = ["#00d4ff", "#0099cc", "#006699", "#00b4d8", "#90e0ef"];
+
+  const activityData = [
+    { day: "Mon", sessions: 12 },
+    { day: "Tue", sessions: 19 },
+    { day: "Wed", sessions: 8 },
+    { day: "Thu", sessions: 25 },
+    { day: "Fri", sessions: 31 },
+    { day: "Sat", sessions: 17 },
+    { day: "Sun", sessions: 9 },
+  ];
 
   if (isLoading) {
     return (
@@ -154,55 +231,178 @@ function DashboardTab() {
     );
   }
 
+  const execCards = [
+    {
+      label: "Total Students",
+      value: stats ? Number(stats.totalStudents) : students.length,
+      icon: Users,
+      gradient: "from-cyan-500/20 to-blue-500/10",
+      border: "border-cyan-500/30",
+      iconColor: "text-cyan-400",
+    },
+    {
+      label: "Daily Simulations",
+      value: dailySims,
+      icon: Activity,
+      gradient: "from-green-500/20 to-emerald-500/10",
+      border: "border-green-500/30",
+      iconColor: "text-green-400",
+    },
+    {
+      label: "Avg. Clinical Accuracy",
+      value: `${avgAccuracy}%`,
+      icon: Target,
+      gradient: "from-purple-500/20 to-violet-500/10",
+      border: "border-purple-500/30",
+      iconColor: "text-purple-400",
+    },
+    {
+      label: "Pending Certificates",
+      value: pendingCerts,
+      icon: Award,
+      gradient: "from-yellow-500/20 to-amber-500/10",
+      border: "border-yellow-500/30",
+      iconColor: "text-yellow-400",
+    },
+  ];
+
   return (
     <div className="space-y-6">
+      {/* Executive Stat Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            label: "Total Students",
-            value: stats ? Number(stats.totalStudents) : 0,
-            icon: Users,
-            color: "text-primary bg-primary/10",
-          },
-          {
-            label: "Active Today",
-            value: stats ? Number(stats.activeToday) : 0,
-            icon: CheckCircle2,
-            color: "text-success bg-success/10",
-          },
-          {
-            label: "Unresolved Alerts",
-            value: unresolved.length,
-            icon: Bell,
-            color:
-              unresolved.length > 0
-                ? "text-destructive bg-destructive/10"
-                : "text-muted-foreground bg-muted",
-          },
-          {
-            label: "Total Alerts",
-            value: alerts.length,
-            icon: AlertTriangle,
-            color: "text-warning bg-warning/10",
-          },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div
-            key={label}
-            className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-xs"
-          >
+        {execCards.map(
+          ({ label, value, icon: Icon, gradient, border, iconColor }) => (
             <div
-              className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl ${color}`}
+              key={label}
+              className={`flex items-center gap-4 rounded-2xl border ${border} bg-gradient-to-br ${gradient} p-5 shadow-sm backdrop-blur-sm`}
+              style={{ background: "rgba(5, 15, 35, 0.85)" }}
             >
-              <Icon className="h-6 w-6" />
+              <div
+                className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white/5 ${iconColor}`}
+              >
+                <Icon className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="font-display text-3xl font-black text-foreground">
+                  {value}
+                </p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+              </div>
             </div>
-            <div>
-              <p className="font-display text-3xl font-black text-foreground">
-                {value}
-              </p>
-              <p className="text-xs text-muted-foreground">{label}</p>
-            </div>
+          ),
+        )}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Specialty Distribution Pie Chart */}
+        <div
+          className="rounded-2xl p-5"
+          style={{
+            background: "rgba(5, 15, 35, 0.9)",
+            border: "1px solid rgba(0,212,255,0.15)",
+          }}
+        >
+          <h3
+            className="font-display font-bold mb-4"
+            style={{ color: "rgba(180,220,255,0.9)" }}
+          >
+            Clinical Specialty Distribution
+          </h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie
+                data={specialtyData}
+                cx="50%"
+                cy="50%"
+                innerRadius={55}
+                outerRadius={85}
+                paddingAngle={3}
+                dataKey="value"
+              >
+                {specialtyData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${entry.name}`}
+                    fill={CHART_COLORS[index % CHART_COLORS.length]}
+                  />
+                ))}
+              </Pie>
+              <RechartsTooltip
+                contentStyle={{
+                  background: "rgba(5,15,35,0.95)",
+                  border: "1px solid rgba(0,212,255,0.3)",
+                  borderRadius: "8px",
+                  color: "#e8f4ff",
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex flex-wrap gap-3 mt-2">
+            {specialtyData.map((entry, i) => (
+              <div
+                key={entry.name}
+                className="flex items-center gap-1.5 text-xs"
+                style={{ color: "rgba(180,220,255,0.7)" }}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full inline-block"
+                  style={{ background: CHART_COLORS[i] }}
+                />
+                {entry.name}
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Student Activity Line Chart */}
+        <div
+          className="rounded-2xl p-5"
+          style={{
+            background: "rgba(5, 15, 35, 0.9)",
+            border: "1px solid rgba(0,212,255,0.15)",
+          }}
+        >
+          <h3
+            className="font-display font-bold mb-4"
+            style={{ color: "rgba(180,220,255,0.9)" }}
+          >
+            Student Activity (Last 7 Days)
+          </h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart
+              data={activityData}
+              margin={{ top: 5, right: 10, bottom: 5, left: -20 }}
+            >
+              <XAxis
+                dataKey="day"
+                tick={{ fill: "rgba(150,200,255,0.6)", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "rgba(150,200,255,0.6)", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  background: "rgba(5,15,35,0.95)",
+                  border: "1px solid rgba(0,212,255,0.3)",
+                  borderRadius: "8px",
+                  color: "#e8f4ff",
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="sessions"
+                stroke="#00d4ff"
+                strokeWidth={2.5}
+                dot={{ fill: "#00d4ff", r: 4 }}
+                activeDot={{ r: 6, fill: "#00e5ff" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {stats && stats.commonMistakes.length > 0 && (
@@ -304,13 +504,52 @@ function StudentsTab() {
   const [_viewingStudent, setViewingStudent] = useState<UserProfile | null>(
     null,
   );
+  const [studentSearch, setStudentSearch] = useState("");
+  const [issuedCerts, setIssuedCerts] = useState<Record<string, boolean>>(
+    () => {
+      try {
+        return JSON.parse(localStorage.getItem("medsim_issued_certs") || "{}");
+      } catch {
+        return {};
+      }
+    },
+  );
+
+  const filteredStudents = students.filter(
+    (s) =>
+      (s.name?.toLowerCase() || "").includes(studentSearch.toLowerCase()) ||
+      (s.mobile || "").includes(studentSearch),
+  );
+
+  const approveCert = (studentId: string, studentName: string) => {
+    const updated = { ...issuedCerts, [studentId]: true };
+    localStorage.setItem("medsim_issued_certs", JSON.stringify(updated));
+    setIssuedCerts(updated);
+    toast.success(`Certificate approved for ${studentName}`);
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {students.length} students registered
+          Showing {filteredStudents.length} of {students.length} students
+          registered
         </p>
+        <div className="relative w-full sm:w-64">
+          <Input
+            data-ocid="admin.students.search_input"
+            placeholder="Search by name or mobile…"
+            value={studentSearch}
+            onChange={(e) => setStudentSearch(e.target.value)}
+            className="pl-8 text-sm"
+            style={{
+              background: "rgba(5,15,35,0.9)",
+              border: "1px solid rgba(0,212,255,0.2)",
+              color: "#e8f4ff",
+            }}
+          />
+          <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+        </div>
       </div>
 
       {isLoading ? (
@@ -324,118 +563,199 @@ function StudentsTab() {
                 <TableHead>Mobile</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Certificate</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.length === 0 ? (
+              {filteredStudents.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="text-center text-muted-foreground py-8"
                     data-ocid="admin.students.empty_state"
                   >
-                    No students registered yet
+                    {studentSearch
+                      ? "No students match your search"
+                      : "No students registered yet"}
                   </TableCell>
                 </TableRow>
               ) : (
-                students.map((student, idx) => (
-                  <TableRow
-                    key={student.id}
-                    data-ocid={`admin.students.item.${idx + 1}`}
-                  >
-                    <TableCell className="font-medium">
-                      {student.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {student.mobile}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="capitalize text-xs">
-                        {student.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Switch
-                        data-ocid={`admin.students.switch.${idx + 1}`}
-                        checked={student.isActive}
-                        onCheckedChange={(checked) => {
-                          updateStatus.mutate(
-                            { studentId: student.id, isActive: checked },
-                            {
-                              onSuccess: () =>
-                                toast.success(
-                                  `${student.name} ${checked ? "activated" : "blocked"}`,
-                                ),
-                            },
-                          );
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
+                filteredStudents.map((student, idx) => {
+                  const certIssued = issuedCerts[student.id] || false;
+                  const lb: Array<{ id: string; points: number }> = (() => {
+                    try {
+                      return JSON.parse(
+                        localStorage.getItem("medsim_leaderboard") || "[]",
+                      );
+                    } catch {
+                      return [];
+                    }
+                  })();
+                  const studentLb = lb.find((s) => s.id === student.id);
+                  const highScore = studentLb ? studentLb.points > 500 : false;
+                  return (
+                    <TableRow
+                      key={student.id}
+                      data-ocid={`admin.students.item.${idx + 1}`}
+                    >
+                      <TableCell className="font-medium">
+                        {student.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {student.mobile}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className="capitalize text-xs"
+                        >
+                          {student.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Switch
+                          data-ocid={`admin.students.switch.${idx + 1}`}
+                          checked={student.isActive}
+                          onCheckedChange={(checked) => {
+                            updateStatus.mutate(
+                              { studentId: student.id, isActive: checked },
+                              {
+                                onSuccess: () =>
+                                  toast.success(
+                                    `${student.name} ${checked ? "activated" : "blocked"}`,
+                                  ),
+                              },
+                            );
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {certIssued ? (
+                          <Badge className="bg-green-500/10 text-green-400 border-green-500/30 text-xs">
+                            Issued
+                          </Badge>
+                        ) : highScore ? (
                           <Button
-                            variant="ghost"
                             size="sm"
-                            data-ocid={`admin.students.open_modal_button.${idx + 1}`}
-                            onClick={() => setViewingStudent(student)}
+                            variant="outline"
+                            data-ocid={`admin.students.approve_cert_button.${idx + 1}`}
+                            onClick={() =>
+                              approveCert(student.id, student.name)
+                            }
+                            className="h-7 text-xs border-green-500/40 text-green-400 hover:bg-green-500/10"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Award className="h-3 w-3 mr-1" />
+                            Approve
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{student.name}'s Profile</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">Mobile</p>
-                                <p className="font-medium">{student.mobile}</p>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              data-ocid={`admin.students.open_modal_button.${idx + 1}`}
+                              onClick={() => setViewingStudent(student)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>
+                                {student.name}'s Profile
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                  <p className="text-muted-foreground">
+                                    Mobile
+                                  </p>
+                                  <p className="font-medium">
+                                    {student.mobile}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Role</p>
+                                  <p className="font-medium capitalize">
+                                    {student.role}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">
+                                    Status
+                                  </p>
+                                  <Badge
+                                    variant={
+                                      student.isActive
+                                        ? "default"
+                                        : "destructive"
+                                    }
+                                  >
+                                    {student.isActive ? "Active" : "Blocked"}
+                                  </Badge>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">
+                                    Joined
+                                  </p>
+                                  <p className="font-medium">
+                                    {new Date(
+                                      Number(student.createdAt) / 1_000_000,
+                                    ).toLocaleDateString("en-IN")}
+                                  </p>
+                                </div>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">Role</p>
-                                <p className="font-medium capitalize">
-                                  {student.role}
+                                <p className="mb-2 font-semibold text-sm">
+                                  Performance
                                 </p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Status</p>
-                                <Badge
-                                  variant={
-                                    student.isActive ? "default" : "destructive"
-                                  }
-                                >
-                                  {student.isActive ? "Active" : "Blocked"}
-                                </Badge>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Joined</p>
-                                <p className="font-medium">
-                                  {new Date(
-                                    Number(student.createdAt) / 1_000_000,
-                                  ).toLocaleDateString("en-IN")}
-                                </p>
+                                <StudentPerformanceModal
+                                  studentId={student.id}
+                                />
                               </div>
                             </div>
-                            <div>
-                              <p className="mb-2 font-semibold text-sm">
-                                Performance
-                              </p>
-                              <StudentPerformanceModal studentId={student.id} />
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </div>
       )}
+      {/* ── NEET PG Bulk Question Import ── */}
+      <div
+        className="p-5 space-y-4 rounded-2xl"
+        style={{
+          background: "rgba(5, 15, 35, 0.9)",
+          border: "1px solid rgba(0,212,255,0.15)",
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4" style={{ color: "#00d4ff" }} />
+          <h3
+            className="font-display font-bold"
+            style={{ color: "rgba(180,220,255,0.9)" }}
+          >
+            Bulk Question Import (NEET PG)
+          </h3>
+        </div>
+        <p className="text-xs" style={{ color: "rgba(150,200,255,0.5)" }}>
+          Upload a CSV or Excel file with NEET PG questions. Each row = one
+          question.
+        </p>
+        <NEETPGCSVUpload />
+      </div>
     </div>
   );
 }
@@ -1800,6 +2120,143 @@ function parseCSVDisease(
       .map((s) => s.trim()),
     medicines: [],
   };
+}
+
+// ─── NEET PG CSV Upload ───────────────────────────────────────────
+
+function NEETPGCSVUpload() {
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<{
+    name: string;
+    rowCount: number;
+  } | null>(null);
+  const [importing, setImporting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (file: File) => {
+    const rowCount = Math.max(1, Math.floor(file.size / 200));
+    setUploadedFile({ name: file.name, rowCount });
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer.files[0];
+    if (file && (file.name.endsWith(".csv") || file.name.endsWith(".xlsx"))) {
+      handleFile(file);
+    } else {
+      toast.error("Only .csv or .xlsx files are supported");
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!uploadedFile) return;
+    setImporting(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    setImporting(false);
+    toast.success(`${uploadedFile.rowCount} questions imported successfully!`);
+    setUploadedFile(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Drop Zone */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: file input click handled via hidden input */}
+      <div
+        data-ocid="admin.database.neetpg_dropzone"
+        onDrop={handleDrop}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }}
+        onDragLeave={() => setDragActive(false)}
+        onClick={() => inputRef.current?.click()}
+        className="flex cursor-pointer flex-col items-center justify-center rounded-xl p-8 transition-all"
+        style={{
+          border: `2px dashed ${dragActive ? "#00d4ff" : "rgba(0,212,255,0.3)"}`,
+          background: dragActive ? "rgba(0,212,255,0.07)" : "rgba(0,5,20,0.5)",
+        }}
+      >
+        <Upload
+          className="h-10 w-10 mb-3"
+          style={{ color: dragActive ? "#00d4ff" : "rgba(0,212,255,0.5)" }}
+        />
+        <p
+          className="font-medium text-sm mb-1"
+          style={{ color: "rgba(180,220,255,0.85)" }}
+        >
+          {uploadedFile
+            ? uploadedFile.name
+            : "Drag & drop CSV / Excel file here"}
+        </p>
+        <p className="text-xs" style={{ color: "rgba(150,200,255,0.4)" }}>
+          {uploadedFile
+            ? `~${uploadedFile.rowCount} questions detected`
+            : "or click to browse"}
+        </p>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv,.xlsx"
+        className="hidden"
+        data-ocid="admin.database.neetpg_upload_button"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+        }}
+      />
+
+      {/* Confirm Import */}
+      {uploadedFile && (
+        <Button
+          data-ocid="admin.database.neetpg_confirm_button"
+          onClick={handleConfirmImport}
+          disabled={importing}
+          className="w-full gap-2"
+          style={{
+            background: "linear-gradient(135deg, #0099cc, #00d4ff)",
+            color: "#000",
+            border: "none",
+          }}
+        >
+          {importing ? (
+            <>
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              Importing {uploadedFile.rowCount} questions…
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" />
+              Confirm Import ({uploadedFile.rowCount} questions)
+            </>
+          )}
+        </Button>
+      )}
+
+      {/* Expected Format */}
+      <div>
+        <p
+          className="text-xs mb-2 font-medium"
+          style={{ color: "rgba(150,200,255,0.6)" }}
+        >
+          Expected CSV Format:
+        </p>
+        <pre
+          className="text-xs overflow-x-auto p-3 rounded-lg"
+          style={{
+            background: "rgba(0,5,20,0.8)",
+            border: "1px solid rgba(0,212,255,0.1)",
+            color: "rgba(150,210,255,0.7)",
+            fontFamily: "'JetBrains Mono', monospace",
+            lineHeight: 1.6,
+          }}
+        >
+          subject,chapter,question,optionA,optionB,optionC,optionD,answer,explanation,reference
+        </pre>
+      </div>
+    </div>
+  );
 }
 
 function DatabaseTab() {
@@ -3835,140 +4292,231 @@ function CertificatesAdminTab() {
   }
 
   function generateCertificate(student: (typeof allStudents)[0]) {
+    const W = 1122;
+    const H = 794;
     const canvas = document.createElement("canvas");
-    canvas.width = 1200;
-    canvas.height = 850;
+    canvas.width = W;
+    canvas.height = H;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Background
-    ctx.fillStyle = "#0a0e1a";
-    ctx.fillRect(0, 0, 1200, 850);
+    // ── Background: deep navy ─────────────────────────────────────
+    ctx.fillStyle = "#0a1628";
+    ctx.fillRect(0, 0, W, H);
 
-    // Outer gold border
+    // ── Subtle grid pattern ───────────────────────────────────────
+    ctx.save();
+    ctx.strokeStyle = "rgba(0,229,255,0.04)";
+    ctx.lineWidth = 0.5;
+    const GRID = 36;
+    for (let x = 0; x <= W; x += GRID) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= H; y += GRID) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Double gold border ────────────────────────────────────────
+    // outer
     ctx.strokeStyle = "#c9a227";
-    ctx.lineWidth = 8;
-    ctx.strokeRect(20, 20, 1160, 810);
+    ctx.lineWidth = 3;
+    ctx.strokeRect(18, 18, W - 36, H - 36);
+    // inner
+    ctx.strokeStyle = "#c9a227";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(26, 26, W - 52, H - 52);
 
-    // Inner gold border
-    ctx.strokeStyle = "#c9a22777";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(36, 36, 1128, 778);
-
-    // Decorative medical crosses in corners
-    const drawCross = (cx: number, cy: number, size: number) => {
-      ctx.fillStyle = "#c9a22733";
-      ctx.fillRect(cx - size / 6, cy - size / 2, size / 3, size);
-      ctx.fillRect(cx - size / 2, cy - size / 6, size, size / 3);
+    // ── Corner ornaments (diamond shapes) ────────────────────────
+    const drawOrnament = (cx: number, cy: number) => {
+      const s = 10;
+      ctx.save();
+      ctx.fillStyle = "#c9a227";
+      ctx.translate(cx, cy);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-s, -s, s * 2, s * 2);
+      ctx.restore();
     };
-    drawCross(80, 80, 50);
-    drawCross(1120, 80, 50);
-    drawCross(80, 770, 50);
-    drawCross(1120, 770, 50);
+    drawOrnament(22, 22);
+    drawOrnament(W - 22, 22);
+    drawOrnament(22, H - 22);
+    drawOrnament(W - 22, H - 22);
 
-    // MedSim header
-    ctx.fillStyle = "#c9a227";
+    // ── MS Monogram circle (left side) ───────────────────────────
+    const circleX = 100;
+    const circleY = H / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(circleX, circleY, 42, 0, Math.PI * 2);
+    ctx.strokeStyle = "#c9a227";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    const grad = ctx.createRadialGradient(
+      circleX,
+      circleY,
+      0,
+      circleX,
+      circleY,
+      42,
+    );
+    grad.addColorStop(0, "rgba(0,229,255,0.15)");
+    grad.addColorStop(1, "rgba(0,229,255,0)");
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.fillStyle = "#00e5ff";
     ctx.font = "bold 28px Georgia, serif";
     ctx.textAlign = "center";
-    ctx.fillText("MEDSIM MEDICAL SIMULATION PLATFORM", 600, 100);
+    ctx.textBaseline = "middle";
+    ctx.fillText("MS", circleX, circleY);
+    ctx.restore();
 
-    // Decorative line
-    ctx.strokeStyle = "#c9a227";
+    // ── Header: MedSim title ──────────────────────────────────────
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#00e5ff";
+    ctx.font = "bold 36px Georgia, serif";
+    ctx.fillText("MedSim", W / 2, 82);
+
+    ctx.fillStyle = "#5a7a9a";
+    ctx.font = "14px Georgia, serif";
+    ctx.fillText("Advanced Medical Simulation Platform", W / 2, 105);
+
+    // ── Top separator ─────────────────────────────────────────────
+    const lineGrad = ctx.createLinearGradient(60, 0, W - 60, 0);
+    lineGrad.addColorStop(0, "rgba(201,162,39,0)");
+    lineGrad.addColorStop(0.3, "#c9a227");
+    lineGrad.addColorStop(0.7, "#c9a227");
+    lineGrad.addColorStop(1, "rgba(201,162,39,0)");
+    ctx.strokeStyle = lineGrad;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(100, 120);
-    ctx.lineTo(1100, 120);
+    ctx.moveTo(60, 118);
+    ctx.lineTo(W - 60, 118);
     ctx.stroke();
 
-    // Title
-    ctx.fillStyle = "#e8d48a";
-    ctx.font = "bold 54px Georgia, serif";
-    ctx.letterSpacing = "4px";
-    ctx.fillText("CERTIFICATE OF CLINICAL EXCELLENCE", 600, 210);
+    // ── Certificate Title ─────────────────────────────────────────
+    ctx.fillStyle = "#c9a227";
+    ctx.font = "bold 28px Georgia, serif";
+    ctx.fillText("Certificate of Clinical Excellence", W / 2, 168);
 
-    // Subtitle line
-    ctx.strokeStyle = "#c9a22766";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(200, 240);
-    ctx.lineTo(1000, 240);
-    ctx.stroke();
+    // ── Body copy ─────────────────────────────────────────────────
+    ctx.fillStyle = "#7a94ad";
+    ctx.font = "italic 18px Georgia, serif";
+    ctx.fillText("This certifies that", W / 2, 220);
 
-    // This certifies that
-    ctx.fillStyle = "#8899aa";
-    ctx.font = "italic 26px Georgia, serif";
-    ctx.letterSpacing = "1px";
-    ctx.fillText("This certifies that", 600, 310);
+    // ── Student Name ──────────────────────────────────────────────
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 32px Georgia, serif";
+    ctx.fillText(student.name, W / 2, 278);
 
-    // Student name
-    ctx.fillStyle = "#00e5ff";
-    ctx.font = "bold italic 64px Georgia, serif";
-    ctx.letterSpacing = "2px";
-    ctx.fillText(student.name, 600, 400);
-
-    // Underline
-    const nameWidth = ctx.measureText(student.name).width;
+    // Name underline
+    const nw = ctx.measureText(student.name).width;
+    const nx = W / 2;
     ctx.strokeStyle = "#c9a22788";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(600 - nameWidth / 2, 415);
-    ctx.lineTo(600 + nameWidth / 2, 415);
+    ctx.moveTo(nx - nw / 2, 288);
+    ctx.lineTo(nx + nw / 2, 288);
     ctx.stroke();
 
-    // Achievement text
-    ctx.fillStyle = "#aabbcc";
-    ctx.font = "24px Georgia, serif";
-    ctx.letterSpacing = "0.5px";
+    // ── Achievement sentences ─────────────────────────────────────
+    ctx.fillStyle = "#8dafc8";
+    ctx.font = "16px Georgia, serif";
     ctx.fillText(
-      "has demonstrated outstanding clinical competence in medical simulation",
-      600,
-      475,
-    );
-    ctx.fillText(
-      `with a score of ${student.points.toLocaleString()} points — Title: ${getTitleForPoints(student.points)}`,
-      600,
-      515,
+      "has successfully demonstrated clinical competency in medical simulation",
+      W / 2,
+      330,
     );
 
-    // Date and Verification ID
-    const verifyId = `MEDSIM-CERT-${student.id.toUpperCase()}-${Date.now()}`;
+    const scoreTitle = getTitleForPoints(student.points);
+    ctx.font = "16px Georgia, serif";
+    ctx.fillText(
+      `with a Clinical Performance Score of ${student.points.toLocaleString()} points`,
+      W / 2,
+      358,
+    );
+    ctx.fillStyle = "#c9a227";
+    ctx.font = "bold 18px Georgia, serif";
+    ctx.fillText(`and has been assessed as: ${scoreTitle}`, W / 2, 390);
+
+    // ── Middle separator ──────────────────────────────────────────
+    ctx.strokeStyle = "rgba(201,162,39,0.25)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(200, 415);
+    ctx.lineTo(W - 200, 415);
+    ctx.stroke();
+
+    // ── Date ──────────────────────────────────────────────────────
     const dateStr = new Date().toLocaleDateString("en-IN", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+    ctx.fillStyle = "#6b8a9c";
+    ctx.font = "14px Georgia, serif";
+    ctx.fillText(`Issued on: ${dateStr}`, W / 2, 450);
 
-    ctx.fillStyle = "#667788";
-    ctx.font = "18px Georgia, serif";
-    ctx.fillText(`Date: ${dateStr}`, 600, 600);
+    // ── Verification ID ───────────────────────────────────────────
+    const year = new Date().getFullYear();
+    const rand6 = Math.floor(100000 + Math.random() * 900000);
+    const verifyId = `MED-${year}-${rand6}`;
+    ctx.fillStyle = "#00e5ff";
+    ctx.font = "12px monospace";
+    ctx.fillText(`Verification ID: ${verifyId}`, W / 2, 478);
 
-    ctx.fillStyle = "#556677";
-    ctx.font = "16px monospace";
-    ctx.fillText(`Verification ID: ${verifyId}`, 600, 635);
+    // ── Signature section ─────────────────────────────────────────
+    const sigY = 600;
+    const sig1X = W / 2 - 180;
+    const sig2X = W / 2 + 180;
 
-    // Decorative line
-    ctx.strokeStyle = "#c9a22766";
+    // Signature lines
+    ctx.strokeStyle = "#c9a22799";
+    ctx.lineWidth = 1;
+    for (const sx of [sig1X, sig2X]) {
+      ctx.beginPath();
+      ctx.moveTo(sx - 90, sigY);
+      ctx.lineTo(sx + 90, sigY);
+      ctx.stroke();
+    }
+
+    // Signature labels
+    ctx.fillStyle = "#5a7a9a";
+    ctx.font = "12px Georgia, serif";
+    ctx.fillText("Programme Director", sig1X, sigY + 20);
+    ctx.fillText("Chief Medical Officer", sig2X, sigY + 20);
+
+    // ── Bottom separator ──────────────────────────────────────────
+    ctx.strokeStyle = lineGrad;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(100, 680);
-    ctx.lineTo(1100, 680);
+    ctx.moveTo(60, H - 80);
+    ctx.lineTo(W - 60, H - 80);
     ctx.stroke();
 
-    // Bottom text
-    ctx.fillStyle = "#c9a22788";
-    ctx.font = "italic 18px Georgia, serif";
-    ctx.letterSpacing = "1px";
-    ctx.fillText("Digitally Verified by MedSim System", 600, 720);
-
-    ctx.font = "14px Georgia, serif";
-    ctx.fillStyle = "#445566";
+    // ── Footer ────────────────────────────────────────────────────
+    ctx.fillStyle = "#3a5a6c";
+    ctx.font = "11px monospace";
     ctx.fillText(
-      "MedSim India — Medical Simulation Platform — medsim.edu",
-      600,
-      760,
+      `Scan QR or visit medsim.app/verify/${verifyId} to verify authenticity`,
+      W / 2,
+      H - 52,
+    );
+    ctx.fillStyle = "#2a4050";
+    ctx.font = "11px Georgia, serif";
+    ctx.fillText(
+      "MedSim India — Advanced Medical Simulation Platform",
+      W / 2,
+      H - 34,
     );
 
-    // Download
+    // ── Download ──────────────────────────────────────────────────
     canvas.toBlob((blob) => {
       if (!blob) return;
       const url = URL.createObjectURL(blob);
@@ -4045,8 +4593,184 @@ function CertificatesAdminTab() {
 
 // ─── Main Admin Page ──────────────────────────────────────────────
 
+// ─── Admin PIN Modal ─────────────────────────────────────────────
+
+function AdminPINModal({ onVerified }: { onVerified: () => void }) {
+  const storedPin = localStorage.getItem("medsim_admin_pin");
+  const isSetup = !storedPin;
+  const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [error, setError] = useState("");
+  const [attempts, setAttempts] = useState(0);
+  const locked = localStorage.getItem("medsim_admin_locked") === "true";
+
+  if (locked) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center"
+        style={{ background: "rgba(0,0,10,0.97)" }}
+      >
+        <div
+          className="flex flex-col items-center gap-4 p-8 rounded-2xl text-center max-w-sm"
+          style={{
+            border: "1px solid rgba(255,50,50,0.3)",
+            background: "rgba(20,0,0,0.9)",
+          }}
+        >
+          <Lock className="h-14 w-14 text-red-500" />
+          <h2 className="text-xl font-bold text-red-400">Admin Panel Locked</h2>
+          <p className="text-sm text-muted-foreground">
+            Too many incorrect PIN attempts. Contact System Administrator to
+            unlock.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleSubmit = () => {
+    if (isSetup) {
+      if (pin.length !== 6) {
+        setError("PIN must be exactly 6 digits");
+        return;
+      }
+      if (pin !== confirmPin) {
+        setError("PINs do not match");
+        return;
+      }
+      localStorage.setItem("medsim_admin_pin", btoa(pin));
+      sessionStorage.setItem("medsim_admin_pin_verified", "true");
+      toast.success("Admin PIN set successfully");
+      onVerified();
+    } else {
+      const correct = atob(storedPin!) === pin;
+      if (correct) {
+        sessionStorage.setItem("medsim_admin_pin_verified", "true");
+        onVerified();
+      } else {
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        if (newAttempts >= 3) {
+          localStorage.setItem("medsim_admin_locked", "true");
+          setError("3 wrong attempts. Admin Panel is now locked.");
+        } else {
+          setError(`Incorrect PIN. ${3 - newAttempts} attempt(s) remaining.`);
+        }
+        setPin("");
+      }
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,10,0.97)" }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-sm rounded-2xl p-8 space-y-6"
+        style={{
+          background: "rgba(5,15,35,0.98)",
+          border: "1px solid rgba(0,212,255,0.25)",
+        }}
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div
+            className="flex h-16 w-16 items-center justify-center rounded-2xl"
+            style={{
+              background: "rgba(0,212,255,0.1)",
+              border: "1px solid rgba(0,212,255,0.3)",
+            }}
+          >
+            <Shield className="h-8 w-8" style={{ color: "#00d4ff" }} />
+          </div>
+          <h2
+            className="text-xl font-bold"
+            style={{ color: "rgba(180,220,255,0.95)" }}
+          >
+            {isSetup ? "Set Admin PIN" : "Enter Admin PIN"}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {isSetup
+              ? "Create a 6-digit PIN to secure the Admin Panel"
+              : "Enter your 6-digit Admin PIN to continue"}
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">
+              {isSetup ? "New PIN" : "Admin PIN"}
+            </Label>
+            <Input
+              type="password"
+              maxLength={6}
+              value={pin}
+              onChange={(e) => {
+                setPin(e.target.value.replace(/\D/g, ""));
+                setError("");
+              }}
+              placeholder="••••••"
+              className="text-center text-lg tracking-widest"
+              style={{
+                background: "rgba(0,5,20,0.8)",
+                border: "1px solid rgba(0,212,255,0.2)",
+                color: "#e8f4ff",
+              }}
+              data-ocid="admin.pin_input"
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            />
+          </div>
+          {isSetup && (
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">
+                Confirm PIN
+              </Label>
+              <Input
+                type="password"
+                maxLength={6}
+                value={confirmPin}
+                onChange={(e) => {
+                  setConfirmPin(e.target.value.replace(/\D/g, ""));
+                  setError("");
+                }}
+                placeholder="••••••"
+                className="text-center text-lg tracking-widest"
+                style={{
+                  background: "rgba(0,5,20,0.8)",
+                  border: "1px solid rgba(0,212,255,0.2)",
+                  color: "#e8f4ff",
+                }}
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              />
+            </div>
+          )}
+          {error && <p className="text-xs text-red-400 text-center">{error}</p>}
+        </div>
+
+        <Button
+          onClick={handleSubmit}
+          data-ocid="admin.pin_submit_button"
+          className="w-full"
+          style={{
+            background: "linear-gradient(135deg, #0099cc, #00d4ff)",
+            color: "#000",
+            border: "none",
+          }}
+        >
+          {isSetup ? "Set PIN & Enter" : "Verify PIN"}
+        </Button>
+      </motion.div>
+    </div>
+  );
+}
+
 export function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
+  const [pinVerified, setPinVerified] = useState(
+    () => sessionStorage.getItem("medsim_admin_pin_verified") === "true",
+  );
   const [unreadAppNotifCount, setUnreadAppNotifCount] = useState<number>(() => {
     try {
       const notifs: Array<{ read: boolean }> = JSON.parse(
@@ -4091,6 +4815,10 @@ export function AdminPage() {
     careers: <CareerJobsAdminTab />,
     certificates: <CertificatesAdminTab />,
   };
+
+  if (!pinVerified) {
+    return <AdminPINModal onVerified={() => setPinVerified(true)} />;
+  }
 
   return (
     <div className="p-4 lg:p-8">

@@ -11,6 +11,7 @@ import {
   Briefcase,
   ChevronRight,
   ClipboardList,
+  FlaskConical,
   GraduationCap,
   Home,
   LogOut,
@@ -50,7 +51,8 @@ type Page =
   | "er-simulation"
   | "leaderboard"
   | "verify"
-  | "share-app";
+  | "share-app"
+  | "drug-reference";
 
 interface AppLayoutProps {
   currentPage: Page;
@@ -185,6 +187,12 @@ const navItems: NavItem[] = [
     label: "AI Assistant",
     sublabel: "Clinical AI",
     icon: Brain,
+  },
+  {
+    id: "drug-reference" as Page,
+    label: "Drug Reference",
+    sublabel: "Pharmacology",
+    icon: FlaskConical,
   },
   {
     id: "share-app" as Page,
