@@ -27,6 +27,7 @@ import { DiagnosticTray } from "../components/DiagnosticTray";
 import { PatientDistressAvatar } from "../components/PatientDistressAvatar";
 import { VirtualStethoscope } from "../components/VirtualStethoscope";
 import { useICUAmbientSound } from "../hooks/useICUAmbientSound";
+import { useSubmitLeaderboardScore } from "../hooks/useQueries";
 
 // ─── Scenario data ────────────────────────────────────────────────
 interface Scenario {
@@ -735,6 +736,7 @@ function VitalCard({
 
 // ─── Main ER Simulation Page ──────────────────────────────────────
 export function ERSimulationPage() {
+  const submitScore = useSubmitLeaderboardScore();
   const [scenarioId, setScenarioId] = useState("acs");
   const [mode, setMode] = useState<"practice" | "observer">("practice");
   const [started, setStarted] = useState(false);
@@ -753,7 +755,7 @@ export function ERSimulationPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const observerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const responseIdxRef = useRef(0);
-  // biome-ignore lint/suspicious/noExplicitAny: SpeechRecognition not in all TS libs
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
@@ -762,7 +764,8 @@ export function ERSimulationPage() {
 
   // Determine patient condition for ambient sounds and avatar
   const hasRespiratory =
-    ["ards", "anaphylaxis"].includes(scenario.id) || scenario.vitals.spo2 < 92;
+    ["respiratory", "anaphylaxis"].includes(scenario.id) ||
+    scenario.vitals.spo2 < 92;
   const hasCardiac = ["acs", "stroke"].includes(scenario.id);
   const hasPain = ["trauma", "acs"].includes(scenario.id);
   const hasCough = hasRespiratory;
@@ -831,14 +834,16 @@ export function ERSimulationPage() {
     ]);
     startSound();
 
-    // Request permissions
-    navigator.mediaDevices
-      ?.getUserMedia({ video: true, audio: true })
-      .catch(() => {});
-    navigator.geolocation?.getCurrentPosition(
-      () => {},
-      () => {},
-    );
+    // Request permissions only in Practice mode (not Observer)
+    if (mode === "practice") {
+      navigator.mediaDevices
+        ?.getUserMedia({ video: true, audio: true })
+        .catch(() => {});
+      navigator.geolocation?.getCurrentPosition(
+        () => {},
+        () => {},
+      );
+    }
   }
 
   function handleSend() {
@@ -894,7 +899,9 @@ export function ERSimulationPage() {
     const prev = Number(
       localStorage.getItem("medsim_leaderboard_points") || "0",
     );
-    localStorage.setItem("medsim_leaderboard_points", String(prev + total));
+    const newTotal = prev + total;
+    localStorage.setItem("medsim_leaderboard_points", String(newTotal));
+    submitScore.mutate(newTotal);
 
     const sessions = JSON.parse(
       localStorage.getItem("medsim_er_sessions") || "[]",
@@ -914,7 +921,7 @@ export function ERSimulationPage() {
   }
 
   function startVoice() {
-    // biome-ignore lint/suspicious/noExplicitAny: cross-browser speech API
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
     const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!SR) {
@@ -982,6 +989,10 @@ export function ERSimulationPage() {
                 setScenarioId(v);
                 setStarted(false);
                 setSessionComplete(false);
+                setActionsUsed([]);
+                setDiagnosisInput("");
+                setEmpathyRating(3);
+                setShowDiagnosis(false);
               }}
             >
               <SelectTrigger
@@ -1199,7 +1210,7 @@ export function ERSimulationPage() {
                         hasRespiratory,
                         hasWheeze:
                           scenario.id === "anaphylaxis" ||
-                          scenario.id === "ards",
+                          scenario.id === "respiratory",
                       }}
                     />
                   </motion.div>

@@ -162,7 +162,13 @@ function DashboardTab() {
   // Compute dashboard stats from localStorage
   const dailySims = (() => {
     try {
-      return Number(localStorage.getItem("medsim_daily_sims") || "0");
+      const stored = localStorage.getItem("medsim_performance");
+      if (!stored) return 0;
+      const entries: Array<{ timestamp?: number }> = JSON.parse(stored);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return entries.filter((e) => e.timestamp && e.timestamp > today.getTime())
+        .length;
     } catch {
       return 0;
     }
@@ -202,13 +208,32 @@ function DashboardTab() {
   })();
 
   // Charts seed data
-  const specialtyData = [
-    { name: "Medicine", value: 34 },
-    { name: "Surgery", value: 22 },
-    { name: "Pharmacology", value: 18 },
-    { name: "Pathology", value: 14 },
-    { name: "Paediatrics", value: 12 },
-  ];
+  const specialtyData = useMemo(() => {
+    try {
+      const stored = localStorage.getItem("medsim_performance");
+      if (!stored) throw new Error("no data");
+      const entries: Array<{ subject?: string }> = JSON.parse(stored);
+      const counts: Record<string, number> = {};
+      for (const e of entries) {
+        const s = e.subject || "General";
+        counts[s] = (counts[s] || 0) + 1;
+      }
+      const result = Object.entries(counts).map(([name, value]) => ({
+        name,
+        value,
+      }));
+      if (result.length === 0) throw new Error("empty");
+      return result;
+    } catch {
+      return [
+        { name: "Medicine", value: 34 },
+        { name: "Surgery", value: 22 },
+        { name: "Pharmacology", value: 18 },
+        { name: "Pathology", value: 14 },
+        { name: "Paediatrics", value: 12 },
+      ];
+    }
+  }, []);
   const CHART_COLORS = ["#00d4ff", "#0099cc", "#006699", "#00b4d8", "#90e0ef"];
 
   const activityData = [
@@ -528,6 +553,16 @@ function StudentsTab() {
     toast.success(`Certificate approved for ${studentName}`);
   };
 
+  const leaderboardData = useMemo(() => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("medsim_leaderboard") || "[]",
+      ) as Array<{ id: string; points: number }>;
+    } catch {
+      return [];
+    }
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -583,16 +618,9 @@ function StudentsTab() {
               ) : (
                 filteredStudents.map((student, idx) => {
                   const certIssued = issuedCerts[student.id] || false;
-                  const lb: Array<{ id: string; points: number }> = (() => {
-                    try {
-                      return JSON.parse(
-                        localStorage.getItem("medsim_leaderboard") || "[]",
-                      );
-                    } catch {
-                      return [];
-                    }
-                  })();
-                  const studentLb = lb.find((s) => s.id === student.id);
+                  const studentLb = leaderboardData.find(
+                    (s) => s.id === student.id,
+                  );
                   const highScore = studentLb ? studentLb.points > 500 : false;
                   return (
                     <TableRow
@@ -1005,7 +1033,7 @@ function DiseaseForm({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                placeholder="Disease ka brief description..."
+                placeholder="Brief clinical description of the disease..."
                 style={{ ...fieldStyle, resize: "none" }}
                 className="border-0 focus-visible:ring-0"
               />
@@ -1076,7 +1104,7 @@ function DiseaseForm({
         {/* Section 3: Symptoms */}
         <SectionCard
           title="3. Symptoms"
-          helpText="Patient mein commonly seen symptoms — naam, severity (1-10) aur description"
+          helpText="Common patient symptoms — name, severity (1-10), and description"
         >
           <div className="space-y-3">
             {symptoms.map((sym, idx) => (
@@ -1243,7 +1271,7 @@ function DiseaseForm({
           <p className="text-sm" style={{ color: "rgba(150, 200, 255, 0.5)" }}>
             {disease?.medicines.length
               ? `${disease.medicines.length} medicines attached. Edit existing disease to modify medicines.`
-              : "Medicines ICMR seed data se automatically populate hongi. Save karne ke baad add/edit kar sakte hain."}
+              : "Medicines will be auto-populated from ICMR seed data. You may add/edit after saving."}
           </p>
         </SectionCard>
 
@@ -1429,8 +1457,8 @@ function DiseasesTab() {
                                 Delete Disease?
                               </AlertDialogTitle>
                               <AlertDialogDescription>
-                                "{d.name}" permanent delete ho jaayega. Undo
-                                cannot proceed.
+                                "{d.name}" will be permanently deleted. This
+                                action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -1476,10 +1504,11 @@ function CasesTab() {
     [backendCases, customCases],
   );
   const { data: diseases = [] } = useAllDiseases();
-  useAddPatientCase();
+  const addCase = useAddPatientCase();
   const deleteCase = useDeletePatientCase();
-  useUpdatePatientCase();
+  const updateCase = useUpdatePatientCase();
   const [addOpen, setAddOpen] = useState(false);
+  const [editingCase, setEditingCase] = useState<PatientCase | null>(null);
   const [caseForm, setCaseForm] = useState({
     title: "",
     diseaseName: "",
@@ -1504,33 +1533,7 @@ function CasesTab() {
     }
   };
 
-  const handleAddCase = () => {
-    if (!caseForm.title || !caseForm.subject || !caseForm.diagnosis) {
-      toast.error("Title, Subject, and Diagnosis are required");
-      return;
-    }
-    const existing: unknown[] = JSON.parse(
-      localStorage.getItem("medsim_custom_cases") || "[]",
-    );
-    const newCase = {
-      id: `custom_${Date.now()}`,
-      title: caseForm.title,
-      diseaseId: caseForm.diseaseName,
-      subject: caseForm.subject,
-      difficulty: caseForm.difficulty,
-      patientAge: Number(caseForm.patientAge) * 12 || 360,
-      patientGender: caseForm.patientGender,
-      chiefComplaint: caseForm.chiefComplaint,
-      finalDiagnosis: caseForm.diagnosis,
-      management: caseForm.management,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem(
-      "medsim_custom_cases",
-      JSON.stringify([...existing, newCase]),
-    );
-    toast.success("Case add ho gaya!");
-    setAddOpen(false);
+  const resetForm = () => {
     setCaseForm({
       title: "",
       diseaseName: "",
@@ -1542,6 +1545,78 @@ function CasesTab() {
       diagnosis: "",
       management: "",
     });
+    setEditingCase(null);
+    setAddOpen(false);
+  };
+
+  const handleAddCase = () => {
+    if (!caseForm.title || !caseForm.subject || !caseForm.diagnosis) {
+      toast.error("Title, Subject, and Diagnosis are required");
+      return;
+    }
+    const casePayload: PatientCase = {
+      id: editingCase ? editingCase.id : `custom_${Date.now()}`,
+      title: caseForm.title,
+      diseaseId: caseForm.diseaseName,
+      subject: caseForm.subject,
+      difficulty: caseForm.difficulty,
+      patientAge: BigInt(Number(caseForm.patientAge) * 12 || 360),
+      patientGender: caseForm.patientGender,
+      chiefComplaint: caseForm.chiefComplaint,
+      correctDiagnosis: caseForm.diagnosis,
+      history: caseForm.management,
+      examinationFindings: "",
+      investigations: "",
+      correctMedicines: [],
+    };
+
+    if (editingCase) {
+      updateCase.mutate(casePayload, {
+        onSuccess: () => {
+          toast.success("Case updated successfully!");
+          resetForm();
+        },
+        onError: () => toast.error("Failed to update case"),
+      });
+    } else {
+      addCase.mutate(casePayload, {
+        onSuccess: () => {
+          toast.success("Case added successfully!");
+          resetForm();
+        },
+        onError: () => {
+          // Fallback to localStorage for custom cases
+          const existing: unknown[] = JSON.parse(
+            localStorage.getItem("medsim_custom_cases") || "[]",
+          );
+          localStorage.setItem(
+            "medsim_custom_cases",
+            JSON.stringify([
+              ...existing,
+              { ...casePayload, patientAge: Number(casePayload.patientAge) },
+            ]),
+          );
+          toast.success("Case saved locally!");
+          resetForm();
+        },
+      });
+    }
+  };
+
+  const handleEditCase = (caseItem: PatientCase) => {
+    setEditingCase(caseItem);
+    setCaseForm({
+      title: caseItem.title,
+      diseaseName: caseItem.diseaseId,
+      subject: caseItem.subject,
+      difficulty: caseItem.difficulty,
+      patientAge: String(Math.floor(Number(caseItem.patientAge) / 12)),
+      patientGender: caseItem.patientGender,
+      chiefComplaint: caseItem.chiefComplaint,
+      diagnosis: caseItem.correctDiagnosis,
+      management: caseItem.history,
+    });
+    setAddOpen(true);
   };
 
   return (
@@ -1550,7 +1625,15 @@ function CasesTab() {
         <p className="text-sm text-muted-foreground">
           {cases.length} patient cases
         </p>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <Dialog
+          open={addOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingCase(null);
+            }
+            setAddOpen(open);
+          }}
+        >
           <DialogTrigger asChild>
             <Button
               size="sm"
@@ -1565,7 +1648,9 @@ function CasesTab() {
             data-ocid="admin.cases.dialog"
           >
             <DialogHeader>
-              <DialogTitle>Add New Patient Case</DialogTitle>
+              <DialogTitle>
+                {editingCase ? "Edit Patient Case" : "Add New Patient Case"}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-3 pt-2">
               <div>
@@ -1707,7 +1792,7 @@ function CasesTab() {
                 <Button
                   data-ocid="admin.cases.cancel_button"
                   variant="outline"
-                  onClick={() => setAddOpen(false)}
+                  onClick={resetForm}
                 >
                   Cancel
                 </Button>
@@ -1778,35 +1863,46 @@ function CasesTab() {
                       {Math.floor(Number(c.patientAge) / 12)}y {c.patientGender}
                     </TableCell>
                     <TableCell>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            data-ocid={`admin.cases.delete_button.${idx + 1}`}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Case?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              "{c.title}" permanent delete hoga.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() => handleDelete(c.id)}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          data-ocid={`admin.cases.edit_button.${idx + 1}`}
+                          onClick={() => handleEditCase(c)}
+                          className="text-primary hover:text-primary"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              data-ocid={`admin.cases.delete_button.${idx + 1}`}
+                              className="text-destructive hover:text-destructive"
                             >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Case?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                "{c.title}" will be permanently deleted.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDelete(c.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -2130,32 +2226,133 @@ function NEETPGCSVUpload() {
     name: string;
     rowCount: number;
   } | null>(null);
-  const [importing, setImporting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
+  const parseAndStoreCSV = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 2) {
+        toast.error("CSV must have a header row and at least one question.");
+        return;
+      }
+      // Skip header row
+      const dataLines = lines.slice(1);
+      const parsed = dataLines
+        .map((line, idx) => {
+          // Simple CSV parse (handles quoted fields)
+          const cols: string[] = [];
+          let cur = "";
+          let inQuote = false;
+          for (let i = 0; i < line.length; i++) {
+            if (line[i] === '"') {
+              inQuote = !inQuote;
+            } else if (line[i] === "," && !inQuote) {
+              cols.push(cur.trim());
+              cur = "";
+            } else {
+              cur += line[i];
+            }
+          }
+          cols.push(cur.trim());
+          if (cols.length < 8) return null;
+          const [
+            subject,
+            chapter,
+            question,
+            optA,
+            optB,
+            optC,
+            optD,
+            correct,
+            explanation = "",
+            reference = "",
+          ] = cols;
+          const correctMap: Record<string, 0 | 1 | 2 | 3> = {
+            a: 0,
+            b: 1,
+            c: 2,
+            d: 3,
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "3": 3,
+          };
+          const correctIndex = correctMap[(correct || "a").toLowerCase()] ?? 0;
+          return {
+            id: `custom_${Date.now()}_${idx}`,
+            subject: subject || "General",
+            chapter: chapter || "Uploaded",
+            stem: question || "",
+            options: [optA || "", optB || "", optC || "", optD || ""] as [
+              string,
+              string,
+              string,
+              string,
+            ],
+            correctIndex,
+            explanation: explanation || "Refer to standard textbooks.",
+            reference: reference || "Uploaded content",
+            difficulty: "Medium" as const,
+          };
+        })
+        .filter(Boolean);
+
+      if (parsed.length === 0) {
+        toast.error("No valid questions found. Check CSV format.");
+        return;
+      }
+
+      // Merge with existing custom questions
+      const existing = JSON.parse(
+        localStorage.getItem("medsim_custom_neetpg_questions") || "[]",
+      );
+      const merged = [...existing, ...parsed];
+      localStorage.setItem(
+        "medsim_custom_neetpg_questions",
+        JSON.stringify(merged),
+      );
+      toast.success(
+        `${parsed.length} questions imported and saved! Reload NEET PG Practice to see them.`,
+      );
+      setUploadedFile({ name: file.name, rowCount: parsed.length });
+      setPendingFile(null);
+    };
+    reader.readAsText(file);
+  };
+
   const handleFile = (file: File) => {
-    const rowCount = Math.max(1, Math.floor(file.size / 200));
-    setUploadedFile({ name: file.name, rowCount });
+    if (file.name.endsWith(".csv")) {
+      setPendingFile(file);
+      // Auto-parse CSV immediately
+      const rowEst = Math.max(1, Math.floor(file.size / 120));
+      setUploadedFile({ name: file.name, rowCount: rowEst });
+    } else {
+      toast.error("Only .csv files are supported for NEET PG import.");
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
-    const file = e.dataTransfer.files[0];
-    if (file && (file.name.endsWith(".csv") || file.name.endsWith(".xlsx"))) {
+    const file = e.dataTransfer.files?.[0];
+    if (file?.name.endsWith(".csv")) {
       handleFile(file);
     } else {
-      toast.error("Only .csv or .xlsx files are supported");
+      toast.error("Only .csv files are supported");
     }
   };
 
-  const handleConfirmImport = async () => {
-    if (!uploadedFile) return;
-    setImporting(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setImporting(false);
-    toast.success(`${uploadedFile.rowCount} questions imported successfully!`);
-    setUploadedFile(null);
+  const handleConfirmImport = () => {
+    if (pendingFile) {
+      parseAndStoreCSV(pendingFile);
+    } else {
+      toast.info("File already processed.");
+      setUploadedFile(null);
+    }
   };
 
   return (
@@ -2212,7 +2409,6 @@ function NEETPGCSVUpload() {
         <Button
           data-ocid="admin.database.neetpg_confirm_button"
           onClick={handleConfirmImport}
-          disabled={importing}
           className="w-full gap-2"
           style={{
             background: "linear-gradient(135deg, #0099cc, #00d4ff)",
@@ -2220,17 +2416,8 @@ function NEETPGCSVUpload() {
             border: "none",
           }}
         >
-          {importing ? (
-            <>
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              Importing {uploadedFile.rowCount} questions…
-            </>
-          ) : (
-            <>
-              <Upload className="h-4 w-4" />
-              Confirm Import ({uploadedFile.rowCount} questions)
-            </>
-          )}
+          <Upload className="h-4 w-4" />
+          Import {uploadedFile.rowCount} questions
         </Button>
       )}
 
@@ -2371,7 +2558,7 @@ function DatabaseTab() {
       const toAdd = icmrDiseaseData.filter((d) => !existingIds.has(d.id));
 
       if (toAdd.length === 0) {
-        toast.success("Sab ICMR diseases already synced hain!");
+        toast.success("All ICMR diseases are already synced.");
         setSyncing(false);
         return;
       }
@@ -2562,7 +2749,7 @@ function DatabaseTab() {
               className="text-xs mt-1"
               style={{ color: "rgba(150, 200, 255, 0.35)" }}
             >
-              .{importFormat} file accept hogi
+              .{importFormat} files accepted
             </p>
           </div>
           <input
@@ -2709,7 +2896,7 @@ function DatabaseTab() {
             color: "rgba(100, 200, 150, 0.7)",
           }}
         >
-          ℹ️ Ye feature ICMR ke publicly available research publications aur
+          ℹ️ This feature uses ICMR publicly available research publications and
           based on guidelines. {icmrDiseaseData.length} diseases available hain
           (Communicable, Non-Communicable, Zoonotic).
         </div>
@@ -3683,7 +3870,7 @@ function ApplicationsTab() {
       JSON.stringify(updatedNotifs),
     );
 
-    toast.success("Exam unlock kar diya! Student ko notify hoga.");
+    toast.success("Exam unlocked. Student will be notified.");
   };
 
   const handleRejectApplication = (appId: string) => {
@@ -4294,11 +4481,13 @@ function CertificatesAdminTab() {
   function generateCertificate(student: (typeof allStudents)[0]) {
     const W = 1122;
     const H = 794;
+    const SCALE = 2; // 2x resolution for crisp PDF-quality output
     const canvas = document.createElement("canvas");
-    canvas.width = W;
-    canvas.height = H;
+    canvas.width = W * SCALE;
+    canvas.height = H * SCALE;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    ctx.scale(SCALE, SCALE);
 
     // ── Background: deep navy ─────────────────────────────────────
     ctx.fillStyle = "#0a1628";
@@ -4522,7 +4711,7 @@ function CertificatesAdminTab() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `certificate_${student.name.replace(/\s+/g, "_")}.png`;
+      a.download = `MedSim_Certificate_${student.name.replace(/\s+/g, "_")}_${new Date().getFullYear()}.png`;
       a.click();
       URL.revokeObjectURL(url);
     }, "image/png");

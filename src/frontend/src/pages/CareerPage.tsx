@@ -24,6 +24,7 @@ import {
   useCallerUserProfile,
   useMyPerformanceStats,
 } from "../hooks/useQueries";
+import { secureGet } from "../utils/secureStorage";
 
 export interface JobListing {
   id: string;
@@ -385,14 +386,15 @@ function calcCareerScore(
 
 function calcProfileCompletionFromLS(): number {
   const lsFields = [
-    localStorage.getItem("medsim_aadhaar"),
-    localStorage.getItem("medsim_address"),
+    secureGet("medsim_aadhaar"),
+    secureGet("medsim_address"),
     localStorage.getItem("medsim_zohoMail"),
     localStorage.getItem("medsim_gmail"),
     localStorage.getItem("medsim_batch"),
     localStorage.getItem("medsim_profile_photo"),
     localStorage.getItem("medsim_college"),
     localStorage.getItem("medsim_rollNumber"),
+    localStorage.getItem("medsim_blood_group"),
   ];
   const filledLS = lsFields.filter(
     (f) => f && f.trim() !== "" && f !== "null",
@@ -401,9 +403,9 @@ function calcProfileCompletionFromLS(): number {
   const hasMobile = !!(
     localStorage.getItem("medsim_login_mobile") || ""
   ).trim();
-  const hasRole = !!(localStorage.getItem("medsim_role") || "").trim();
+  const hasRole = !!(localStorage.getItem("medsim_profile_role") || "").trim();
   const bonusCount = [hasName, hasMobile, hasRole].filter(Boolean).length;
-  const total = lsFields.length + 3; // 11 total
+  const total = lsFields.length + 3; // 12 total
   return Math.round(((filledLS + bonusCount) / total) * 100);
 }
 
@@ -439,11 +441,14 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
     try {
       const stored = localStorage.getItem("medsim_performance");
       if (stored) {
-        const entries: Array<{ score: number; total: number }> =
-          JSON.parse(stored);
+        const entries: Array<{
+          score?: number;
+          correct?: number;
+          total: number;
+        }> = JSON.parse(stored);
         if (entries.length > 0) {
           const totalScore = entries.reduce(
-            (sum, e) => sum + (e.score || 0),
+            (sum, e) => sum + (e.score ?? e.correct ?? 0),
             0,
           );
           const totalQuestions = entries.reduce(
@@ -555,7 +560,7 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
               className="mt-1 text-sm"
               style={{ color: "rgba(150, 200, 255, 0.5)" }}
             >
-              Apne scores ke hisab se eligible positions dekho — {eligibleCount}{" "}
+              View eligible positions based on your scores — {eligibleCount}{" "}
               jobs eligible
             </p>
           </div>
@@ -730,7 +735,7 @@ export function CareerPage({ onNavigate }: CareerPageProps) {
                 className="text-sm font-semibold"
                 style={{ color: "rgba(180, 150, 255, 0.9)" }}
               >
-                Meri Applications & Exams dekho
+                My Applications & Exams
               </span>
             </div>
             <ChevronRight

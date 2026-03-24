@@ -2,8 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Award, Crown, Medal, Star, TrendingUp, Trophy } from "lucide-react";
 import { motion } from "motion/react";
-import React, { useEffect, useState } from "react";
-import { useCallerUserProfile } from "../hooks/useQueries";
+import React, { useEffect, useMemo, useState } from "react";
+import { useCallerUserProfile, useGetLeaderboard } from "../hooks/useQueries";
 
 const TITLE_TIERS = [
   {
@@ -118,12 +118,14 @@ interface LeaderboardEntry {
   points: number;
   isDemo?: boolean;
   isCurrentUser?: boolean;
+  joinedAt?: number;
 }
 
 export function LeaderboardPage(_props: {
   onNavigate?: (page: string) => void;
 }) {
   const { data: profile } = useCallerUserProfile();
+  const { data: backendEntries } = useGetLeaderboard();
   const [filter, setFilter] = useState<"all" | "month" | "week">("all");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
 
@@ -137,22 +139,75 @@ export function LeaderboardPage(_props: {
   })();
 
   useEffect(() => {
-    const base = seedLeaderboard();
-    const userName = profile?.name || "You";
     const mobile = localStorage.getItem("medsim_login_mobile") || "";
     const userId = `user_${mobile}`;
+    const userName = profile?.name || "You";
 
-    const withoutMe = base.filter((e) => e.id !== userId);
-    const me: LeaderboardEntry = {
-      id: userId,
-      name: userName,
-      role: profile?.role || "Student (MBBS)",
-      points: currentUserPoints,
-      isCurrentUser: true,
-    };
-    const all = [...withoutMe, me].sort((a, b) => b.points - a.points);
+    let base: LeaderboardEntry[];
+
+    if (backendEntries && backendEntries.length > 0) {
+      // Use real backend data
+      base = backendEntries.map((e) => ({
+        id: e.id,
+        name: e.name,
+        role: e.role,
+        points: Number(e.points),
+        isCurrentUser: e.id === userId,
+        joinedAt: Date.now(),
+      }));
+      // Ensure current user is included even if not yet in backend
+      const hasMe = base.some((e) => e.isCurrentUser);
+      if (!hasMe) {
+        base = [
+          ...base,
+          {
+            id: userId,
+            name: userName,
+            role: profile?.role || "Student (MBBS)",
+            points: currentUserPoints,
+            isCurrentUser: true,
+          },
+        ];
+      } else {
+        // Update points from local if higher
+        base = base.map((e) =>
+          e.isCurrentUser
+            ? {
+                ...e,
+                name: userName,
+                points: Math.max(e.points, currentUserPoints),
+              }
+            : e,
+        );
+      }
+    } else {
+      // Fallback to demo data
+      const demoBase = seedLeaderboard();
+      const withoutMe = demoBase.filter((e) => e.id !== userId);
+      const me: LeaderboardEntry = {
+        id: userId,
+        name: userName,
+        role: profile?.role || "Student (MBBS)",
+        points: currentUserPoints,
+        isCurrentUser: true,
+      };
+      base = [...withoutMe, me];
+    }
+
+    const all = [...base].sort((a, b) => b.points - a.points);
     setEntries(all);
-  }, [profile, currentUserPoints]);
+  }, [profile, currentUserPoints, backendEntries]);
+
+  const displayEntries = useMemo(() => {
+    if (filter === "all") return entries;
+    const cutoff =
+      filter === "month"
+        ? Date.now() - 30 * 24 * 60 * 60 * 1000
+        : Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return entries.filter(
+      (e) => e.isDemo || e.isCurrentUser || (e.joinedAt && e.joinedAt > cutoff),
+    );
+  }, [entries, filter]);
 
   const myRank = entries.findIndex((e) => e.isCurrentUser) + 1;
   const myEntry = entries.find((e) => e.isCurrentUser);
@@ -160,7 +215,7 @@ export function LeaderboardPage(_props: {
   const pointsToNext =
     myTitle.next !== null ? myTitle.next - currentUserPoints : 0;
 
-  const top3 = entries.slice(0, 3);
+  const top3 = displayEntries.slice(0, 3);
   const podiumColors = [
     {
       bg: "from-yellow-500/20 to-yellow-500/5",

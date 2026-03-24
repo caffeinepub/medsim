@@ -3,18 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
 import {
   AlertCircle,
   BarChart3,
   BookOpen,
   ChevronRight,
   Clock,
+  Smartphone,
   Target,
   Trophy,
   Users,
+  X,
 } from "lucide-react";
-import { motion } from "motion/react";
-import React from "react";
+import { AnimatePresence, motion } from "motion/react";
+import React, { useState } from "react";
 import {
   useAllPatientCases,
   useCallerUserProfile,
@@ -123,7 +126,104 @@ function LeaderboardRankCard({
   );
 }
 
+function PwaInstallBanner({
+  onInstall,
+  onDismiss,
+}: { onInstall: () => void; onDismiss: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className="relative mx-3 mt-3 sm:mx-4 rounded-2xl overflow-hidden"
+      data-ocid="home.install_banner"
+    >
+      <div
+        className="flex items-center gap-3 p-3 sm:p-4"
+        style={{
+          background:
+            "linear-gradient(135deg, oklch(0.35 0.12 175) 0%, oklch(0.28 0.10 195) 100%)",
+          border: "1px solid oklch(0.55 0.14 175 / 0.4)",
+          boxShadow: "0 4px 24px oklch(0.45 0.14 175 / 0.3)",
+          borderRadius: "inherit",
+        }}
+      >
+        <div
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl"
+          style={{
+            background: "oklch(0.55 0.16 175 / 0.25)",
+            border: "1px solid oklch(0.65 0.14 175 / 0.4)",
+          }}
+        >
+          <Smartphone
+            className="h-5 w-5"
+            style={{ color: "oklch(0.82 0.14 175)" }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p
+            className="font-semibold text-sm"
+            style={{ color: "oklch(0.95 0.02 175)" }}
+          >
+            Install MedSim on your device
+          </p>
+          <p
+            className="text-xs mt-0.5"
+            style={{ color: "oklch(0.72 0.06 175)" }}
+          >
+            Offline access &middot; Faster loading &middot; Home screen icon
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onInstall}
+            className="rounded-lg px-3 py-1.5 text-xs font-bold transition-all hover:scale-105 active:scale-95"
+            style={{
+              background: "oklch(0.65 0.16 175)",
+              color: "oklch(0.98 0 0)",
+              boxShadow: "0 2px 8px oklch(0.55 0.16 175 / 0.5)",
+            }}
+            data-ocid="home.install_now_button"
+          >
+            Install Now
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+            style={{ color: "oklch(0.72 0.06 175)" }}
+            aria-label="Dismiss install banner"
+            data-ocid="home.install_dismiss_button"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export function HomePage({ onNavigate }: HomePageProps) {
+  const { canInstall, isInstalled, promptInstall } = usePwaInstall();
+  const [bannerDismissed, setBannerDismissed] = useState(
+    () => localStorage.getItem("medsim_install_dismissed") === "1",
+  );
+
+  const handleInstall = async () => {
+    await promptInstall();
+    setBannerDismissed(true);
+    localStorage.setItem("medsim_install_dismissed", "1");
+  };
+
+  const handleDismiss = () => {
+    setBannerDismissed(true);
+    localStorage.setItem("medsim_install_dismissed", "1");
+  };
+
+  const showBanner = canInstall && !isInstalled && !bannerDismissed;
+
   const { data: profile, isLoading: profileLoading } = useCallerUserProfile();
   const { data: perf, isLoading: perfLoading } = useMyPerformanceStats();
   const { data: attempts = [], isLoading: attemptsLoading } =
@@ -219,6 +319,15 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </motion.div>
         </div>
       </section>
+
+      <AnimatePresence>
+        {showBanner && (
+          <PwaInstallBanner
+            onInstall={handleInstall}
+            onDismiss={handleDismiss}
+          />
+        )}
+      </AnimatePresence>
 
       <div className="p-3 sm:p-4 lg:p-8">
         <div className="mx-auto max-w-5xl space-y-5 sm:space-y-6">

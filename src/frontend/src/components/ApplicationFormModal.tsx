@@ -28,6 +28,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { JobListing } from "../pages/CareerPage";
+import { secureGet } from "../utils/secureStorage";
 
 interface ApplicationFormModalProps {
   open: boolean;
@@ -109,8 +110,8 @@ export function ApplicationFormModal({
       localStorage.getItem("medsim_zohoMail") ||
       "",
     college: localStorage.getItem("medsim_college") || "",
-    aadhaar: localStorage.getItem("medsim_aadhaar") || "",
-    address: localStorage.getItem("medsim_address") || "",
+    aadhaar: secureGet("medsim_aadhaar"),
+    address: secureGet("medsim_address"),
     sop: "",
     yearsExperience: "",
     currentPosition: "",

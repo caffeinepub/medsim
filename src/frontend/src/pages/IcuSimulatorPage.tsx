@@ -652,10 +652,9 @@ function VitalCard({
       className="relative flex flex-col items-start rounded-xl p-3 gap-1 overflow-hidden"
       style={{
         background: "oklch(0.18 0.05 235)",
-        border: `1px solid ${color}${isCritical ? "" : " / 0.35"}`,
-        boxShadow: isCritical
-          ? `0 0 18px ${color} / 0.3`
-          : `0 0 8px ${color} / 0.15`,
+        border: `1px solid ${color}`,
+        opacity: isCritical ? 1 : 0.85,
+        boxShadow: isCritical ? `0 0 18px ${color}` : `0 0 8px ${color}`,
         animation: isCritical
           ? "alert-blink 1.5s ease-in-out infinite"
           : "none",
@@ -798,7 +797,11 @@ export function IcuSimulatorPage() {
   // ── New: clinical controls ──────────────────────────────────────────────────
   const [pathology, setPathology] = useState<Pathology>("normal");
   const [frozen, setFrozen] = useState(false);
+  const frozenRef = useRef(false);
   const [show12Lead, setShow12Lead] = useState(false);
+  useEffect(() => {
+    frozenRef.current = frozen;
+  }, [frozen]);
   const [nibpRunning, setNibpRunning] = useState(false);
   const [nibpSystolic, setNibpSystolic] = useState(120);
   const [nibpDiastolic, setNibpDiastolic] = useState(80);
@@ -845,6 +848,7 @@ export function IcuSimulatorPage() {
   useEffect(() => {
     if (!running) return;
     intervalRef.current = setInterval(() => {
+      if (frozenRef.current) return;
       setPhaseProgress((prev) => {
         if (phaseRef.current === "stable") return 100;
         const next = prev + 5;

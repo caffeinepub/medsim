@@ -9,9 +9,9 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
-const SIMULATED_OTP = atob("MTIzNDU2"); // 123456
-const ADMIN_MOBILE = atob("ODIwOTkxODQ5MQ=="); // obfuscated
-const ADMIN_OTP = atob("ODIwOTkx"); // obfuscated
+const SIMULATED_OTP = atob("MTIzNDU2");
+const ADMIN_MOBILE = atob("ODIwOTkxODQ5MQ==");
+const ADMIN_OTP = atob("ODIwOTkx");
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -144,6 +144,7 @@ function OtpStep({
   onBack,
   isAdmin,
   onResend,
+  resendCooldown,
 }: {
   mobile: string;
   otp: string;
@@ -152,6 +153,7 @@ function OtpStep({
   onBack: () => void;
   isAdmin: boolean;
   onResend: () => void;
+  resendCooldown: number;
 }) {
   return (
     <motion.div
@@ -233,7 +235,7 @@ function OtpStep({
             </InputOTPGroup>
           </InputOTP>
           <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-            Demo: {isAdmin ? "Use 820991" : "Use 123456"}
+            Enter the 6-digit code sent to your WhatsApp
           </p>
         </div>
 
@@ -266,10 +268,18 @@ function OtpStep({
             type="button"
             data-ocid="login.resend_button"
             onClick={onResend}
-            style={{ color: "rgba(37,211,102,0.85)" }}
-            className="hover:opacity-80 transition-opacity"
+            disabled={resendCooldown > 0}
+            style={{
+              color:
+                resendCooldown > 0
+                  ? "rgba(37,211,102,0.4)"
+                  : "rgba(37,211,102,0.85)",
+            }}
+            className="hover:opacity-80 transition-opacity disabled:cursor-not-allowed"
           >
-            Resend Code
+            {resendCooldown > 0
+              ? `Resend Code (${resendCooldown}s)`
+              : "Resend Code"}
           </button>
         </div>
       </form>
@@ -320,21 +330,30 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [step, setStep] = useState<"mobile" | "otp" | "connecting">("mobile");
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
   const { login, isLoggingIn, isLoginSuccess, identity } =
     useInternetIdentity();
 
   const isAdminNumber = mobile === ADMIN_MOBILE;
   const generatedOtp = isAdminNumber ? ADMIN_OTP : SIMULATED_OTP;
 
-  // Stable random hue for subtle background variation
+  // Decrement resend cooldown every second
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const id = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [resendCooldown]);
+
+  // Stable hue for background variation, keyed to mobile state
   const bgHue = useMemo(() => {
-    const mobile = localStorage.getItem("medsim_login_mobile") || "";
     if (mobile) {
       const code = mobile.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-      return (code % 40) - 20; // slight variation around green
+      return (code % 40) - 20;
     }
     return 0;
-  }, []);
+  }, [mobile]);
 
   const handleSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -344,21 +363,22 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
     }
     localStorage.setItem("medsim_login_mobile", mobile);
     if (isAdminNumber) {
-      toast.success(`Admin OTP: ${generatedOtp} — enter this code`, {
-        duration: 8000,
+      toast.success("Verification code sent to admin WhatsApp.", {
+        duration: 5000,
       });
     } else {
-      toast.success(`Demo OTP: ${generatedOtp} — enter this code`, {
-        duration: 6000,
+      toast.success("Verification code sent to your WhatsApp.", {
+        duration: 5000,
       });
     }
+    setResendCooldown(30);
     setStep("otp");
   };
 
   const handleVerifyOtp = (e: React.FormEvent) => {
     e.preventDefault();
     if (otp !== generatedOtp) {
-      toast.error(`Incorrect OTP! Demo OTP: ${generatedOtp}`);
+      toast.error("Incorrect verification code. Please try again.");
       return;
     }
     setStep("connecting");
@@ -366,7 +386,14 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   };
 
   const handleResend = () => {
-    toast.success(`OTP resent: ${generatedOtp}`, { duration: 6000 });
+    if (resendCooldown > 0) {
+      toast.error(`Please wait ${resendCooldown} seconds before resending.`);
+      return;
+    }
+    toast.success("Verification code resent to your WhatsApp.", {
+      duration: 5000,
+    });
+    setResendCooldown(30);
   };
 
   useEffect(() => {
@@ -516,6 +543,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 }}
                 isAdmin={isAdminNumber}
                 onResend={handleResend}
+                resendCooldown={resendCooldown}
               />
             )}
             {(step === "connecting" || isLoggingIn) && <ConnectingScreen />}

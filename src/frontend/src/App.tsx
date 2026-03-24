@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AIAssistantFloat } from "./components/AIAssistantFloat";
 import { AppLayout } from "./components/AppLayout";
-import { CameraPermissionScreen } from "./components/CameraPermissionScreen";
 import { MedicalSpinner } from "./components/MedicalSpinner";
 import { ProfileIncompleteBanner } from "./components/ProfileIncompleteBanner";
 import { SecuritySystem } from "./components/SecuritySystem";
@@ -29,6 +28,7 @@ import { PerformancePage } from "./pages/PerformancePage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ShareAppPage } from "./pages/ShareAppPage";
 import { VerifyPage } from "./pages/VerifyPage";
+import { secureGet } from "./utils/secureStorage";
 
 type AppPage =
   | "home"
@@ -49,20 +49,16 @@ type AppPage =
   | "share-app"
   | "drug-reference";
 
-type AppState = "loading" | "login" | "camera-permission" | "app";
+type AppState = "loading" | "login" | "app";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-// Check if this is a verification URL (publicly accessible)
 function getVerifyPrincipalFromHash(): string | null {
   if (typeof window === "undefined") return null;
   const hash = window.location.hash;
   if (hash.startsWith("#verify/")) {
     const rest = hash.slice("#verify/".length);
-    // New format: #verify/?name=...&systemId=... (data embedded in URL)
-    if (rest.startsWith("?")) {
-      return `embedded:${rest}`;
-    }
+    if (rest.startsWith("?")) return `embedded:${rest}`;
     return decodeURIComponent(rest);
   }
   return null;
@@ -82,26 +78,30 @@ function isLoginWithin30Days(): boolean {
 
 function calcProfileScore(): number {
   try {
-    const lsKeys = [
+    const regularKeys = [
       "medsim_profile_photo",
       "medsim_batch",
       "medsim_college",
       "medsim_rollNumber",
-      "medsim_aadhaar",
-      "medsim_address",
       "medsim_zohoMail",
       "medsim_gmail",
       "medsim_blood_group",
     ];
-    const filledLS = lsKeys.filter((k) => {
+    const secureKeys = ["medsim_aadhaar", "medsim_address"];
+    const filledRegular = regularKeys.filter((k) => {
       const val = localStorage.getItem(k);
       return val && val.trim() !== "" && val !== "null";
     }).length;
+    const filledSecure = secureKeys.filter((k) => {
+      const val = secureGet(k);
+      return val && val.trim() !== "" && val !== "null";
+    }).length;
+    const filledLS = filledRegular + filledSecure;
     const loginMobile = localStorage.getItem("medsim_login_mobile");
     const hasName = !!localStorage.getItem("medsim_saved_name");
     const hasMobile = !!(loginMobile && loginMobile.trim() !== "");
     const bonusFields = [hasName, hasMobile].filter(Boolean).length;
-    const total = lsKeys.length + 2;
+    const total = regularKeys.length + secureKeys.length + 2;
     return Math.round(((filledLS + bonusFields) / total) * 100);
   } catch {
     return 0;
@@ -125,7 +125,18 @@ function AppWithSeed({
 }) {
   useSeedDiseases();
 
-  const profileScore = calcProfileScore();
+  const [profileScore, setProfileScore] = React.useState(() =>
+    calcProfileScore(),
+  );
+
+  React.useEffect(() => {
+    const refresh = () => setProfileScore(calcProfileScore());
+    window.addEventListener("storage", refresh);
+    // Also refresh when component re-renders after navigation
+    refresh();
+    return () => window.removeEventListener("storage", refresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // biome-ignore lint/correctness/useExhaustiveDependencies: currentPage used to trigger recalc only
   const showBanner = profileScore < 100;
 
   React.useEffect(() => {
@@ -140,6 +151,13 @@ function AppWithSeed({
     if (daysLeft <= 5 && daysLeft > 0) {
       const reminderKey = `medsim_expiry_reminder_${daysLeft}`;
       if (!localStorage.getItem(reminderKey)) {
+        // Clean up all old reminder keys before setting the new one
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (k?.startsWith("medsim_expiry_reminder_")) {
+            localStorage.removeItem(k);
+          }
+        }
         localStorage.setItem(reminderKey, "1");
         setTimeout(() => {
           toast.warning(
@@ -206,14 +224,8 @@ function AppMain() {
       return;
     }
 
-    const permissionAsked = localStorage.getItem(
-      "medsim_camera_permission_asked",
-    );
-    if (!permissionAsked) {
-      setAppState("camera-permission");
-      return;
-    }
-
+    // Permissions are requested lazily only when simulations start
+    // not at login -- avoids aggressive permission requests
     setAppState("app");
   }, [isInitializing, identity, profileLoading]);
 
@@ -223,12 +235,16 @@ function AppMain() {
         if (!identity) {
           setAppState("login");
         }
-      }, 3000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [isInitializing, identity]);
 
   const handleNavigate = (page: string) => {
+    if (page === "admin" && !isAdmin) {
+      toast.error("Access denied. Admin credentials required.");
+      return;
+    }
     setPageHistory((prev) => [...prev, currentPage]);
     setCurrentPage(page as AppPage);
   };
@@ -244,13 +260,20 @@ function AppMain() {
     }
   };
 
-  const handleCameraPermissionComplete = () => {
-    setAppState("app");
-  };
-
   const handleLoginSuccess = () => {
     localStorage.setItem("medsim_login_timestamp", Date.now().toString());
-    setAppState("loading");
+    // Set app state directly -- demo OTP flow does not rely on ICP identity
+    setTimeout(() => {
+      setAppState("app");
+      const hasName = !!localStorage.getItem("medsim_saved_name");
+      if (!hasName) {
+        setCurrentPage("profile");
+        toast.info(
+          "Welcome to MedSim! Please complete your profile to get started.",
+          { duration: 6000 },
+        );
+      }
+    }, 800);
   };
 
   const pageContent: Record<AppPage, React.ReactNode> = {
@@ -281,15 +304,6 @@ function AppMain() {
     return (
       <>
         <LoginPage onLoginSuccess={handleLoginSuccess} />
-        <Toaster />
-      </>
-    );
-  }
-
-  if (appState === "camera-permission") {
-    return (
-      <>
-        <CameraPermissionScreen onComplete={handleCameraPermissionComplete} />
         <Toaster />
       </>
     );

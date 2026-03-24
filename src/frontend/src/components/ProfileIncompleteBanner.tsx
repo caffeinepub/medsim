@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Camera, ChevronRight, X } from "lucide-react";
+import { ChevronRight, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
@@ -16,26 +16,12 @@ export function ProfileIncompleteBanner({
     () => localStorage.getItem("medsim_banner_dismissed") === "true",
   );
 
-  const cameraGranted =
-    localStorage.getItem("medsim_camera_granted") === "true";
-
   // Show only if profile incomplete
   if (profileScore >= 100) {
     if (!dismissed) localStorage.setItem("medsim_banner_dismissed", "true");
     return null;
   }
   if (dismissed) return null;
-
-  const requestCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      for (const track of stream.getTracks()) track.stop();
-      localStorage.setItem("medsim_camera_granted", "true");
-      window.location.reload();
-    } catch {
-      localStorage.setItem("medsim_camera_granted", "false");
-    }
-  };
 
   return (
     <AnimatePresence>
@@ -72,28 +58,11 @@ export function ProfileIncompleteBanner({
             <strong style={{ color: "#ffb800" }}>
               {profileScore}% complete
             </strong>
-            . {!cameraGranted && "Allow camera and "}
-            Fill in the remaining details.
+            . Fill in the remaining details.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          {!cameraGranted && (
-            <Button
-              data-ocid="banner.allow_camera_button"
-              size="sm"
-              onClick={requestCamera}
-              className="h-7 gap-1.5 rounded-lg border-0 px-2.5 text-xs font-semibold"
-              style={{
-                background: "rgba(255, 184, 0, 0.2)",
-                border: "1px solid rgba(255, 184, 0, 0.4)",
-                color: "#ffb800",
-              }}
-            >
-              <Camera className="h-3 w-3" />
-              Allow Camera
-            </Button>
-          )}
           <Button
             data-ocid="banner.complete_profile_button"
             size="sm"

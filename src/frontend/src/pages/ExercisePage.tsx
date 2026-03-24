@@ -694,7 +694,7 @@ function ClinicalReasoningGuide({
       {topSymptoms.length > 0 && (
         <div className="mb-3">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
-            Key Clues Jo Point Karte The Correct Diagnosis Ki Taraf
+            Key Clinical Clues Leading to Correct Diagnosis
           </p>
           <div className="space-y-1.5">
             {topSymptoms.map((sym) => (
@@ -744,7 +744,7 @@ function ClinicalReasoningGuide({
       {patientCase.investigations && (
         <div className="mb-3">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">
-            Investigations Jo Confirm Karte
+            Confirming Investigations
           </p>
           <p className="text-sm text-muted-foreground">
             {patientCase.investigations}
@@ -807,9 +807,9 @@ function ComprehensiveResults({
 
   const headingText =
     totalScore >= 85
-      ? "Shabash! Bahut Sahi Kiya! 🎉"
+      ? "Excellent! Correct Diagnosis! 🎉"
       : totalScore >= 60
-        ? "Theek Hai, Par Seekhne Ki Zarurat Hai"
+        ? "Acceptable — Review Recommended"
         : "Many Errors — Please Revise";
 
   const firstCorrectMed =
@@ -883,7 +883,7 @@ function ComprehensiveResults({
             <div>
               <p className="font-semibold text-foreground">Medicines</p>
               <p className="text-muted-foreground">
-                {results.medicinesCorrect.length}/{totalCorrectMeds} sahi
+                {results.medicinesCorrect.length}/{totalCorrectMeds} correct
               </p>
             </div>
           </div>
@@ -900,7 +900,7 @@ function ComprehensiveResults({
         <div className="space-y-1.5 text-sm">
           <div className="flex items-start gap-2">
             <span className="text-muted-foreground font-medium min-w-20">
-              Aapne chuna:
+              Your Selection:
             </span>
             <span
               className={`font-semibold ${results.diagnosisCorrect ? "text-success" : "text-destructive"}`}
@@ -912,7 +912,7 @@ function ComprehensiveResults({
           {!results.diagnosisCorrect && (
             <div className="flex items-start gap-2">
               <span className="text-muted-foreground font-medium min-w-20">
-                Sahi tha:
+                Correct was:
               </span>
               <span className="font-semibold text-success">
                 {patientCase.correctDiagnosis} ✓
@@ -984,7 +984,7 @@ function ComprehensiveResults({
                 </p>
               )}
               <p className="text-xs text-success pl-6">
-                <strong>Sahi alternative:</strong> {wm.correctAlternative}
+                <strong>Correct alternative:</strong> {wm.correctAlternative}
               </p>
             </motion.div>
           ))}
@@ -1001,7 +1001,7 @@ function ComprehensiveResults({
               <div className="text-sm">
                 <p className="font-semibold text-foreground">{mm.name}</p>
                 <p className="text-muted-foreground text-xs">
-                  Aapne yeh miss kar diya — treatment ke liye important thi
+                  Missed — Important for Treatment
                 </p>
               </div>
             </motion.div>
@@ -1048,7 +1048,7 @@ function ComprehensiveResults({
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
         <h3 className="font-display font-bold text-foreground flex items-center gap-2 mb-3">
           <TrendingUp className="h-4 w-4 text-primary" />
-          Aage Kya Padhein?
+          Recommended Reading
         </h3>
 
         <div className="space-y-2 text-sm">
@@ -1062,7 +1062,7 @@ function ComprehensiveResults({
                   Revise {patientCase.subject}:
                 </strong>{" "}
                 Focus on diagnostic criteria for{" "}
-                <em>{patientCase.correctDiagnosis}</em> — symptoms, signs, aur
+                <em>{patientCase.correctDiagnosis}</em> — symptoms, signs, and
                 investigations.
               </p>
             </div>
@@ -1077,7 +1077,7 @@ function ComprehensiveResults({
                 <strong className="text-foreground">
                   Revise Pharmacology:
                 </strong>{" "}
-                {results.medicinesWrong.map((wm) => wm.name).join(", ")} ke
+                {results.medicinesWrong.map((wm) => wm.name).join(", ")} —
                 please revise contraindications and alternatives.
               </p>
             </div>
@@ -1116,14 +1116,14 @@ function ComprehensiveResults({
           onClick={onBack}
           className="flex-1"
         >
-          Naya Case Chunein
+          Select New Case
         </Button>
         <Button
           data-ocid="exercise.results.home.button"
           onClick={onComplete}
           className="flex-1"
         >
-          Home Jaao
+          Return to Home
         </Button>
       </div>
     </motion.div>
@@ -1387,7 +1387,7 @@ function CaseSolver({
       isCorrect,
       wrongDiagnosis: !diagnosisCorrect
         ? {
-            explanation: `Aapne "${selectedDiagnosis}" choose kiya tha, lekin correct tha "${patientCase.correctDiagnosis}"`,
+            explanation: `You selected "${selectedDiagnosis}" — correct answer was "${patientCase.correctDiagnosis}"`,
             correctDiagnosis: patientCase.correctDiagnosis,
           }
         : undefined,
@@ -1435,6 +1435,19 @@ function CaseSolver({
           timestamp: Date.now(),
         });
         localStorage.setItem("medsim_performance", JSON.stringify(existing));
+        // Award leaderboard points for exercise completion
+        try {
+          const pts = isCorrect ? 10 : 3;
+          const current = Number(
+            localStorage.getItem("medsim_leaderboard_points") || "0",
+          );
+          localStorage.setItem(
+            "medsim_leaderboard_points",
+            String(current + pts),
+          );
+        } catch {
+          /* ignore */
+        }
       } catch {
         /* ignore */
       }
@@ -1640,7 +1653,7 @@ function CaseSolver({
                 >
                   <div className="flex items-center justify-between mb-1">
                     <h2 className="font-display text-lg font-bold text-foreground">
-                      Apna Diagnosis Chuno
+                      Select Your Diagnosis
                     </h2>
                     <div
                       className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold"
@@ -1679,8 +1692,7 @@ function CaseSolver({
                         color: "oklch(0.55 0.22 27)",
                       }}
                     >
-                      ⏰ Time khatam! Ab bhi apna best guess select kar sakte
-                      hain.
+                      ⏰ Time is up! You may still select your best guess.
                     </div>
                   )}
                   <div className="space-y-2">
@@ -1822,7 +1834,7 @@ function CaseSolver({
                           Submit Ho Raha Hai...
                         </>
                       ) : (
-                        "Results Dekho →"
+                        "View Results →"
                       )}
                     </Button>
                   </div>
@@ -2121,7 +2133,7 @@ function CaseSolver({
                     }}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Expert ko alert bhej diya gaya</span>
+                    <span>Expert has been alerted</span>
                   </div>
                 )}
               </motion.div>

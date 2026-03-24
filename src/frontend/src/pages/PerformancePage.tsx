@@ -145,10 +145,10 @@ export function PerformancePage() {
         {/* Header stats */}
         <div>
           <h1 className="font-display mb-2 text-2xl sm:text-3xl font-black text-foreground">
-            Mera Performance
+            My Performance
           </h1>
           <p className="text-muted-foreground">
-            Aapki medical simulation progress dekhein
+            Review your medical simulation progress
           </p>
         </div>
 
@@ -426,7 +426,7 @@ export function PerformancePage() {
                         {attempt.wrongDiagnosis && (
                           <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
                             <p className="font-semibold text-destructive text-xs mb-1">
-                              Galat Diagnosis Kyun Tha?
+                              Why Was the Diagnosis Incorrect?
                             </p>
                             <p className="text-muted-foreground">
                               {attempt.wrongDiagnosis.explanation}
@@ -444,7 +444,7 @@ export function PerformancePage() {
                           <div className="space-y-2">
                             <p className="flex items-center gap-1 font-semibold text-warning text-xs">
                               <AlertTriangle className="h-3 w-3" />
-                              Galat Medicines:
+                              Incorrect Medicines:
                             </p>
                             {attempt.wrongMedicines.map((wm) => (
                               <div
@@ -462,7 +462,7 @@ export function PerformancePage() {
                                   Side Effect: {wm.sideEffect}
                                 </p>
                                 <p className="text-success text-xs">
-                                  Sahi Alternative: {wm.correctAlternative}
+                                  Correct Alternative: {wm.correctAlternative}
                                 </p>
                               </div>
                             ))}

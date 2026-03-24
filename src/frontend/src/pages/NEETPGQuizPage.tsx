@@ -552,8 +552,8 @@ function QuestionCard({
                   }}
                 >
                   {selected === question.correctIndex
-                    ? "Sahi Jawab! Bahut Achha!"
-                    : `Galat! Sahi jawab: Option ${["A", "B", "C", "D"][question.correctIndex]}`}
+                    ? "Correct! Well done!"
+                    : `Incorrect! Correct answer: Option ${["A", "B", "C", "D"][question.correctIndex]}`}
                 </span>
               </div>
 
@@ -706,7 +706,7 @@ function QuizSession({
               }}
             >
               <CheckCircle2 className="h-3 w-3" />
-              {attempts.filter((a) => a.isCorrect).length} Sahi
+              {attempts.filter((a) => a.isCorrect).length} Correct
             </span>
             <span
               className="flex items-center gap-1 rounded-full px-2.5 py-1"
@@ -716,7 +716,7 @@ function QuizSession({
               }}
             >
               <XCircle className="h-3 w-3" />
-              {attempts.filter((a) => !a.isCorrect).length} Galat
+              {attempts.filter((a) => !a.isCorrect).length} Incorrect
             </span>
             <span
               className="flex items-center gap-1 rounded-full px-2.5 py-1 ml-auto"
@@ -758,8 +758,8 @@ function QuizSession({
                 }}
               >
                 {currentIndex + 1 >= questions.length
-                  ? "Results Dekho →"
-                  : "Agla Sawaal →"}
+                  ? "View Results →"
+                  : "Next Question →"}
               </Button>
             </motion.div>
           )}
@@ -775,7 +775,7 @@ function QuizSession({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel data-ocid="neet_pg.exit.cancel_button">
-              Rukein
+              Pause
             </AlertDialogCancel>
             <AlertDialogAction
               data-ocid="neet_pg.exit.confirm_button"
@@ -867,14 +867,14 @@ function ResultsSummary({
             {grade.label}
           </p>
           <p className="text-sm" style={{ color: "oklch(0.65 0.02 215)" }}>
-            {correct} / {total} questions sahi
+            {correct} / {total} questions correct
           </p>
 
           <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
             {[
-              { label: "Sahi", val: correct, color: "oklch(0.7 0.15 145)" },
+              { label: "Correct", val: correct, color: "oklch(0.7 0.15 145)" },
               {
-                label: "Galat",
+                label: "Incorrect",
                 val: total - correct,
                 color: "oklch(0.65 0.2 25)",
               },
@@ -1011,7 +1011,7 @@ function ResultsSummary({
                           color: "oklch(0.68 0.18 25)",
                         }}
                       >
-                        Aapka: {letters[attempt.selectedIndex]}.{" "}
+                        Your Answer: {letters[attempt.selectedIndex]}.{" "}
                         {q.options[attempt.selectedIndex]}
                       </span>
                       <span
@@ -1021,7 +1021,7 @@ function ResultsSummary({
                           color: "oklch(0.68 0.15 145)",
                         }}
                       >
-                        Sahi: {letters[q.correctIndex]}.{" "}
+                        Correct: {letters[q.correctIndex]}.{" "}
                         {q.options[q.correctIndex]}
                       </span>
                     </div>
@@ -1066,7 +1066,7 @@ function ResultsSummary({
             }}
           >
             <BookOpen className="h-4 w-4" />
-            Naya Practice
+            New Practice
           </Button>
         </div>
       </div>
@@ -1100,15 +1100,23 @@ export function NEETPGQuizPage({
   );
   const [sessionAttempts, setSessionAttempts] = useState<AttemptRecord[]>([]);
 
+  // Merge hardcoded + custom uploaded questions
+  const allQuestions = useMemo(() => {
+    const custom = JSON.parse(
+      localStorage.getItem("medsim_custom_neetpg_questions") || "[]",
+    );
+    return [...NEET_PG_QUESTIONS, ...custom];
+  }, []);
+
   // Filtered questions
   const filteredQuestions = useMemo(() => {
-    return NEET_PG_QUESTIONS.filter((q) => {
+    return allQuestions.filter((q) => {
       const matchSubject = subject === "all" || q.subject === subject;
       const matchChapter = chapter === "all" || q.chapter === chapter;
       const matchDiff = difficulty === "all" || q.difficulty === difficulty;
       return matchSubject && matchChapter && matchDiff;
     });
-  }, [subject, chapter, difficulty]);
+  }, [allQuestions, subject, chapter, difficulty]);
 
   const handleSubjectChange = (v: string) => {
     setSubject(v);
@@ -1146,6 +1154,21 @@ export function NEETPGQuizPage({
       };
       existing.push(entry);
       localStorage.setItem("medsim_performance", JSON.stringify(existing));
+      // Award leaderboard points for NEET PG quiz
+      try {
+        const correct = attempts.filter((a) => a.isCorrect).length;
+        const total = attempts.length;
+        const pts = Math.round((correct / total) * 20);
+        const current = Number(
+          localStorage.getItem("medsim_leaderboard_points") || "0",
+        );
+        localStorage.setItem(
+          "medsim_leaderboard_points",
+          String(current + pts),
+        );
+      } catch {
+        /* ignore */
+      }
     } catch {
       // silently ignore storage errors
     }
@@ -1168,10 +1191,10 @@ export function NEETPGQuizPage({
   if (quizState === "browse") {
     const subjectStats = MBBS_SUBJECTS.map((s) => ({
       ...s,
-      count: NEET_PG_QUESTIONS.filter((q) => q.subject === s.name).length,
+      count: allQuestions.filter((q) => q.subject === s.name).length,
     }));
 
-    const totalQuestions = NEET_PG_QUESTIONS.length;
+    const totalQuestions = allQuestions.length;
 
     return (
       <div className="p-4 sm:p-6 lg:p-8">

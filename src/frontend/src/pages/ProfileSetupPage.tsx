@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import type { UserProfile } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useSaveProfile } from "../hooks/useQueries";
+import { secureSet } from "../utils/secureStorage";
 
 interface ProfileSetupPageProps {
   onComplete: () => void;
@@ -38,6 +39,7 @@ const ROLES = [
   { value: "sr2", label: "Senior Resident 2 (Sr 2)" },
   { value: "asst_professor", label: "Assistant Professor" },
   { value: "assoc_professor", label: "Associate Professor" },
+  { value: "professor", label: "Professor" },
   { value: "hod", label: "Head of Department (HOD)" },
 ];
 
@@ -88,7 +90,7 @@ export function ProfileSetupPage({
     }
 
     if (form.aadhaar && !/^\d{12}$/.test(form.aadhaar)) {
-      toast.error("Aadhaar number 12 digits ka hona chahiye");
+      toast.error("Aadhaar number must be 12 digits");
       return;
     }
 
@@ -107,8 +109,8 @@ export function ProfileSetupPage({
     try {
       await saveProfile.mutateAsync(profile);
       localStorage.setItem("medsim_profile_role", form.role);
-      if (form.aadhaar) localStorage.setItem("medsim_aadhaar", form.aadhaar);
-      if (form.address) localStorage.setItem("medsim_address", form.address);
+      if (form.aadhaar) secureSet("medsim_aadhaar", form.aadhaar);
+      if (form.address) secureSet("medsim_address", form.address);
       if (form.batch) localStorage.setItem("medsim_batch", form.batch);
       if (form.zohoMail) localStorage.setItem("medsim_zohoMail", form.zohoMail);
       if (form.gmail) localStorage.setItem("medsim_gmail", form.gmail);
@@ -117,7 +119,7 @@ export function ProfileSetupPage({
       if (form.rollNumber)
         localStorage.setItem("medsim_rollNumber", form.rollNumber);
       if (form.name) localStorage.setItem("medsim_saved_name", form.name);
-      toast.success("Profile save ho gayi! Welcome to MedSim 🎉");
+      toast.success("Profile saved successfully! Welcome to MedSim");
       onComplete();
     } catch {
       toast.error("Could not save profile. Please try again.");
@@ -139,7 +141,7 @@ export function ProfileSetupPage({
             </div>
             <div>
               <h1 className="font-display text-3xl font-black text-foreground">
-                Apna Profile Banayein
+                Complete Your Profile
               </h1>
               <p className="text-muted-foreground">
                 First time? Please fill in some basic information
@@ -161,7 +163,7 @@ export function ProfileSetupPage({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="name">
-                      Poora Naam <span className="text-destructive">*</span>
+                      Full Name <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="name"
@@ -277,7 +279,7 @@ export function ProfileSetupPage({
                       required
                     >
                       <SelectTrigger id="role">
-                        <SelectValue placeholder="Apna role chunein" />
+                        <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
                       <SelectContent>
                         {ROLES.map((r) => (
@@ -341,7 +343,7 @@ export function ProfileSetupPage({
                 {saveProfile.isPending ? (
                   <>
                     <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Save Ho Raha Hai...
+                    Saving...
                   </>
                 ) : (
                   "Save Profile & Continue →"

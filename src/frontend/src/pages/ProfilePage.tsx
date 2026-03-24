@@ -51,6 +51,7 @@ import {
   useMyPerformanceStats,
   useSaveProfile,
 } from "../hooks/useQueries";
+import { secureGet, secureSet } from "../utils/secureStorage";
 import { generateSystemId } from "../utils/systemId";
 
 const PHOTO_STORAGE_KEY = "medsim_profile_photo";
@@ -271,7 +272,7 @@ const JOB_TIERS: {
     minScore: 70,
     maxScore: 85,
     tier: "Senior Specialist Track",
-    description: "Senior positions eligible! Fellowship apply kar sakte hain.",
+    description: "Senior positions eligible! Fellowship applications now open.",
     color: "#9b59ff",
     icon: Star,
     jobs: [
@@ -510,7 +511,7 @@ function CameraModal({
     if (!capturedImage) return;
     localStorage.setItem(PHOTO_STORAGE_KEY, capturedImage);
     onPhotoSaved(capturedImage);
-    toast.success("Photo save ho gayi!");
+    toast.success("Photo saved successfully!");
     onClose();
   };
 
@@ -523,7 +524,7 @@ function CameraModal({
       if (dataUrl) {
         localStorage.setItem(PHOTO_STORAGE_KEY, dataUrl);
         onPhotoSaved(dataUrl);
-        toast.success("Photo save ho gayi!");
+        toast.success("Photo saved successfully!");
         onClose();
       }
     };
@@ -791,6 +792,7 @@ const ROLES = [
   { value: "sr2", label: "Senior Resident 2 (Sr 2)", color: "#00c460" },
   { value: "asst_professor", label: "Assistant Professor", color: "#b39dff" },
   { value: "assoc_professor", label: "Associate Professor", color: "#9b59ff" },
+  { value: "professor", label: "Professor", color: "#0099ff" },
   { value: "hod", label: "Head of Department (HOD)", color: "#ff3355" },
 ];
 
@@ -819,11 +821,12 @@ interface ExtendedProfile {
   bloodGroup: string;
 }
 
-// Score includes photo as a field (12 total)
-function calcCompletion(
-  form: ExtendedProfile,
-  hasPhoto: boolean,
-): { score: number; filled: number; total: number } {
+// Score includes 11 fields (matches App.tsx calcProfileScore)
+function calcCompletion(form: ExtendedProfile): {
+  score: number;
+  filled: number;
+  total: number;
+} {
   const fields = [
     form.name,
     form.mobile,
@@ -836,7 +839,6 @@ function calcCompletion(
     form.collegeName,
     form.rollNumber,
     form.bloodGroup,
-    hasPhoto ? "photo" : null,
   ];
   const filled = fields.filter((f) => f && f.toString().trim() !== "").length;
   const total = fields.length;
@@ -901,8 +903,8 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
     name: "",
     mobile: "",
     role: "",
-    aadhaar: localStorage.getItem("medsim_aadhaar") || "",
-    address: localStorage.getItem("medsim_address") || "",
+    aadhaar: secureGet("medsim_aadhaar"),
+    address: secureGet("medsim_address"),
     zohoMail: localStorage.getItem("medsim_zohoMail") || "",
     gmail: localStorage.getItem("medsim_gmail") || "",
     batch: localStorage.getItem("medsim_batch") || "",
@@ -925,20 +927,6 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
 
   const updateField = (field: keyof ExtendedProfile) => (value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    // Persist extended fields to localStorage
-    const lsFields: Record<string, string> = {
-      aadhaar: "medsim_aadhaar",
-      address: "medsim_address",
-      zohoMail: "medsim_zohoMail",
-      gmail: "medsim_gmail",
-      batch: "medsim_batch",
-      collegeName: "medsim_college",
-      rollNumber: "medsim_rollNumber",
-      bloodGroup: "medsim_blood_group",
-    };
-    if (lsFields[field]) {
-      localStorage.setItem(lsFields[field], value);
-    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -966,9 +954,17 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
 
     try {
       await saveProfile.mutateAsync(updatedProfile);
-      // Save name to localStorage for profile score calculation
+      // Save all extended fields to localStorage
       localStorage.setItem("medsim_saved_name", form.name);
-      toast.success("Profile update ho gayi!");
+      localStorage.setItem("medsim_zohoMail", form.zohoMail);
+      localStorage.setItem("medsim_gmail", form.gmail);
+      localStorage.setItem("medsim_batch", form.batch);
+      localStorage.setItem("medsim_college", form.collegeName);
+      localStorage.setItem("medsim_rollNumber", form.rollNumber);
+      localStorage.setItem("medsim_blood_group", form.bloodGroup);
+      secureSet("medsim_aadhaar", form.aadhaar);
+      secureSet("medsim_address", form.address);
+      toast.success("Profile updated successfully!");
       setIsEditing(false);
     } catch {
       toast.error("Could not save profile. Please try again.");
@@ -979,7 +975,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
     score: completion,
     filled: filledCount,
     total: totalFields,
-  } = calcCompletion(form, !!profilePhoto);
+  } = calcCompletion(form);
   const roleInfo = getRoleInfo(form.role);
 
   // Combined career score
@@ -1095,7 +1091,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                       boxShadow: "0 0 10px rgba(0, 212, 255, 0.4)",
                     }}
                     aria-label="Take live photo"
-                    title="Live photo lein"
+                    title="Take live photo"
                   >
                     <Camera className="h-3.5 w-3.5 text-black" />
                   </button>
@@ -1207,8 +1203,8 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                         name: profile?.name || "",
                         mobile: profile?.mobile || "",
                         role: profile?.role || "",
-                        aadhaar: localStorage.getItem("medsim_aadhaar") || "",
-                        address: localStorage.getItem("medsim_address") || "",
+                        aadhaar: secureGet("medsim_aadhaar"),
+                        address: secureGet("medsim_address"),
                         zohoMail: localStorage.getItem("medsim_zohoMail") || "",
                         gmail: localStorage.getItem("medsim_gmail") || "",
                         batch: localStorage.getItem("medsim_batch") || "",
@@ -1216,6 +1212,8 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                           localStorage.getItem("medsim_college") || "",
                         rollNumber:
                           localStorage.getItem("medsim_rollNumber") || "",
+                        bloodGroup:
+                          localStorage.getItem("medsim_blood_group") || "",
                       }));
                     }}
                     className="h-10 gap-2 rounded-xl border-0 font-semibold"
@@ -1296,14 +1294,10 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                       type="tel"
                       placeholder="9876543210"
                       value={form.mobile}
-                      onChange={(e) =>
-                        updateField("mobile")(
-                          e.target.value.replace(/\D/g, "").slice(0, 10),
-                        )
-                      }
-                      disabled={!isEditing}
-                      style={isEditing ? inputStyle : readonlyStyle}
-                      className="h-11 flex-1 border-0 font-mono tracking-widest focus-visible:ring-0"
+                      readOnly
+                      disabled
+                      style={readonlyStyle}
+                      className="h-11 flex-1 border-0 font-mono tracking-widest focus-visible:ring-0 cursor-not-allowed opacity-70"
                     />
                   </div>
                 </MonitorField>
@@ -1407,7 +1401,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                       className="h-11 rounded-xl border-0 focus-visible:ring-0"
                       style={isEditing ? inputStyle : readonlyStyle}
                     >
-                      <SelectValue placeholder="Apna role chunein" />
+                      <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent
                       style={{
@@ -1484,6 +1478,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
                   <Select
                     value={form.bloodGroup}
                     onValueChange={(v) => updateField("bloodGroup")(v)}
+                    disabled={!isEditing}
                   >
                     <SelectTrigger
                       data-ocid="profile.blood_group.select"

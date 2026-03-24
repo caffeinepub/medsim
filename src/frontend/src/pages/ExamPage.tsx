@@ -143,7 +143,7 @@ function ExamLockedScreen({
               className="text-sm"
               style={{ color: "rgba(150, 200, 255, 0.6)" }}
             >
-              Admin approval ya 24 ghante baad exam unlock hoga
+              Exam will unlock after admin approval or 24 hours
             </p>
           </div>
 
@@ -235,8 +235,8 @@ function ExamLockedScreen({
                   color: "#00e676",
                 }}
               >
-                ✅ 24 ghante guzar gaye! Refresh karo — exam unlock ho gaya
-                hoga.
+                ✅ 24 hours have passed. Refresh the page — exam should now be
+                unlocked.
               </div>
             )}
 
@@ -1034,8 +1034,8 @@ export function ExamPage({
                     color: "#ffb800",
                   }}
                 >
-                  ⚠️ {totalQuestions - answeredCount} questions unanswered hain.
-                  Submit kar sakte hain, lekin score affect hoga.
+                  ⚠️ {totalQuestions - answeredCount} questions unanswered. You
+                  may submit, but your score will be affected.
                 </div>
               )}
 
@@ -1079,7 +1079,7 @@ export function ExamPage({
                     <AlertDialogDescription
                       style={{ color: "rgba(150, 200, 255, 0.6)" }}
                     >
-                      Ek baar submit karne ke baad answers change nahi ho sakte.
+                      Answers cannot be changed after submission.
                       {answeredCount < totalQuestions && (
                         <span
                           className="block mt-2"

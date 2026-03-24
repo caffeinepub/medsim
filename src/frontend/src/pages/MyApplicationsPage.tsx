@@ -190,7 +190,7 @@ export function MyApplicationsPage({ onNavigate }: MyApplicationsPageProps) {
               }}
             >
               <Briefcase className="h-4 w-4" />
-              Jobs Dekho
+              Browse Opportunities
             </Button>
           )}
         </motion.div>
@@ -297,7 +297,7 @@ export function MyApplicationsPage({ onNavigate }: MyApplicationsPageProps) {
                     className="mt-1 text-sm"
                     style={{ color: "rgba(100, 150, 200, 0.4)" }}
                   >
-                    Career Opportunities page par jao aur apply karo
+                    Visit the Career Opportunities page to apply
                   </p>
                 </div>
                 {onNavigate && (

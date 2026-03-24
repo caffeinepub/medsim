@@ -10,28 +10,46 @@ import {
   Smartphone,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import QRCode from "qrcode";
+import { useEffect, useState } from "react";
 import { SiWhatsapp } from "react-icons/si";
 import { toast } from "sonner";
+
+function QRCodeDisplay({ url }: { url: string }) {
+  const [dataUrl, setDataUrl] = useState<string>("");
+
+  useEffect(() => {
+    QRCode.toDataURL(url, { width: 220, margin: 2 })
+      .then(setDataUrl)
+      .catch(() => setDataUrl(""));
+  }, [url]);
+
+  if (!dataUrl) return <div style={{ width: 220, height: 220 }} />;
+
+  return (
+    <img
+      src={dataUrl}
+      alt="QR Code"
+      width={220}
+      height={220}
+      style={{ display: "block", borderRadius: "8px" }}
+    />
+  );
+}
 
 export function ShareAppPage() {
   const [copied, setCopied] = useState(false);
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
 
   const appUrl = window.location.origin;
-  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&color=00d4ff&bgcolor=030a1c&data=${encodeURIComponent(appUrl)}`;
 
-  const inviteText = `🏥 Join MedSim — India ka best MBBS Medical Simulation App!
-
-📱 Clinical cases, NEET PG practice, ICU simulator aur AI assistant — sab ek jagah.
-
-${appUrl}`;
+  const inviteText = `Join MedSim — India's best MBBS Medical Simulation Platform!\n\nClinical cases, NEET PG practice, ICU simulator and AI assistant — all in one place.\n\n${appUrl}`;
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(appUrl);
       setCopied(true);
-      toast.success("Link copy ho gaya! 🔗");
+      toast.success("Link copied!");
       setTimeout(() => setCopied(false), 2500);
     } catch {
       toast.error("Could not copy. Please copy the link manually.");
@@ -50,20 +68,20 @@ ${appUrl}`;
     }
     try {
       await navigator.share({
-        title: "MedSim — Medical Simulation App",
-        text: "India ka best MBBS Medical Simulation App — clinical cases, NEET PG, ICU simulator!",
+        title: "MedSim — Medical Simulation Platform",
+        text: "India's best MBBS Medical Simulation Platform — clinical cases, NEET PG, ICU simulator!",
         url: appUrl,
       });
       toast.success("Shared successfully!");
     } catch {
-      // User cancelled or error
+      // User cancelled
     }
   };
 
   const handleInstall = async () => {
     const accepted = await promptInstall();
     if (accepted) {
-      toast.success("MedSim install ho gaya! 🎉");
+      toast.success("MedSim installed successfully!");
     }
   };
 
@@ -99,11 +117,11 @@ ${appUrl}`;
           className="mt-1 text-sm"
           style={{ color: "oklch(var(--muted-foreground))" }}
         >
-          Apne doston ko MedSim join karaein — ek scan mein!
+          Invite your colleagues — one scan to install
         </p>
       </motion.div>
 
-      {/* Install banner — only if installable and not yet installed */}
+      {/* Install banner */}
       {canInstall && !isInstalled && (
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
@@ -174,7 +192,7 @@ ${appUrl}`;
         >
           <Check className="h-4 w-4" style={{ color: "#00e676" }} />
           <span className="text-sm font-medium" style={{ color: "#00e676" }}>
-            MedSim already installed hai! ✅
+            MedSim is already installed
           </span>
         </motion.div>
       )}
@@ -192,25 +210,23 @@ ${appUrl}`;
             "0 0 40px rgba(0,212,255,0.1), inset 0 1px 0 rgba(255,255,255,0.04)",
         }}
       >
-        {/* Card header */}
         <div
           className="flex items-center gap-2 px-5 py-3"
           style={{ borderBottom: "1px solid rgba(0,212,255,0.12)" }}
         >
           <QrCode className="h-4 w-4" style={{ color: "#00d4ff" }} />
           <span className="text-sm font-semibold" style={{ color: "#00d4ff" }}>
-            Dynamic QR Code
+            QR Code
           </span>
           <span
             className="ml-auto text-xs"
             style={{ color: "rgba(150,200,255,0.4)" }}
           >
-            Scan to Install MedSim
+            Scan to open MedSim
           </span>
         </div>
 
         <div className="flex flex-col items-center p-6">
-          {/* QR code with white bg for readability */}
           <div
             className="relative mb-4 overflow-hidden rounded-2xl p-3"
             style={{
@@ -219,31 +235,7 @@ ${appUrl}`;
                 "0 0 0 4px rgba(0,212,255,0.2), 0 0 30px rgba(0,212,255,0.15)",
             }}
           >
-            <img
-              src={qrApiUrl}
-              alt="QR Code to install MedSim"
-              width={220}
-              height={220}
-              className="block"
-              style={{ imageRendering: "pixelated" }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-            {/* MedSim watermark overlay */}
-            <div
-              className="absolute inset-x-0 bottom-0 flex items-center justify-center pb-1 pt-1"
-              style={{
-                background: "rgba(255,255,255,0.9)",
-              }}
-            >
-              <span
-                className="font-display text-xs font-black tracking-widest"
-                style={{ color: "#030a1c" }}
-              >
-                MEDSIM
-              </span>
-            </div>
+            <QRCodeDisplay url={appUrl} />
           </div>
 
           <p
@@ -256,10 +248,9 @@ ${appUrl}`;
             className="text-center text-xs"
             style={{ color: "rgba(150,200,255,0.5)" }}
           >
-            Doosre student ka phone scan karo — seedha app install hoga
+            Works with any QR scanner app
           </p>
 
-          {/* URL display */}
           <div
             className="mt-4 flex w-full items-center gap-2 rounded-xl px-3 py-2"
             style={{
@@ -306,12 +297,11 @@ ${appUrl}`;
             className="text-xs"
             style={{ color: "oklch(var(--muted-foreground))" }}
           >
-            Invite your friends
+            Invite your colleagues
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
-          {/* Copy Invite Link */}
           <Button
             data-ocid="share.copy_link_button"
             onClick={handleCopyLink}
@@ -334,7 +324,6 @@ ${appUrl}`;
             <span className="text-xs">{copied ? "Copied!" : "Copy Link"}</span>
           </Button>
 
-          {/* WhatsApp */}
           <Button
             data-ocid="share.whatsapp_button"
             onClick={handleWhatsApp}
@@ -349,7 +338,6 @@ ${appUrl}`;
             <span className="text-xs">WhatsApp</span>
           </Button>
 
-          {/* Native Share */}
           {"share" in navigator ? (
             <Button
               data-ocid="share.native_share_button"
@@ -382,7 +370,7 @@ ${appUrl}`;
         </div>
       </motion.div>
 
-      {/* Invite message preview */}
+      {/* Install guide for students */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -401,10 +389,10 @@ ${appUrl}`;
             className="text-sm font-semibold"
             style={{ color: "oklch(var(--foreground))" }}
           >
-            Invite Message Preview
+            How to Install
           </p>
         </div>
-        <div className="p-4">
+        <div className="p-4 space-y-3">
           <div
             className="rounded-xl p-3"
             style={{
@@ -412,27 +400,35 @@ ${appUrl}`;
               border: "1px solid rgba(0,212,255,0.08)",
             }}
           >
-            <pre
-              className="whitespace-pre-wrap text-xs leading-relaxed"
-              style={{ color: "rgba(200,230,255,0.7)", fontFamily: "inherit" }}
+            <p
+              className="text-xs font-semibold mb-1"
+              style={{ color: "#00d4ff" }}
             >
-              {inviteText}
-            </pre>
+              Android (Chrome)
+            </p>
+            <p className="text-xs" style={{ color: "rgba(200,230,255,0.7)" }}>
+              Open the link in Chrome → tap the 3-dot menu → "Add to Home
+              screen"
+            </p>
           </div>
-          <Button
-            data-ocid="share.copy_message_button"
-            variant="ghost"
-            size="sm"
-            onClick={async () => {
-              await navigator.clipboard.writeText(inviteText).catch(() => {});
-              toast.success("Message copy ho gaya!");
+          <div
+            className="rounded-xl p-3"
+            style={{
+              background: "rgba(0,212,255,0.04)",
+              border: "1px solid rgba(0,212,255,0.08)",
             }}
-            className="mt-2 h-8 gap-1.5 text-xs"
-            style={{ color: "rgba(0,212,255,0.6)" }}
           >
-            <Copy className="h-3 w-3" />
-            Copy Message
-          </Button>
+            <p
+              className="text-xs font-semibold mb-1"
+              style={{ color: "#00d4ff" }}
+            >
+              iPhone (Safari)
+            </p>
+            <p className="text-xs" style={{ color: "rgba(200,230,255,0.7)" }}>
+              Open the link in Safari → tap the Share icon → "Add to Home
+              Screen"
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>

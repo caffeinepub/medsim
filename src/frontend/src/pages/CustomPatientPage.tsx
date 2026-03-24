@@ -161,9 +161,7 @@ export function CustomPatientPage() {
       toast.success("AI diagnosis ready!");
     } catch {
       // AI failed — alert admin
-      toast.error(
-        "AI diagnosis nahi kar paya. Admin ko alert bheja ja raha hai...",
-      );
+      toast.error("AI could not complete diagnosis. Alerting admin...");
       if (!aiAlertSent) {
         try {
           await createAlert.mutateAsync({
@@ -175,7 +173,7 @@ export function CustomPatientPage() {
             createdAt: BigInt(Date.now()) * BigInt(1_000_000),
           });
           setAiAlertSent(true);
-          toast.info("Admin ko alert bhej diya gaya hai ✓");
+          toast.info("Admin has been alerted.");
         } catch {
           // silent
         }
@@ -245,9 +243,9 @@ export function CustomPatientPage() {
         },
       });
       setShowTimeline(true);
-      toast.success("Treatment session save ho gayi!");
+      toast.success("Treatment session saved successfully!");
     } catch {
-      toast.error("Session save nahi hua.");
+      toast.error("Session could not be saved.");
     }
   };
 
@@ -256,7 +254,7 @@ export function CustomPatientPage() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-6">
           <h1 className="font-display text-3xl font-black text-foreground">
-            Custom Patient Banao
+            Create Custom Patient
           </h1>
           <p className="text-muted-foreground">
             Create your patient and get AI diagnosis
@@ -480,7 +478,7 @@ export function CustomPatientPage() {
             {aiAlertSent && (
               <div className="flex items-center gap-2 rounded-xl border border-warning/30 bg-warning/5 p-3 text-sm text-warning">
                 <AlertCircle className="h-4 w-4" />
-                Admin ko alert bhej diya gaya hai. Jaldi review hoga.
+                Admin has been alerted. Review is pending.
               </div>
             )}
 

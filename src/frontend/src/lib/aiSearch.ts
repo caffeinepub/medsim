@@ -318,7 +318,7 @@ export function generateResponse(
       diseases: [],
       intent: parsed.intent,
       responseText:
-        "Is query ke liye database mein koi matching disease nahi mili. Admin ko alert bheja ja raha hai.",
+        "No matching condition found in the clinical database. Please refine your query or consult the Drug Reference tool.",
       confidence: 0,
     };
   }

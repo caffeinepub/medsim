@@ -91,6 +91,7 @@ export function useAllDiseases() {
   const { actor, isFetching } = useActor();
   return useQuery<Disease[]>({
     queryKey: ["allDiseases"],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllDiseases();
@@ -159,6 +160,7 @@ export function useAllPatientCases() {
   const { actor, isFetching } = useActor();
   return useQuery<PatientCase[]>({
     queryKey: ["allPatientCases"],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllPatientCases();
@@ -462,6 +464,43 @@ export function useCreateAIEscalationAlert() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allAdminAlerts"] });
       queryClient.invalidateQueries({ queryKey: ["unresolvedAdminAlerts"] });
+    },
+  });
+}
+
+// ─── Leaderboard ──────────────────────────────────────────────────
+
+export interface LeaderboardEntry {
+  id: string;
+  name: string;
+  role: string;
+  points: bigint;
+  updatedAt: bigint;
+}
+
+export function useGetLeaderboard() {
+  const { actor, isFetching } = useActor();
+  return useQuery<LeaderboardEntry[]>({
+    queryKey: ["leaderboard"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      if (!actor) return [];
+      return (actor as any).getLeaderboard();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useSubmitLeaderboardScore() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (points: number) => {
+      if (!actor) throw new Error("Actor not available");
+      return (actor as any).submitLeaderboardScore(BigInt(Math.floor(points)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
     },
   });
 }

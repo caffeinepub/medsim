@@ -40,10 +40,10 @@ export function VerifyPage({ principalId }: VerifyPageProps) {
           queryStr.startsWith("?") ? queryStr.slice(1) : queryStr,
         );
         setQrData({
-          name: params.get("name") || undefined,
-          batch: params.get("batch") || undefined,
-          systemId: params.get("systemId") || undefined,
-          role: params.get("role") || undefined,
+          name: params.get("name")?.slice(0, 100) || undefined,
+          batch: params.get("batch")?.slice(0, 50) || undefined,
+          systemId: params.get("systemId")?.slice(0, 50) || undefined,
+          role: params.get("role")?.slice(0, 50) || undefined,
           verified: true,
         });
       } catch {

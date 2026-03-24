@@ -230,6 +230,15 @@ actor {
     description : Text;
   };
 
+
+  public type LeaderboardEntry = {
+    id : Text;
+    name : Text;
+    role : Text;
+    points : Nat;
+    updatedAt : Time.Time;
+  };
+
   module PerformanceStats {
     public func compareByStudent(a : PerformanceStats, b : PerformanceStats) : Order.Order {
       Text.compare(a.studentId, b.studentId);
@@ -249,6 +258,7 @@ actor {
   let securityEvents = Map.empty<Text, SecurityEvent>();
   let medicines = Map.empty<Text, Medicine>();
   let performanceStatsMap = Map.empty<Text, PerformanceStats>();
+  let leaderboardEntries = Map.empty<Text, LeaderboardEntry>();
 
   // ==== Actor & Authorization ====
 
@@ -782,5 +792,48 @@ actor {
       mostAttemptedCases = [];
       commonMistakes = [];
     };
+  };
+
+  // ==== Leaderboard ====
+
+  public shared ({ caller }) func submitLeaderboardScore(points : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can submit scores");
+    };
+    switch (getUserIdFromPrincipal(caller)) {
+      case (null) { Runtime.trap("User profile not found") };
+      case (?userId) {
+        let existing = leaderboardEntries.get(userId);
+        let name = switch (users.get(userId)) {
+          case (null) { "Unknown" };
+          case (?u) { u.name };
+        };
+        let role = switch (users.get(userId)) {
+          case (null) { "Student (MBBS)" };
+          case (?u) { u.role };
+        };
+        let currentPoints = switch (existing) {
+          case (null) { 0 };
+          case (?e) { e.points };
+        };
+        let newPoints = if (points > currentPoints) { points } else { currentPoints };
+        let entry : LeaderboardEntry = {
+          id = userId;
+          name = name;
+          role = role;
+          points = newPoints;
+          updatedAt = Time.now();
+        };
+        leaderboardEntries.add(userId, entry);
+      };
+    };
+  };
+
+  public query func getLeaderboard() : async [LeaderboardEntry] {
+    leaderboardEntries.values().toArray().sort(
+      func(a : LeaderboardEntry, b : LeaderboardEntry) : Order.Order {
+        if (a.points > b.points) { #less } else if (a.points < b.points) { #greater } else { #equal };
+      }
+    );
   };
 };
