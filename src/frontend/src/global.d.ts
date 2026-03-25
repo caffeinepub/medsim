@@ -49,3 +49,11 @@ declare module "html2canvas" {
   ): Promise<HTMLCanvasElement>;
   export = html2canvas;
 }
+
+declare module "qrcode" {
+  function toDataURL(text: string, options?: object): Promise<string>;
+  // biome-ignore lint/suspicious/noShadowRestrictedNames: third-party module declaration
+  function toString(text: string, options?: object): Promise<string>;
+  export { toDataURL, toString };
+  export default { toDataURL, toString };
+}

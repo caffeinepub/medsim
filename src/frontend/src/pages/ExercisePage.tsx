@@ -973,8 +973,8 @@ function ComprehensiveResults({
               </div>
               {wm.contraindications.length > 0 && (
                 <p className="text-xs text-muted-foreground pl-6">
-                  <strong className="text-foreground/80">Kyun galat:</strong>{" "}
-                  This medicine is contraindicated because:{" "}
+                  <strong className="text-foreground/80">Reason:</strong> This
+                  medicine is contraindicated because:{" "}
                   {wm.contraindications.slice(0, 2).join("; ")}
                 </p>
               )}
@@ -1500,7 +1500,7 @@ function CaseSolver({
                       }
                 }
               >
-                {feedbackOverlay === "correct" ? "u2713" : "u2717"}
+                {feedbackOverlay === "correct" ? "✓" : "✗"}
               </div>
             </motion.div>
           )}
@@ -1509,7 +1509,7 @@ function CaseSolver({
         <div className="mb-6 flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Wapas
+            Back
           </Button>
           <div className="flex-1">
             <h1 className="font-display text-2xl font-black text-foreground">
@@ -1576,7 +1576,7 @@ function CaseSolver({
                   }}
                 >
                   <Brain className="h-3.5 w-3.5" />
-                  AI Se Poochho
+                  Ask AI
                 </Button>
               </div>
               <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -1817,7 +1817,7 @@ function CaseSolver({
                       variant="outline"
                       onClick={() => setStep("diagnose")}
                     >
-                      ← Wapas
+                      ← Back
                     </Button>
                     <Button
                       data-ocid="exercise.medicine.submit_button"
@@ -2175,7 +2175,7 @@ function CaseSolver({
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              {aiThinking ? "AI Soch Raha Hai..." : "AI Se Poochho"}
+              {aiThinking ? "Analyzing..." : "Ask AI"}
             </Button>
           </div>
         </SheetContent>
@@ -2217,7 +2217,7 @@ export function ExercisePage({
               onClick={() => setSelectedCase(null)}
               className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
             >
-              Wapas Cases Par Jaayein
+              Back to Cases
             </button>
           </div>
         </div>

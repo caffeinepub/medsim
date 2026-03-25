@@ -892,7 +892,19 @@ export function ERSimulationPage() {
       (correctActions / Math.max(totalCorrect, 1)) * 60,
     );
     const empathyScore = Math.round((empathyRating / 5) * 20);
-    const diagnosisScore = diagnosisInput.length > 10 ? 20 : 5;
+    const diagKeywords = scenario.diagnosis
+      .toLowerCase()
+      .split(" ")
+      .filter((w: string) => w.length > 4);
+    const diagLower = diagnosisInput.toLowerCase();
+    const keywordMatch = diagKeywords.some((kw: string) =>
+      diagLower.includes(kw),
+    );
+    const diagnosisScore = keywordMatch
+      ? 20
+      : diagnosisInput.length > 10
+        ? 10
+        : 5;
     const total = actionScore + empathyScore + diagnosisScore;
 
     // Save to leaderboard

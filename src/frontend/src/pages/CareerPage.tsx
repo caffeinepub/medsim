@@ -403,9 +403,16 @@ function calcProfileCompletionFromLS(): number {
   const hasMobile = !!(
     localStorage.getItem("medsim_login_mobile") || ""
   ).trim();
-  const hasRole = !!(localStorage.getItem("medsim_profile_role") || "").trim();
+  const hasRole = !!(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem("medsim_profile") || "{}");
+      return p?.role?.trim();
+    } catch {
+      return "";
+    }
+  })();
   const bonusCount = [hasName, hasMobile, hasRole].filter(Boolean).length;
-  const total = lsFields.length + 3; // 12 total
+  const total = lsFields.length + 3; // 11 total
   return Math.round(((filledLS + bonusCount) / total) * 100);
 }
 

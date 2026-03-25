@@ -176,18 +176,23 @@ function DashboardTab() {
 
   const avgAccuracy = (() => {
     try {
-      const perfs: Array<{ correct: number; total: number }> = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith("medsim_perf_")) {
-          const raw = JSON.parse(localStorage.getItem(key) || "{}");
-          if (raw.correct !== undefined && raw.total > 0) perfs.push(raw);
-        }
-      }
-      if (perfs.length === 0) return 0;
-      const avg =
-        perfs.reduce((s, p) => s + p.correct / p.total, 0) / perfs.length;
-      return Math.round(avg * 100);
+      const entries: Array<{
+        score?: number;
+        correct?: number;
+        total?: number;
+      }> = JSON.parse(localStorage.getItem("medsim_performance") || "[]");
+      if (!entries.length) return 0;
+      return Math.round(
+        entries.reduce(
+          (s, e) =>
+            s +
+            (e.score ??
+              (e.total && e.total > 0
+                ? ((e.correct ?? 0) / e.total) * 100
+                : 0)),
+          0,
+        ) / Math.max(entries.length, 1),
+      );
     } catch {
       return 0;
     }
@@ -1630,6 +1635,17 @@ function CasesTab() {
           onOpenChange={(open) => {
             if (!open) {
               setEditingCase(null);
+              setCaseForm({
+                title: "",
+                diseaseName: "",
+                subject: "",
+                difficulty: "Medium",
+                patientAge: "",
+                patientGender: "Male",
+                chiefComplaint: "",
+                diagnosis: "",
+                management: "",
+              });
             }
             setAddOpen(open);
           }}

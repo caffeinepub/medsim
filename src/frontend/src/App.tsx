@@ -132,11 +132,14 @@ function AppWithSeed({
   React.useEffect(() => {
     const refresh = () => setProfileScore(calcProfileScore());
     window.addEventListener("storage", refresh);
-    // Also refresh when component re-renders after navigation
+    const handler = () => refresh();
+    window.addEventListener("medsim-profile-updated", handler);
     refresh();
-    return () => window.removeEventListener("storage", refresh);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // biome-ignore lint/correctness/useExhaustiveDependencies: currentPage used to trigger recalc only
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("medsim-profile-updated", handler);
+    };
+  }, []);
   const showBanner = profileScore < 100;
 
   React.useEffect(() => {

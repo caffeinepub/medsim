@@ -1719,7 +1719,8 @@ export function ProfilePage({ onNavigate }: ProfilePageProps = {}) {
               className="mt-4 text-center font-mono text-xs"
               style={{ color: "rgba(100, 150, 200, 0.35)" }}
             >
-              ℹ️ Career recommendations profile + performance score pe based hain
+              ℹ️ Career recommendations are based on profile and performance
+              score.
             </p>
           </div>
 

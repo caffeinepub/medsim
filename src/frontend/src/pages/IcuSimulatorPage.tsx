@@ -952,6 +952,8 @@ export function IcuSimulatorPage() {
 
   const resetScenario = () => {
     setPhase("initial");
+    phaseRef.current = "initial";
+    phaseTimerRef.current = 0;
     liveHrRef.current = scenario.phases.initial.hr;
     setVitals(scenario.phases.initial);
     setPhaseProgress(0);

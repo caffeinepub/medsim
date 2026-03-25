@@ -627,7 +627,7 @@ function QuizSession({
   const [currentAnswered, setCurrentAnswered] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
-  const progress = (currentIndex / questions.length) * 100;
+  const progress = ((currentIndex + 1) / questions.length) * 100;
 
   const handleAnswer = (selectedIndex: number) => {
     const q = questions[currentIndex];
@@ -1319,6 +1319,7 @@ export function NEETPGQuizPage({
                     questionCount={s.count}
                     onClick={() => {
                       setSubject(s.name);
+                      localStorage.setItem("neetpg_filter_subject", s.name);
                       setChapter("all");
                       setDifficulty("all");
                     }}
