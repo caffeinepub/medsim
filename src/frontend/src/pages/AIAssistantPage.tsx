@@ -975,7 +975,7 @@ function TypingIndicator() {
         <Brain className="h-4 w-4" style={{ color: "oklch(0.65 0.16 196)" }} />
       </div>
       <div
-        className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm px-4 py-3"
+        className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm px-3 py-2.5"
         style={{
           background: "oklch(0.22 0.05 230 / 0.8)",
           border: "1px solid oklch(0.35 0.06 230)",
@@ -1047,7 +1047,7 @@ function AIMessageBubble({
         className="flex justify-end"
       >
         <div
-          className="max-w-[75%] rounded-2xl rounded-br-sm px-4 py-3 text-sm"
+          className="max-w-[75%] rounded-2xl rounded-br-sm px-3 py-2.5 text-sm"
           style={{
             background: "oklch(0.45 0.12 200)",
             color: "oklch(0.96 0.01 215)",
@@ -1087,7 +1087,7 @@ function AIMessageBubble({
         {/* ICMR Protocol Card */}
         {message.responseType === "icmr_protocol" && message.icmrProtocol ? (
           <div
-            className="rounded-2xl rounded-bl-sm px-4 py-3.5 space-y-3"
+            className="rounded-2xl rounded-bl-sm px-3 py-2.5 space-y-2.5"
             style={{
               background: "oklch(0.22 0.05 230 / 0.8)",
               border: "1px solid oklch(0.45 0.14 196 / 0.5)",
@@ -1137,7 +1137,7 @@ function AIMessageBubble({
           </div>
         ) : (
           <div
-            className="rounded-2xl rounded-bl-sm px-4 py-3.5 space-y-3"
+            className="rounded-2xl rounded-bl-sm px-3 py-2.5 space-y-2.5"
             style={{
               background: "oklch(0.22 0.05 230 / 0.8)",
               border: "1px solid oklch(0.35 0.06 230)",
@@ -1541,14 +1541,14 @@ export function AIAssistantPage() {
     >
       {/* Header */}
       <div
-        className="flex-shrink-0 border-b px-3 sm:px-5 py-3 sm:py-4"
+        className="flex-shrink-0 border-b px-3 sm:px-5 py-2 sm:py-3"
         style={{
           borderColor: "oklch(0.28 0.05 235)",
           background: "oklch(0.17 0.05 235 / 0.95)",
           backdropFilter: "blur(8px)",
         }}
       >
-        <div className="mx-auto max-w-3xl space-y-3">
+        <div className="mx-auto max-w-3xl space-y-2">
           <div className="flex items-center gap-3">
             <div
               className="flex h-10 w-10 items-center justify-center rounded-xl animate-monitor-glow"
@@ -1682,7 +1682,7 @@ export function AIAssistantPage() {
         className="flex-1 overflow-y-auto"
         style={{ background: "transparent" }}
       >
-        <div className="mx-auto max-w-3xl space-y-4 px-3 sm:px-5 py-4 sm:py-6">
+        <div className="mx-auto max-w-3xl space-y-3 px-3 sm:px-5 py-3 sm:py-4">
           {/* Loading skeleton */}
           {diseasesLoading && messages.length === 0 && <LoadingSkeleton />}
 

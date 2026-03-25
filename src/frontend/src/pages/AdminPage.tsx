@@ -2458,6 +2458,232 @@ function NEETPGCSVUpload() {
           subject,chapter,question,optionA,optionB,optionC,optionD,answer,explanation,reference
         </pre>
       </div>
+
+      {/* Uploaded Questions Management */}
+      <UploadedQuestionsManager />
+    </div>
+  );
+}
+
+function UploadedQuestionsManager() {
+  const [questions, setQuestions] = useState<any[]>(() => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("medsim_custom_neetpg_questions") || "[]",
+      );
+    } catch {
+      return [];
+    }
+  });
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editData, setEditData] = useState<any>(null);
+
+  const saveEdit = () => {
+    if (editingIdx === null || !editData) return;
+    const updated = [...questions];
+    updated[editingIdx] = editData;
+    setQuestions(updated);
+    localStorage.setItem(
+      "medsim_custom_neetpg_questions",
+      JSON.stringify(updated),
+    );
+    setEditingIdx(null);
+    setEditData(null);
+    toast.success("Question updated.");
+  };
+
+  const deleteQ = (idx: number) => {
+    const updated = questions.filter((_, i) => i !== idx);
+    setQuestions(updated);
+    localStorage.setItem(
+      "medsim_custom_neetpg_questions",
+      JSON.stringify(updated),
+    );
+    toast.success("Question deleted.");
+  };
+
+  return (
+    <div className="mt-2">
+      <p
+        className="text-xs font-semibold mb-2"
+        style={{ color: "rgba(180,220,255,0.7)" }}
+      >
+        Uploaded Questions ({questions.length})
+      </p>
+      {questions.length === 0 ? (
+        <p
+          className="text-xs text-center py-4"
+          style={{ color: "rgba(150,200,255,0.4)" }}
+        >
+          No questions uploaded yet
+        </p>
+      ) : (
+        <div
+          className="overflow-x-auto rounded-lg"
+          style={{ border: "1px solid rgba(0,212,255,0.12)" }}
+        >
+          <table className="w-full text-xs">
+            <thead>
+              <tr style={{ background: "rgba(0,5,20,0.7)" }}>
+                <th
+                  className="text-left px-3 py-2"
+                  style={{ color: "rgba(150,200,255,0.6)" }}
+                >
+                  Question
+                </th>
+                <th
+                  className="text-left px-3 py-2"
+                  style={{ color: "rgba(150,200,255,0.6)" }}
+                >
+                  Subject
+                </th>
+                <th
+                  className="text-left px-3 py-2"
+                  style={{ color: "rgba(150,200,255,0.6)" }}
+                >
+                  Answer
+                </th>
+                <th
+                  className="px-3 py-2"
+                  style={{ color: "rgba(150,200,255,0.6)" }}
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {questions.map((q: any, idx: number) => (
+                <tr
+                  key={q.question ? q.question.slice(0, 20) + idx : idx}
+                  style={{ borderTop: "1px solid rgba(0,212,255,0.07)" }}
+                >
+                  {editingIdx === idx ? (
+                    <td colSpan={4} className="px-3 py-3">
+                      <div className="space-y-2">
+                        {[
+                          "question",
+                          "optionA",
+                          "optionB",
+                          "optionC",
+                          "optionD",
+                          "correctAnswer",
+                          "explanation",
+                          "subject",
+                          "chapter",
+                        ].map((field) => (
+                          <div key={field} className="flex gap-2 items-center">
+                            <span
+                              className="w-28 text-xs shrink-0"
+                              style={{ color: "rgba(150,200,255,0.5)" }}
+                            >
+                              {field}
+                            </span>
+                            <input
+                              className="flex-1 text-xs rounded px-2 py-1"
+                              style={{
+                                background: "rgba(0,5,20,0.8)",
+                                border: "1px solid rgba(0,212,255,0.2)",
+                                color: "rgba(180,220,255,0.9)",
+                              }}
+                              value={editData?.[field] ?? ""}
+                              onChange={(e) =>
+                                setEditData({
+                                  ...editData,
+                                  [field]: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        ))}
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={saveEdit}
+                            className="px-3 py-1 rounded text-xs font-semibold"
+                            style={{
+                              background: "rgba(0,212,255,0.2)",
+                              color: "#00d4ff",
+                            }}
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingIdx(null);
+                              setEditData(null);
+                            }}
+                            className="px-3 py-1 rounded text-xs"
+                            style={{ color: "rgba(150,200,255,0.5)" }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  ) : (
+                    <>
+                      <td
+                        className="px-3 py-2"
+                        style={{
+                          color: "rgba(180,220,255,0.85)",
+                          maxWidth: 200,
+                        }}
+                      >
+                        <span title={q.question}>
+                          {(q.question || "").slice(0, 60)}
+                          {(q.question || "").length > 60 ? "…" : ""}
+                        </span>
+                      </td>
+                      <td
+                        className="px-3 py-2"
+                        style={{ color: "rgba(150,200,255,0.6)" }}
+                      >
+                        {q.subject || "-"}
+                      </td>
+                      <td
+                        className="px-3 py-2"
+                        style={{ color: "rgba(100,220,150,0.8)" }}
+                      >
+                        {q.correctAnswer || q.answer || "-"}
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingIdx(idx);
+                              setEditData({ ...q });
+                            }}
+                            className="px-2 py-0.5 rounded text-xs"
+                            style={{
+                              background: "rgba(0,212,255,0.15)",
+                              color: "#00d4ff",
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteQ(idx)}
+                            className="px-2 py-0.5 rounded text-xs"
+                            style={{
+                              background: "rgba(255,80,80,0.15)",
+                              color: "#ff5050",
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

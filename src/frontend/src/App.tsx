@@ -24,6 +24,7 @@ import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyApplicationsPage } from "./pages/MyApplicationsPage";
 import { NEETPGQuizPage } from "./pages/NEETPGQuizPage";
+import { OnboardingPage } from "./pages/OnboardingPage";
 import { PerformancePage } from "./pages/PerformancePage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ShareAppPage } from "./pages/ShareAppPage";
@@ -205,12 +206,27 @@ function AppMain() {
   const { isLoading: profileLoading } = useCallerUserProfile();
   const { data: isAdminBackend = false } = useIsAdmin();
 
-  const storedMobile = localStorage.getItem("medsim_login_mobile") ?? "";
+  // Corruption recovery: if mobile exists but timestamp is missing, treat as logged-out
+  let storedMobile = "";
+  try {
+    const rawMobile = localStorage.getItem("medsim_login_mobile");
+    const rawTimestamp = localStorage.getItem("medsim_login_timestamp");
+    if (rawMobile && !rawTimestamp) {
+      // Session bypass attempt or corrupted state -- clear and force re-login
+      localStorage.removeItem("medsim_login_mobile");
+    } else {
+      storedMobile = rawMobile ?? "";
+    }
+  } catch {
+    localStorage.removeItem("medsim_login_mobile");
+    localStorage.removeItem("medsim_login_timestamp");
+  }
   const isAdmin = isAdminBackend || storedMobile === ADMIN_MOBILE;
 
   const [appState, setAppState] = useState<AppState>("loading");
   const [currentPage, setCurrentPage] = useState<AppPage>("home");
   const [pageHistory, setPageHistory] = useState<AppPage[]>([]);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (isInitializing || profileLoading) {
@@ -269,12 +285,9 @@ function AppMain() {
     setTimeout(() => {
       setAppState("app");
       const hasName = !!localStorage.getItem("medsim_saved_name");
-      if (!hasName) {
-        setCurrentPage("profile");
-        toast.info(
-          "Welcome to MedSim! Please complete your profile to get started.",
-          { duration: 6000 },
-        );
+      const onboardingDone = localStorage.getItem("medsim_onboarding_done");
+      if (!hasName && !onboardingDone) {
+        setShowOnboarding(true);
       }
     }, 800);
   };
@@ -307,6 +320,21 @@ function AppMain() {
     return (
       <>
         <LoginPage onLoginSuccess={handleLoginSuccess} />
+        <Toaster />
+      </>
+    );
+  }
+
+  if (showOnboarding) {
+    return (
+      <>
+        <OnboardingPage
+          onComplete={() => {
+            localStorage.setItem("medsim_onboarding_done", "1");
+            setShowOnboarding(false);
+            setCurrentPage("profile-setup" as AppPage);
+          }}
+        />
         <Toaster />
       </>
     );

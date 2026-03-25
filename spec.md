@@ -1,41 +1,32 @@
-# MedSim — ICU Simulator & ECG Panel Re-Engineering
+# MedSim
 
 ## Current State
-IcuSimulatorPage.tsx exists with a canvas-based ECG waveform, basic vitals display, ventilator panel, drug panel, practice/observer modes, and scenario selection. The ECG is functional but not clinically realistic — background is not pitch black, waveforms lack fading tails, there is no 12-lead view, no NIBP logic with sound, no freeze-frame, and no ECG interpretation panel.
+MedSim v64 is live. Most critical and high-priority bugs have been fixed in previous batches. The app has backend-persisted leaderboard scores, profile sync (name/role/mobile), lazy permissions, professional Medical English, and ICMR AI protocols. Remaining weaknesses identified below.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Pitch black (#000000) background for the entire ICU monitor display
-- Neon Green ECG (Lead II), Neon Yellow SpO2 pleth wave, White respiration — all drawn procedurally with Canvas API, sweeping left-to-right with fading phosphor tail effect
-- Dynamic R-R interval physics: intervals shorten/lengthen in real-time as HR slider changes
-- Audio beep at every R-wave peak (Web Audio API sharp electronic tone)
-- SpO2 < 90% red flashing alarm with critical alarm tone
-- "View 12-Lead" button opening a modal with 3×4 grid of all 12 leads (I, II, III, aVR, aVL, aVF, V1–V6)
-- Correct anatomical lead morphology per lead (inverted P/QRS in aVR, R-wave progression V1–V6, etc.)
-- Pink-tinted 1mm/5mm medical ECG grid background in 12-lead view
-- Pathology toggles: Normal Sinus, STEMI (ST elevation), AFib (irregularly irregular R-R)
-- Freeze Frame button to pause all waveforms for detailed analysis
-- "Start BP" button with cuff inflation sound (Web Audio), 5-second delay before updating BP digital display
-- ECG Interpretation/Analysis panel showing AI-driven explanation based on current pathology (ACLS/NEET PG guidelines)
+- **Onboarding flow**: New users (first login, no saved name) should see a 3-step welcome wizard before ProfileSetupPage. Steps: (1) Welcome to MedSim + role selection, (2) College + batch details, (3) "You're ready" with tips. Store `medsim_onboarding_done` in localStorage to skip on repeat visits.
+- **localStorage corruption recovery**: Wrap all localStorage reads in try-catch in App.tsx. If `medsim_login_timestamp` or `medsim_user` is corrupt/unparseable, show a recovery toast with a "Reset Session" button instead of silent failure or hang.
+- **NEET PG question management in Admin**: In the Admin Panel's NEET PG/Database tab, after CSV upload, show the uploaded questions in a table with Edit and Delete buttons. Store in `medsim_custom_neetpg_questions` localStorage array. Allow admin to click Edit to modify question text, options, correct answer, explanation. Allow Delete to remove a question.
+- **Session bypass protection**: In App.tsx login validation, add a check: if `medsim_login_mobile` is present but `medsim_login_timestamp` is missing or expired, force re-login. This prevents trivial localStorage injection bypasses.
+- **iOS Safari camera permission guide**: In CameraPermissionScreen and PermissionGuideModal, detect iOS Safari specifically and show a step-by-step iOS guide (Settings > Safari > Camera > Allow) with a screenshot-style diagram.
 
 ### Modify
-- Replace existing ECG canvas rendering with new high-fidelity multi-channel canvas renderer
-- Update vitals display panel to match ICU monitor aesthetic (dark background, neon digit colors)
-- Integrate pathology state (Normal/STEMI/AFib) into existing scenario/phase system
+- **Certificate download**: Change certificate download format from `.png` to `.pdf` using a simple approach -- create a hidden iframe with the canvas content, print to PDF. If not possible, keep PNG but label the button "Download as Image (PNG)" to be honest about format.
+- **Profile completion banner**: Fix the dismissal logic so that once dismissed (user clicks X), it never shows again for that device (store `medsim_banner_dismissed_v2` key, not just `medsim_profile_banner_dismissed`).
+- **AI Assistant congestion**: The AI Assistant page is congested. Reduce padding on message bubbles, make the search bar smaller, use a cleaner single-column layout. Remove duplicate UI elements.
 
 ### Remove
-- Old basic ECG drawing logic (replaced by new procedural multi-channel renderer)
+- Remove any remaining hardcoded OTP hints or comments referencing `123456` or `820991` in visible UI text.
 
 ## Implementation Plan
-1. Create `IcuMonitorCanvas.tsx` component — multi-channel canvas renderer with phosphor tail effect, dynamic physics for R-R interval, beep audio, alarm logic
-2. Create `TwelveLeadECGModal.tsx` — full 12-lead view with pink grid, anatomically correct morphology per lead, pathology-aware rendering
-3. Create `ECGAnalysisPanel.tsx` — static AI-driven interpretation text based on current pathology state (Normal/STEMI/AFib)
-4. Update `IcuSimulatorPage.tsx` to:
-   - Use new IcuMonitorCanvas for main display
-   - Add pathology toggle buttons (Normal Sinus / STEMI / AFib)
-   - Add Freeze Frame button
-   - Add NIBP "Start BP" button with cuff sound + 5s delay
-   - Add "View 12-Lead" button
-   - Add ECGAnalysisPanel
-   - Apply pitch black monitor background
+1. App.tsx: Add localStorage corruption guard + session bypass protection
+2. Create OnboardingPage.tsx: 3-step wizard for new users
+3. App.tsx: Add onboarding flow check after login
+4. AdminPage.tsx: Add NEET PG question table with edit/delete
+5. CameraPermissionScreen.tsx + PermissionGuideModal.tsx: iOS-specific guide
+6. AdminPage.tsx: Certificate download label fix
+7. ProfileIncompleteBanner.tsx: Fix dismissal key to be permanent
+8. AIAssistantPage.tsx: Reduce visual congestion
+9. Remove any remaining OTP hint text from UI

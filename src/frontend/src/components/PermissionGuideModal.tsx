@@ -101,6 +101,12 @@ function getGuide(
   return guides[browser];
 }
 
+function isIOSSafari(): boolean {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  return isIOS && isSafari;
+}
+
 export function PermissionGuideModal({
   isOpen,
   onClose,
@@ -108,10 +114,28 @@ export function PermissionGuideModal({
   permissionType,
 }: PermissionGuideModalProps) {
   const browser = useMemo(() => detectBrowser(), []);
-  const guide = useMemo(
-    () => getGuide(browser, permissionType),
-    [browser, permissionType],
-  );
+  const iosSafari = useMemo(() => isIOSSafari(), []);
+  const guide = useMemo(() => {
+    if (iosSafari) {
+      const permLabel =
+        permissionType === "both"
+          ? "Camera and Location"
+          : permissionType === "camera"
+            ? "Camera"
+            : "Location";
+      return {
+        name: "Safari on iOS",
+        icon: "📱",
+        steps: [
+          "Open the iPhone Settings app",
+          'Scroll down and tap "Safari"',
+          `Tap "${permLabel}" and select "Allow"`,
+          "Return to MedSim and refresh the page",
+        ],
+      };
+    }
+    return getGuide(browser, permissionType);
+  }, [browser, permissionType, iosSafari]);
 
   const permLabel =
     permissionType === "both"

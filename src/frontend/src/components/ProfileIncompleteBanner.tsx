@@ -13,12 +13,15 @@ export function ProfileIncompleteBanner({
   onNavigateToProfile,
 }: ProfileIncompleteBannerProps) {
   const [dismissed, setDismissed] = useState(
-    () => localStorage.getItem("medsim_banner_dismissed") === "true",
+    () =>
+      localStorage.getItem("medsim_profile_banner_dismissed_permanent") ===
+      "true",
   );
 
   // Show only if profile incomplete
   if (profileScore >= 100) {
-    if (!dismissed) localStorage.setItem("medsim_banner_dismissed", "true");
+    if (!dismissed)
+      localStorage.setItem("medsim_profile_banner_dismissed_permanent", "true");
     return null;
   }
   if (dismissed) return null;
@@ -82,7 +85,10 @@ export function ProfileIncompleteBanner({
             data-ocid="banner.dismiss_button"
             onClick={() => {
               setDismissed(true);
-              localStorage.setItem("medsim_banner_dismissed", "true");
+              localStorage.setItem(
+                "medsim_profile_banner_dismissed_permanent",
+                "true",
+              );
             }}
             className="flex h-6 w-6 items-center justify-center rounded-full transition-all hover:bg-white/10"
             style={{ color: "rgba(255, 220, 100, 0.5)" }}
