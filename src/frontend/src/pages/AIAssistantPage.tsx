@@ -387,6 +387,670 @@ const ICMR_PROTOCOLS: Record<
       "envenomation",
     ],
   },
+  heart_failure: {
+    title: "Acute Decompensated Heart Failure",
+    overview:
+      "Acute worsening of heart failure with fluid overload. Classified as HFrEF (<40% EF) or HFpEF (>50% EF).",
+    firstLine: [
+      "Sit upright (high Fowler's position) — reduces preload",
+      "Oxygen: Target SpO2 >95%; use NIV (CPAP/BiPAP) if respiratory distress",
+      "Furosemide 40-80mg IV bolus (double oral dose if on chronic diuretics)",
+      "Morphine 2-4mg IV for dyspnea/anxiety (use cautiously)",
+      "GTN (Nitroglycerine) 0.5mg SL or IV infusion if SBP >90mmHg",
+      "Echocardiography within 24-48 hours for all new presentations",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Orthopnoea (worse lying flat) and PND (Paroxysmal Nocturnal Dyspnoea) are pathognomonic of left heart failure. S3 gallop rhythm = hallmark of acute LVF.",
+    pearlPoints: [
+      "BNP >100 pg/mL or NT-proBNP >300 pg/mL confirms cardiac origin of dyspnea",
+      "Furosemide dose = 2.5x the total oral daily dose when converting to IV",
+      "LVEDP rises before clinical symptoms — diastolic dysfunction can precede symptoms by years",
+      "NEET PG: 'Cardiac asthma' = nocturnal wheeze from bronchospasm due to pulmonary edema",
+      "Digoxin: avoid in acute phase; useful for rate control in AF+HF (not in sinus rhythm HF)",
+    ],
+    keywords: [
+      "heart failure",
+      "cardiac failure",
+      "LVF",
+      "left ventricular failure",
+      "pulmonary edema",
+      "pulmonary oedema",
+      "bhf",
+      "decompensated",
+      "dyspnea",
+      "dyspnoea",
+      "orthopnea",
+      "furosemide",
+    ],
+  },
+  hypertensive_emergency: {
+    title: "Hypertensive Emergency",
+    overview:
+      "BP >180/120 mmHg with evidence of end-organ damage (HYPERTENSIVE EMERGENCY) vs. no damage (URGENCY). Immediate IV therapy needed for emergency only.",
+    firstLine: [
+      "Target: Reduce MAP by no more than 25% in first hour, then to 160/100 over next 2-6 hours",
+      "Labetalol 20mg IV bolus, repeat 40-80mg every 10 min (max 300mg)",
+      "Sodium Nitroprusside 0.3-10 mcg/kg/min IV infusion (for most emergencies)",
+      "Hypertensive encephalopathy: Labetalol or Nicardipine preferred",
+      "Acute Ischaemic Stroke: Do NOT lower BP unless >220/120 (cerebral autoregulation impaired)",
+      "Aortic Dissection: Target SBP <120 in 20 min — IV Labetalol + Morphine",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Papilloedema on fundoscopy = Malignant Hypertension (Grade IV Keith-Wagener retinopathy). Flame-shaped retinal hemorrhages + cotton wool spots = accelerated hypertension.",
+    pearlPoints: [
+      "Too rapid BP reduction = watershed infarct (bilateral posterior cerebral infarction)",
+      "Phaeochromocytoma crisis: never give beta-blocker alone (paradoxical hypertension) — always alpha-block first with Phentolamine",
+      "NEET PG: ACE inhibitors are contraindicated in bilateral renal artery stenosis — worsen renal function",
+      "Hydralazine preferred in pregnancy-induced hypertension (eclampsia)",
+      "MgSO4 4g IV loading dose for eclampsia seizure prophylaxis — NOT an antihypertensive",
+    ],
+    keywords: [
+      "hypertensive emergency",
+      "hypertensive crisis",
+      "malignant hypertension",
+      "high BP emergency",
+      "BP crisis",
+      "eclampsia",
+      "hypertension treatment",
+      "blood pressure emergency",
+    ],
+  },
+  copd_exacerbation: {
+    title: "COPD Acute Exacerbation",
+    overview:
+      "Acute worsening of respiratory symptoms beyond day-to-day variation. Most commonly triggered by viral URTI (50%), bacterial (25%), or environmental factors.",
+    firstLine: [
+      "Controlled Oxygen: Target SpO2 88-92% (NOT 95-100% — may suppress hypoxic drive)",
+      "Salbutamol 2.5mg + Ipratropium 500mcg via nebulizer every 4-6 hours",
+      "Prednisolone 40mg oral x 5 days (or Hydrocortisone 200mg IV if severe)",
+      "Antibiotics if 2 of 3 Anthonisen criteria: increased dyspnea, sputum volume, sputum purulence",
+      "Amoxicillin-Clavulanate 625mg TID or Azithromycin 500mg OD x 5 days",
+      "NIV (BiPAP) if pH <7.35 despite initial therapy — reduces intubation rate by 65%",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Type II respiratory failure (hypercapnia + hypoxia) with pH <7.35 = NIV indication. Barrel chest + pursed-lip breathing + use of accessory muscles = classic chronic COPD.",
+    pearlPoints: [
+      "Give Oxygen 28% Venturi mask (2L/min) — not high-flow; hypercapnic patients lose hypoxic drive",
+      "Spirometry: FEV1/FVC <0.7 post-bronchodilator = obstructive pattern (GOLD criteria)",
+      "NEET PG: Pink Puffer = emphysema (type A COPD); Blue Bloater = chronic bronchitis (type B COPD)",
+      "Annual influenza + pneumococcal vaccine mandatory for all COPD patients (ICMR/GOLD guidelines)",
+      "Theophylline: last resort due to narrow therapeutic index — monitor levels 10-20 mcg/mL",
+    ],
+    keywords: [
+      "COPD",
+      "chronic obstructive",
+      "copd exacerbation",
+      "emphysema",
+      "chronic bronchitis",
+      "respiratory failure",
+      "GOLD",
+      "bronchodilator",
+      "salbutamol nebulizer",
+    ],
+  },
+  asthma_acute: {
+    title: "Acute Severe Asthma",
+    overview:
+      "Life-threatening bronchospasm. Near-fatal asthma = PEFR <33% predicted, SpO2 <92%, silent chest, cyanosis, bradycardia, or exhaustion.",
+    firstLine: [
+      "Salbutamol 5mg via nebulizer, driven by Oxygen 6-8 L/min",
+      "Ipratropium 500mcg via nebulizer (add to first 3 nebulizers in severe attack)",
+      "Prednisolone 40-50mg oral or Hydrocortisone 100mg IV 6-hourly",
+      "Oxygen: Target SpO2 94-98% (contrast with COPD)",
+      "IV Magnesium Sulphate 1.2-2g IV over 20 min for severe attacks (NEET PG high-yield)",
+      "Heliox, IV Aminophylline: Second-line in ICU settings",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Silent chest in asthma = DANGER SIGN (no air movement for wheeze). Pulsus paradoxus >10mmHg = severe attack. Rising PaCO2 in an asthmatic = impending respiratory arrest.",
+    pearlPoints: [
+      "MgSO4 1.2-2g IV over 20 minutes — smooth muscle relaxant, evidence-based in acute severe asthma",
+      "Aminophylline loading dose 5mg/kg IV over 20 min (if not on theophylline); halve dose if already on theophylline",
+      "NEET PG: FEV1 <60% predicted = moderate; FEV1 <40% = severe; FEV1 <25% = life-threatening",
+      "Spacer + MDI = as effective as nebulizer in mild-moderate attacks (BTS/SIGN guidelines)",
+      "Avoid beta-blockers (even topical eye drops) in all asthmatic patients — can trigger fatal bronchospasm",
+    ],
+    keywords: [
+      "asthma",
+      "bronchial asthma",
+      "acute asthma",
+      "asthma attack",
+      "bronchospasm",
+      "wheezing",
+      "wheeze",
+      "PEFR",
+      "salbutamol",
+      "nebulizer",
+    ],
+  },
+  meningitis: {
+    title: "Bacterial Meningitis",
+    overview:
+      "Medical emergency. Classic triad: Fever + Neck stiffness + Altered sensorium (present in only 44% patients). Most common causes: N. meningitidis (young adults), S. pneumoniae (adults >50 years).",
+    firstLine: [
+      "Do NOT delay antibiotics for LP if LP would take >30 minutes",
+      "Dexamethasone 0.15mg/kg IV 15-30 min BEFORE first antibiotic dose (reduces mortality)",
+      "Ceftriaxone 2g IV 12-hourly (adult) — drug of choice",
+      "Add Ampicillin 2g IV 4-hourly if age >50 or immunocompromised (covers Listeria)",
+      "LP: Opening pressure >20 cmH2O, CSF turbid/cloudy, neutrophilic pleocytosis",
+      "Isolate patient, notify public health — give prophylaxis to close contacts (Rifampicin 600mg BD x 2 days)",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Non-blanching petechial/purpuric rash = N. meningitidis septicaemia (meningococcaemia) — give Benzylpenicillin IM immediately, before transfer. Kernig's sign positive = bacterial meningitis.",
+    pearlPoints: [
+      "CSF in bacterial meningitis: glucose <45 mg/dL (or CSF:serum glucose <0.4), protein >150 mg/dL, neutrophilia",
+      "Viral (aseptic) meningitis: lymphocytic pleocytosis, normal glucose, mildly elevated protein — no antibiotics",
+      "NEET PG: India Ink stain = Cryptococcal meningitis; AFB in CSF = TB meningitis (low glucose, very high protein)",
+      "Waterhouse-Friderichsen syndrome: bilateral adrenal hemorrhage + meningococcaemia + DIC — high mortality",
+      "Give Dexamethasone before antibiotics — reduces incidence of hearing loss and neurological sequelae",
+    ],
+    keywords: [
+      "meningitis",
+      "bacterial meningitis",
+      "neck stiffness",
+      "Kernig",
+      "Brudzinski",
+      "meningococcal",
+      "CSF",
+      "lumbar puncture",
+      "brain fever",
+    ],
+  },
+  pe_dvt: {
+    title: "Pulmonary Embolism & DVT",
+    overview:
+      "Venous thromboembolism (VTE) spectrum: DVT (most commonly ileofemoral) → Pulmonary Embolism (PE). Massive PE = hemodynamic instability (SBP <90 or drop >40 mmHg).",
+    firstLine: [
+      "Massive PE with hemodynamic instability: Thrombolysis — Alteplase 100mg IV over 2 hours",
+      "Submassive/Stable PE: Anticoagulation — LMWH (Enoxaparin 1mg/kg SC 12-hourly)",
+      "Heparin UFH: Bolus 80 U/kg IV, then 18 U/kg/hour infusion (target aPTT 60-100 seconds)",
+      "NOAC preferred for long-term: Rivaroxaban 15mg BD x 3 weeks, then 20mg OD",
+      "Oxygen to maintain SpO2 >94%; IV fluids judiciously (RV already stressed)",
+      "IVC filter: only if anticoagulation absolutely contraindicated",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Saddle embolus = large PE at bifurcation of main pulmonary artery. ECG: S1Q3T3 pattern (S wave in I, Q wave in III, inverted T in III) = classic but present in only 20% of PE.",
+    pearlPoints: [
+      "Wells Score >4 = high probability PE; D-dimer negative (<500 ng/mL) rules out PE in low-probability patients",
+      "CTPA (CT Pulmonary Angiography) = gold standard for PE diagnosis",
+      "NEET PG: Most common source of DVT = ileofemoral veins; most common cause of death = massive PE with RV failure",
+      "Homan's sign (calf pain on dorsiflexion) = low sensitivity/specificity for DVT — clinical examination insufficient alone",
+      "Virchow's Triad: Stasis + Hypercoagulability + Endothelial injury = DVT formation",
+    ],
+    keywords: [
+      "pulmonary embolism",
+      "PE",
+      "DVT",
+      "deep vein thrombosis",
+      "blood clot",
+      "VTE",
+      "venous thromboembolism",
+      "Alteplase",
+      "LMWH",
+      "heparin PE",
+    ],
+  },
+  upper_gi_bleed: {
+    title: "Upper GI Bleed",
+    overview:
+      "GI bleed proximal to Treitz ligament. Most common causes: Peptic ulcer (50%), varices (20%), Mallory-Weiss tear (15%). Rockall score predicts rebleeding and mortality.",
+    firstLine: [
+      "Resuscitate: 2 large bore IV cannulas, O-negative blood if cross-match unavailable",
+      "IV PPI: Omeprazole 80mg bolus then 8mg/hour infusion x 72 hours (for non-variceal)",
+      "For Variceal Bleed: Terlipressin 2mg IV 6-hourly + prophylactic Ceftriaxone 1g/day",
+      "Urgent OGD (within 24 hours, within 12 hours if variceal suspected or hemodynamic instability)",
+      "Endoscopic haemostasis: adrenaline injection + thermal coagulation or clipping for ulcer",
+      "TIPSS (Transjugular Intrahepatic Portosystemic Shunt) if variceal bleeding uncontrolled",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Haematemesis (bright red) = active arterial bleed; Coffee-ground vomiting = slow upper GI bleed. Melaena (tarry black stool) = UGIB; Haematochezia (bright red PR bleed) = LGIB or massive UGIB.",
+    pearlPoints: [
+      "Rockall Score ≥3 = high risk; Score 0-1 = early discharge safe",
+      "H. pylori eradication mandatory for all PUD patients — reduces rebleeding by 80%",
+      "NEET PG: Most common cause of UGI bleed in India = peptic ulcer (duodenal > gastric)",
+      "IV PPI before endoscopy reduces need for endoscopic intervention but does NOT reduce mortality",
+      "Sengstaken-Blakemore tube: balloon tamponade for variceal bleed as bridge to definitive therapy",
+    ],
+    keywords: [
+      "GI bleed",
+      "gastrointestinal bleed",
+      "upper GI bleed",
+      "UGIB",
+      "haematemesis",
+      "hematemesis",
+      "melaena",
+      "melena",
+      "peptic ulcer bleed",
+      "variceal bleed",
+      "OGD",
+    ],
+  },
+  acute_pancreatitis: {
+    title: "Acute Pancreatitis",
+    overview:
+      "Inflammatory condition of pancreas. Most common causes: Gallstones (40%) + Alcohol (35%) in India. Severity: Mild (no organ failure) vs Severe (organ failure >48h, Ranson's score ≥3).",
+    firstLine: [
+      "Aggressive IV fluid resuscitation: Ringer's Lactate 250-500mL/hour (preferred over normal saline)",
+      "Nil by mouth initially; start feeding early (within 24-48h) once tolerated",
+      "Adequate analgesia: Morphine or Tramadol IV (old teaching — avoid morphine — now outdated)",
+      "Monitor: hourly urine output target >0.5mL/kg/hour",
+      "Prophylactic antibiotics NOT recommended unless infected necrosis suspected",
+      "Infected pancreatic necrosis: CT-guided FNA for culture, then targeted antibiotics (Imipenem-Cilastatin)",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Grey Turner's sign (flank bruising) + Cullen's sign (periumbilical bruising) = hemorrhagic pancreatitis — severe, high mortality. Serum lipase more specific than amylase (elevated longer).",
+    pearlPoints: [
+      "Serum amylase >3x upper limit of normal = diagnostic (but also elevated in other conditions)",
+      "Ranson's Criteria: Age >55, WBC >16,000, glucose >200, LDH >350, AST >250 on admission",
+      "NEET PG: Most common complication = pseudocyst (4 weeks later, fluid collection without epithelial lining)",
+      "ERCP + sphincterotomy within 24-72 hours for gallstone pancreatitis with biliary obstruction",
+      "Hypocalcaemia (fat saponification) = poor prognostic sign; Chvostek's/Trousseau's sign positive",
+    ],
+    keywords: [
+      "pancreatitis",
+      "acute pancreatitis",
+      "pancreas",
+      "amylase",
+      "lipase",
+      "gallstone pancreatitis",
+      "Ranson",
+      "abdominal pain severe",
+    ],
+  },
+  acute_liver_failure: {
+    title: "Acute Liver Failure",
+    overview:
+      "Rapid hepatic dysfunction (jaundice + coagulopathy + encephalopathy) without prior liver disease. Most common causes in India: Viral hepatitis E (pregnancy), Hepatitis B reactivation, drug-induced (anti-TB drugs, paracetamol).",
+    firstLine: [
+      "NAC (N-Acetyl Cysteine) IV: Even in non-paracetamol ALF — improves transplant-free survival",
+      "Paracetamol overdose specific: NAC 150mg/kg IV over 15 min, then 50mg/kg over 4h, then 100mg/kg over 16h",
+      "Lactulose 30mL TID to QID (target: 2-3 soft stools/day) for hepatic encephalopathy",
+      "Avoid sedatives, opioids, aminoglycosides",
+      "Coagulopathy: FFP only if active bleeding or procedure planned (NOT to correct INR alone)",
+      "Liver transplant evaluation URGENTLY — King's College Criteria to assess transplant eligibility",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: INR >1.5 + encephalopathy = Acute Liver Failure (not just jaundice alone). Paracetamol-induced ALF = best prognosis (NAC effective). Indeterminate aetiology = worst prognosis.",
+    pearlPoints: [
+      "King's College Criteria (paracetamol): pH <7.3, OR INR >6.5 + creatinine >300 + Grade III-IV encephalopathy = transplant",
+      "Cerebral oedema is the #1 cause of death in ALF — grade III-IV encephalopathy = ICU admission",
+      "NEET PG: Anti-TB drugs = hepatotoxic (Isoniazid, Rifampicin, Pyrazinamide) — monitor LFT monthly",
+      "Hepatic encephalopathy stages: I (confusion) → II (drowsy) → III (stupor) → IV (coma)",
+      "Zinc supplementation + BCAA (Branched Chain Amino Acids) diet recommended in chronic hepatic encephalopathy",
+    ],
+    keywords: [
+      "liver failure",
+      "acute liver failure",
+      "ALF",
+      "hepatic encephalopathy",
+      "hepatic failure",
+      "jaundice encephalopathy",
+      "fulminant hepatic failure",
+      "NAC",
+      "N-acetyl cysteine",
+    ],
+  },
+  acute_kidney_injury: {
+    title: "Acute Kidney Injury",
+    overview:
+      "Abrupt loss of kidney function. KDIGO staging: Stage 1 (1.5-1.9x baseline creatinine), Stage 2 (2-2.9x), Stage 3 (>3x or <0.3mL/kg/h urine for 24h). Most common causes: Prerenal (60%), intrinsic (35%), postrenal (5%).",
+    firstLine: [
+      "Identify and treat cause: prerenal (fluids), intrinsic (stop nephrotoxins), postrenal (catheterize/relieve obstruction)",
+      "IV NS 500mL bolus for prerenal AKI, reassess after 30 minutes",
+      "Monitor: strict fluid balance, hourly urine output, daily weight",
+      "Hyperkalaemia management: ECG monitoring; Calcium gluconate 10mL of 10% IV for cardioprotection",
+      "Dialysis indications: AEIOU — Acidosis (pH <7.1), Electrolytes (K >6.5), Intoxication, Overload, Uraemia (urea >30 mmol/L)",
+      "Avoid NSAIDs, ACE inhibitors, contrast dye, aminoglycosides in AKI",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: FeNa <1% = prerenal (tubules intact, conserving Na); FeNa >2% = intrinsic renal (ATN — tubules damaged, cannot conserve Na). RBC casts = glomerulonephritis; Muddy brown granular casts = ATN.",
+    pearlPoints: [
+      "Hyperkalaemia ECG changes (in order): Peaked T waves → Prolonged PR → Widened QRS → Sine wave → VF/Asystole",
+      "Contrast nephropathy prevention: IV saline + N-Acetylcysteine 600mg BD before and after contrast",
+      "NEET PG: Most common cause of AKI in ICU = Sepsis (septic AKI)",
+      "Rhabdomyolysis-induced AKI: myoglobinuria (dark tea-coloured urine), CK >5x ULN — aggressive hydration",
+      "Avoid dietary potassium, phosphate; protein restriction 0.6-0.8 g/kg/day in oliguric AKI",
+    ],
+    keywords: [
+      "AKI",
+      "acute kidney injury",
+      "renal failure",
+      "oliguria",
+      "anuria",
+      "creatinine raised",
+      "kidney failure",
+      "ATN",
+      "prerenal",
+      "dialysis",
+      "hyperkalaemia",
+    ],
+  },
+  typhoid: {
+    title: "Enteric Fever / Typhoid",
+    overview:
+      "Systemic infection with Salmonella Typhi (or Paratyphi). Transmitted feco-oral. India: 4.5 million cases/year. Stepladder fever pattern + relative bradycardia + Rose spots (on trunk) = classic triad.",
+    firstLine: [
+      "Ceftriaxone 2-3g IV OD x 10-14 days — drug of choice for severe typhoid",
+      "Azithromycin 500mg OD x 7 days — for uncomplicated typhoid (oral)",
+      "Fluoroquinolones (Ciprofloxacin, Ofloxacin) — use only if susceptibility confirmed (high resistance in India)",
+      "Dexamethasone 3mg/kg IV bolus then 1mg/kg 6-hourly x 48h — for typhoid encephalopathy/severe disease",
+      "Blood culture in 1st week (highest yield); Widal test (baseline titre >1:160 O, >1:80 H suggestive)",
+      "Notify health authorities; sanitation measures",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Relative bradycardia (pulse slower than expected for temperature) = Faget's sign — classic of typhoid. Intestinal perforation at Peyer's patches in distal ileum = most dangerous complication (3rd week).",
+    pearlPoints: [
+      "Blood culture Week 1 > Stool/Urine culture Week 2-3 > Widal Week 2 onwards",
+      "Typhoid Vi polysaccharide vaccine (injectable, single dose) — 60-70% efficacy, lasts 3 years",
+      "NEET PG: Rose spots on trunk = salmon-pink macules, 2-4mm, blanch on pressure",
+      "MDR Typhoid: resistant to Chloramphenicol + Ampicillin + Cotrimoxazole — use ceftriaxone/azithromycin",
+      "Carriers: treat with Ciprofloxacin 750mg BD x 4 weeks + cholecystectomy if gallbladder stones",
+    ],
+    keywords: [
+      "typhoid",
+      "enteric fever",
+      "Salmonella typhi",
+      "stepladder fever",
+      "Widal test",
+      "typhoid treatment",
+      "blood culture fever",
+    ],
+  },
+  ckd_management: {
+    title: "Chronic Kidney Disease",
+    overview:
+      "GFR <60 mL/min/1.73m² for >3 months. Stages G1-G5. Most common causes in India: Diabetic nephropathy (40%), Hypertensive nephropathy (30%), Chronic glomerulonephritis (15%). CKD Stage 5 (GFR <15) = ESRD.",
+    firstLine: [
+      "Blood pressure target: <130/80 with ACE inhibitor or ARB (first choice — nephroprotective)",
+      "Glycemic control: HbA1c <7% (but avoid hypoglycemia; reduce insulin doses as GFR falls)",
+      "Restrict protein 0.6-0.8 g/kg/day (reduces urea, slows progression)",
+      "Phosphate binders (Calcium carbonate, Sevelamer) for hyperphosphataemia",
+      "EPO (Erythropoietin) 50-100 U/kg SC 3x/week for anaemia of CKD (target Hb 10-12 g/dL)",
+      "AV fistula creation when GFR <15-20 (prepare for dialysis 6 months ahead)",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: CKD anaemia = normocytic normochromic (due to EPO deficiency). Renal osteodystrophy = secondary hyperparathyroidism due to low 1,25-OH-D3 and high phosphate.",
+    pearlPoints: [
+      "Avoid NSAIDs, contrast agents, aminoglycosides in CKD — worsen renal function",
+      "Vitamin D deficiency in CKD = low 1-alpha hydroxylase activity — give Calcitriol (active form)",
+      "NEET PG: Diabetic nephropathy: earliest sign = microalbuminuria (30-300 mg/day); Kim-1 and Cystatin C are early biomarkers",
+      "Uremic frost = urea crystals on skin in advanced CKD (rare today with dialysis)",
+      "Anaemia of CKD: iron stores should be replenished BEFORE starting EPO therapy",
+    ],
+    keywords: [
+      "CKD",
+      "chronic kidney disease",
+      "renal failure chronic",
+      "creatinine high",
+      "EPO",
+      "kidney dialysis",
+      "glomerulonephritis",
+      "nephrotic",
+      "nephritic",
+      "proteinuria",
+    ],
+  },
+  appendicitis: {
+    title: "Acute Appendicitis",
+    overview:
+      "Most common surgical emergency worldwide. Peak incidence 10-30 years. Luminal obstruction (faecolith, lymphoid hyperplasia) → infection → gangrene → perforation. Perforation risk: 36 hours (30%), 72 hours (80%).",
+    firstLine: [
+      "IV fluid resuscitation + NBM (Nil By Mouth)",
+      "Analgesia: Morphine or Tramadol IV — does NOT mask signs (old teaching debunked)",
+      "Antibiotics pre-operatively: Co-amoxiclav 1.2g IV or Metronidazole 500mg + Cefuroxime 1.5g IV",
+      "Appendicectomy: Laparoscopic (preferred) or open; within 12-24 hours of diagnosis",
+      "Perforation/peritonitis: urgent surgery + IV antibiotics (Piperacillin-Tazobactam + Metronidazole)",
+      "CT abdomen: sensitivity 94%, specificity 95% — gold standard when clinical diagnosis uncertain",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Rovsing's sign (pressure in LIF causes pain in RIF) = peritoneal irritation from appendix. McBurney's point tenderness (2/3 from umbilicus to ASIS) = classic sign.",
+    pearlPoints: [
+      "Alvarado Score ≥7 = likely appendicitis; ≥9 = almost certain — useful for decision making",
+      "Retrocaecal appendix (75%): psoas sign positive (pain on right hip extension); Pelvic appendix: dysuria, frequency",
+      "NEET PG: First symptom is periumbilical pain, migrates to RIF (McBurney's point)",
+      "Negative appendicectomy rate should be <15% (acceptable to operate on clinical diagnosis)",
+      "Conservative management (antibiotics alone) for uncomplicated appendicitis — 30% recurrence at 5 years",
+    ],
+    keywords: [
+      "appendicitis",
+      "appendix pain",
+      "McBurney",
+      "RIF pain",
+      "right iliac fossa pain",
+      "appendicectomy",
+      "rebound tenderness",
+    ],
+  },
+  fracture_management: {
+    title: "Fracture Principles & Management",
+    overview:
+      "Disruption in bone continuity. Classification: open/closed, displacement, comminution. Healing phases: Haematoma (days) → Soft callus (weeks) → Hard callus (months) → Remodelling (years).",
+    firstLine: [
+      "Primary survey: ATLS approach for polytrauma — Airway, Breathing, Circulation first",
+      "Immobilize above and below the fracture — reduce pain, prevent neurovascular injury",
+      "Neurovascular check: Pulse, sensation, movement distal to fracture before and after manipulation",
+      "Open fracture: IV antibiotics within 3 hours (Co-amoxiclav 1.2g IV) + tetanus prophylaxis + wound irrigation",
+      "Compartment syndrome: Urgent fasciotomy if compartment pressure >30 mmHg or within 30 mmHg of diastolic",
+      "Definitive fixation: ORIF, IM nailing, external fixation based on fracture type",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Fat embolism syndrome = petechiae on upper body + hypoxia + confusion 24-72h after long bone fracture. Compartment syndrome 6 Ps: Pain, Pressure, Paraesthesia, Paralysis, Pallor, Pulselessness.",
+    pearlPoints: [
+      "Most common complication of femoral fracture = fat embolism (long bone marrow fat → pulmonary emboli)",
+      "Colles' fracture: dinner-fork deformity (dorsal displacement of distal radius, 1 inch above wrist)",
+      "NEET PG: Scaphoid fracture: pain in anatomical snuffbox; high risk of avascular necrosis — treat all as fracture",
+      "Volkmann's ischaemic contracture: late complication of compartment syndrome — forearm flexor contracture",
+      "Salter-Harris classification: Type I (physis) → Type V (crush) — higher type = worse prognosis for growth",
+    ],
+    keywords: [
+      "fracture",
+      "bone fracture",
+      "broken bone",
+      "orthopaedic",
+      "compartment syndrome",
+      "ORIF",
+      "fat embolism",
+      "Colles fracture",
+      "scaphoid",
+    ],
+  },
+  hypothyroidism: {
+    title: "Hypothyroidism & Myxoedema",
+    overview:
+      "Primary hypothyroidism (elevated TSH, low T4) most common — due to Hashimoto's thyroiditis in iodine-sufficient areas, iodine deficiency in India. Myxoedema coma = severe hypothyroidism + precipitant = medical emergency.",
+    firstLine: [
+      "Levothyroxine (L-T4): Start 25-50 mcg OD in elderly/CAD; 50-100 mcg OD in young adults",
+      "Increase dose by 25-50 mcg every 4-6 weeks; target TSH 0.5-2.5 mIU/L",
+      "Myxoedema coma: IV T4 300-500 mcg IV bolus + IV T3 5-20 mcg 8-12 hourly + IV Hydrocortisone 100mg TID",
+      "Avoid iron supplements, antacids (reduce L-T4 absorption) — take L-T4 30 min before food",
+      "Iodine supplementation for population-level prevention (iodized salt)",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Myxoedema coma triggers: infection, cold, sedatives. Non-pitting oedema (myxoedema) = glycosaminoglycan accumulation, not fluid. Hung-up ankle reflexes (delayed relaxation phase) = classic sign.",
+    pearlPoints: [
+      "Subclinical hypothyroidism: elevated TSH, normal T4 — treat if TSH >10 or symptomatic",
+      "Cretinism = congenital hypothyroidism — intellectual disability + growth retardation; neonatal screening mandatory (heel-prick TSH)",
+      "NEET PG: Most sensitive test = TSH (not T3/T4). For monitoring Levothyroxine therapy, check TSH 6-8 weeks after dose change",
+      "Hashimoto's: anti-TPO antibodies (most sensitive), anti-Tg antibodies; goitre with hypothyroidism",
+      "L-T4 half-life = 7 days; T3 half-life = 1 day (T3 more potent, faster onset)",
+    ],
+    keywords: [
+      "hypothyroidism",
+      "thyroid",
+      "TSH raised",
+      "low thyroid",
+      "levothyroxine",
+      "myxoedema",
+      "Hashimoto",
+      "cretinism",
+      "thyroid hormone",
+    ],
+  },
+  diabetic_complications: {
+    title: "Diabetes Mellitus & Complications",
+    overview:
+      "DM1 (autoimmune, absolute insulin deficiency) vs DM2 (insulin resistance + relative deficiency). Major complications: Microvascular (retinopathy, nephropathy, neuropathy) and Macrovascular (IHD, stroke, PVD).",
+    firstLine: [
+      "Lifestyle: Medical nutrition therapy + exercise 150 min/week moderate aerobic",
+      "DM2 first-line: Metformin 500mg OD (with food) → increase to 1g BD",
+      "Add-on if HbA1c >7%: SGLT2 inhibitor (Dapagliflozin) or GLP-1 RA (Semaglutide) — cardioprotective",
+      "Annual screening: HbA1c (target <7%), lipids, urine ACR (microalbuminuria), fundoscopy, foot examination",
+      "Hypoglycaemia <70 mg/dL: Rule of 15 — 15g fast carbs, check after 15 min; if unconscious: Glucagon 1mg IM or Dextrose 50% 25mL IV",
+      "Foot care: Daily inspection, appropriate footwear, monofilament testing for neuropathy",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Painless diabetic foot ulcer = peripheral neuropathy (loss of protective sensation). Charcot's arthropathy = hot, swollen, deformed foot with normal pulses = severe neuropathy complication.",
+    pearlPoints: [
+      "SGLT2 inhibitors (Dapagliflozin, Empagliflozin): reduce HbA1c + CV events + CKD progression + HF hospitalizations",
+      "Diabetic ketoacidosis: DM1 emergency — insulin deficiency → ketone formation (see DKA protocol)",
+      "NEET PG: First sign of diabetic nephropathy = microalbuminuria (30-300 mg/day); treat with ACE inhibitor",
+      "Insulin storage: Room temperature up to 28 days; refrigerator (2-8°C) for unused vials",
+      "Metformin: contraindicated if eGFR <30 (risk of lactic acidosis); hold 48 hours before contrast",
+    ],
+    keywords: [
+      "diabetes",
+      "diabetes mellitus",
+      "DM2",
+      "type 2 diabetes",
+      "metformin",
+      "HbA1c",
+      "diabetic foot",
+      "insulin resistance",
+      "blood sugar control",
+      "hyperglycemia",
+    ],
+  },
+  ectopic_pregnancy: {
+    title: "Ectopic Pregnancy",
+    overview:
+      "Implantation outside uterine cavity, 95% in fallopian tube. Medical emergency when ruptured. Risk factors: previous PID, tubal surgery, IUD use, previous ectopic. In India, incidence rising due to increasing PID rates.",
+    firstLine: [
+      "Ruptured ectopic = haemodynamic emergency: IV access x2, cross-match, urgent laparotomy",
+      "Resuscitate: IV fluids + blood transfusion; O-negative blood if cross-match pending",
+      "Salpingectomy (removal of tube) or salpingostomy (conservation) — depends on contralateral tube status",
+      "Unruptured ectopic, stable: Methotrexate 50mg/m² IM — single dose (if bHCG <5000, no cardiac activity)",
+      "Anti-D immunoglobulin 250 IU IM if Rh-negative patient",
+      "Monitor bHCG weekly until undetectable post-methotrexate",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Amenorrhoea + Abdominal pain + Vaginal bleeding = ectopic until proven otherwise. Shoulder-tip pain = diaphragmatic irritation from haemoperitoneum. Cullen's sign = periumbilical bruising from haemoperitoneum.",
+    pearlPoints: [
+      "Serum bHCG should double every 48h in normal intrauterine pregnancy; sub-optimal rise = suspicious",
+      "Discriminatory zone: bHCG >1500-2000 mIU/mL — intrauterine sac should be visible on TVS",
+      "NEET PG: Most common site = ampullary portion of fallopian tube (most common rupture = isthmus)",
+      "Criteria for Methotrexate: bHCG <5000, no cardiac activity on USS, tube <3.5cm, no rupture",
+      "Salpingitis isthmica nodosa = risk factor for recurrent ectopic pregnancy",
+    ],
+    keywords: [
+      "ectopic pregnancy",
+      "tubal pregnancy",
+      "PID",
+      "fallopian tube",
+      "bHCG",
+      "ruptured ectopic",
+      "methotrexate ectopic",
+      "amenorrhoea pain bleeding",
+    ],
+  },
+  acute_mi: {
+    title: "ST-Elevation MI / STEMI",
+    overview:
+      "Complete occlusion of coronary artery — full thickness myocardial infarction. Time = Muscle: every 30 min delay = 7.5% increased mortality. Golden hour: PCI within 90 min, Thrombolysis within 30 min (if PCI unavailable).",
+    firstLine: [
+      "MONA: Morphine 2-4mg IV, Oxygen (if SpO2 <94%), Nitrates SL (avoid if hypotensive or RV infarct), Aspirin 300mg crushed/chewed",
+      "Dual antiplatelet: Aspirin 300mg + Ticagrelor 180mg (preferred over Clopidogrel 600mg)",
+      "Primary PCI within 90 minutes (door-to-balloon time) = gold standard in India at PCI-capable centres",
+      "Thrombolysis (if PCI unavailable within 120 min): Tenecteplase/Streptokinase weight-based IV",
+      "IV Heparin: UFH 60 U/kg IV bolus (max 4000 U) then 12 U/kg/hour infusion",
+      "Beta-blocker (Metoprolol 25-50mg oral) within 24h if stable — reduce infarct size and arrhythmia risk",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: STEMI = persistent ST elevation >1mm in 2+ contiguous limb leads (or >2mm in V1-V4). Posterior MI = tall R wave + ST depression in V1-V2 (mirror image). RV MI = ST elevation in V4R.",
+    pearlPoints: [
+      "Contraindications to thrombolysis: recent surgery (<3 months), stroke (<3 months), active bleeding, aortic dissection",
+      "RV MI: Avoid nitrates + diuretics (preload-dependent RV); give IV fluids",
+      "NEET PG: Troponin I/T = most sensitive AND specific marker for MI; rises 4-6h, peaks 24h, normalises 7-14 days",
+      "Post-MI drugs: Aspirin + Beta-blocker + ACE inhibitor + Statin (ABAS) for life",
+      "Door-to-balloon time <90 minutes = Class I recommendation (AHA/ESC/Indian guidelines)",
+    ],
+    keywords: [
+      "heart attack",
+      "MI",
+      "myocardial infarction",
+      "STEMI",
+      "chest pain crushing",
+      "coronary",
+      "ECG ST elevation",
+      "troponin",
+      "thrombolysis",
+      "PCI",
+      "ACS STEMI",
+    ],
+  },
+  dengue_severe: {
+    title: "Dengue Haemorrhagic Fever / Severe Dengue",
+    overview:
+      "Dengue virus (4 serotypes, DENV1-4) — transmitted by Aedes aegypti. Severe dengue criteria: plasma leakage with shock (DSS), severe bleeding, severe organ impairment. Platelet <20,000 or active bleeding = danger sign.",
+    firstLine: [
+      "NS1 Antigen (Day 1-5), IgM ELISA (Day 5+), IgG for secondary infection",
+      "Hydration: Oral rehydration for non-severe; IV RL/NS for severe (5-10 mL/kg/hour)",
+      "Dengue Shock Syndrome: IV NS/RL 10-20 mL/kg over 15-30 min; titrate to haemodynamic response",
+      "Platelet transfusion: ONLY for platelet <10,000 OR <20,000 with active bleeding",
+      "Paracetamol for fever — AVOID NSAIDs and Aspirin (bleeding risk)",
+      "Daily CBC monitoring — watch for haematocrit rise >20% (plasma leakage warning)",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Tourniquet test (≥10 petechiae per square inch) = positive = thrombocytopaenia/vascular fragility. Saddle-back fever (biphasic) + thrombocytopenia + leukopenia = classic Dengue triad.",
+    pearlPoints: [
+      "Critical phase: Day 3-7 of illness — plasma leakage, thrombocytopenia, risk of shock",
+      "Dengue vs Chikungunya: Dengue = severe myalgia + thrombocytopenia; Chikungunya = severe joint pain (arthralgia), normal platelets",
+      "NEET PG: Dengue shock syndrome = plasma leakage across endothelium due to NS1 protein (not blood loss)",
+      "Warning signs: abdominal pain, persistent vomiting, rapid breathing, bleeding gums, fatigue, liver enlargement, rising HCT + rapid platelet drop",
+      "No specific antiviral for dengue — management is purely supportive",
+    ],
+    keywords: [
+      "dengue severe",
+      "dengue hemorrhagic fever",
+      "DHF",
+      "dengue shock",
+      "DSS",
+      "platelet transfusion dengue",
+      "NS1 antigen",
+      "dengue warning signs",
+    ],
+  },
+  seizures_epilepsy: {
+    title: "Seizures & Status Epilepticus",
+    overview:
+      "Status Epilepticus = continuous seizure >5 min OR 2+ seizures without recovery. GCSE (Generalized Convulsive Status Epilepticus) = life-threatening emergency. Mortality 20% if not treated within 30 min.",
+    firstLine: [
+      "0-5 min: Benzodiazepines IV — Lorazepam 0.1mg/kg IV (max 4mg) OR Diazepam 0.15mg/kg IV",
+      "If no IV: Midazolam 10mg IM or Buccal Midazolam 10mg (equally effective to IV lorazepam)",
+      "5-30 min: Levetiracetam 60mg/kg IV over 15 min (preferred, less side effects than Phenytoin)",
+      "OR Fosphenytoin 20mg PE/kg IV (150mg PE/min max) — monitor ECG during infusion",
+      "30-60 min (Refractory SE): Phenobarbitone 20mg/kg IV + general anaesthesia (Propofol/Thiopentone)",
+      "Check: BGL (hypoglycaemia), electrolytes (Na, Ca, Mg), drug levels, sepsis",
+    ],
+    differentiatingFeature:
+      "Differentiating Feature: Absence seizure = 3Hz spike-wave on EEG + blank stare (childhood) — no post-ictal confusion. Temporal lobe seizure = aura (déjà vu/jamais vu) + automatisms + post-ictal confusion.",
+    pearlPoints: [
+      "IV Glucose 50mL of 50% Dextrose empirically if hypoglycaemia suspected — never withhold",
+      "Thiamine 100mg IV before dextrose in alcoholics (prevents Wernicke's encephalopathy)",
+      "NEET PG: Juvenile Myoclonic Epilepsy (JME) = most common genetic epilepsy; Valproate = drug of choice (avoid in women of childbearing age)",
+      "Driving restrictions: minimum 6 months seizure-free before driving (in India — variable by state)",
+      "Febrile seizures: not epilepsy; recurrence risk 30-50%; only antipyretics needed, not AEDs",
+    ],
+    keywords: [
+      "seizure",
+      "epilepsy",
+      "status epilepticus",
+      "convulsion",
+      "fit",
+      "diazepam seizure",
+      "lorazepam seizure",
+      "antiepileptic",
+      "ECT brain",
+    ],
+  },
 };
 
 const DOSE_WARNINGS: Array<{ pattern: RegExp; warning: string }> = [
@@ -415,17 +1079,43 @@ const DOSE_WARNINGS: Array<{ pattern: RegExp; warning: string }> = [
     warning:
       "Warning: Heparin doses above 10,000 units require clinical justification. Standard STEMI UFH bolus is 60 U/kg IV (max 4,000 U). Review the indication and use weight-based dosing.",
   },
+  {
+    pattern: /metformin.*(stage|GFR|CKD).*(3b|4|5|<30|30)/i,
+    warning:
+      "Warning: Metformin is contraindicated when eGFR <30 mL/min (CKD Stage 4-5). Risk of lactic acidosis. Check renal function before prescribing.",
+  },
+  {
+    pattern: /digoxin\s*(0\.[5-9]|[1-9])\s*mg/i,
+    warning:
+      "Warning: Digoxin therapeutic range is narrow (0.5-0.9 ng/mL). Standard dose is 0.125-0.25mg OD. Adjust for renal function and check K+ levels — hypokalaemia potentiates toxicity.",
+  },
+  {
+    pattern: /warfarin\s*[5-9]\s*mg|warfarin\s*1[0-9]\s*mg/i,
+    warning:
+      "Warning: Warfarin doses >5mg are unusual without dose-escalation titration. INR must guide dosing (target 2-3 for most indications, 2.5-3.5 for mechanical heart valves).",
+  },
+  {
+    pattern: /lithium\s*(2[0-9]{2,}|[3-9]\d{2,})\s*mg/i,
+    warning:
+      "Warning: Lithium has a narrow therapeutic index (0.6-1.2 mEq/L). Signs of toxicity: tremor, ataxia, confusion, polyuria. Monitor levels every 3 months and ensure adequate hydration.",
+  },
+  {
+    pattern:
+      /vancomycin.*(500|750|1000|1500|2000)\s*mg\s*rapid|rapid.*vancomycin/i,
+    warning:
+      "Warning: Vancomycin must be infused slowly (over minimum 60 minutes, ideally 90-120 min). Rapid infusion causes Red Man Syndrome (flushing, erythema, hypotension). Not a true allergy — slow the infusion.",
+  },
 ];
 
 // ─── Quick suggestion chips ───────────────────────────────────────
 
 const QUICK_SUGGESTIONS = [
-  "Malaria Symptoms",
-  "Dengue Treatment",
-  "ACS Management Protocol",
-  "TB/NTEP Protocol",
-  "Anaphylaxis First-Line",
-  "DKA Management",
+  "Heart Failure Management",
+  "STEMI Protocol",
+  "Seizure Emergency",
+  "Meningitis Treatment",
+  "AKI Management",
+  "Typhoid Protocol",
 ];
 
 // ─── Confidence color helper ──────────────────────────────────────

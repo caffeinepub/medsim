@@ -1,6 +1,14 @@
 import { Toaster } from "@/components/ui/sonner";
-import React from "react";
-import { useEffect, useState } from "react";
+import {
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AIAssistantFloat } from "./components/AIAssistantFloat";
 import { AppLayout } from "./components/AppLayout";
@@ -53,6 +61,46 @@ type AppPage =
 type AppState = "loading" | "login" | "app";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+const pageToPath: Record<string, string> = {
+  home: "/",
+  exercise: "/exercise",
+  "neet-pg": "/neet-pg",
+  "custom-patient": "/custom-patient",
+  performance: "/performance",
+  admin: "/admin",
+  profile: "/profile",
+  "ai-assistant": "/ai-assistant",
+  career: "/career",
+  exam: "/exam",
+  "my-applications": "/my-applications",
+  "icu-simulator": "/icu-simulator",
+  "er-simulation": "/er-simulation",
+  leaderboard: "/leaderboard",
+  verify: "/verify",
+  "share-app": "/share-app",
+  "drug-reference": "/drug-reference",
+};
+
+const pathToPage: Record<string, AppPage> = {
+  "/": "home",
+  "/exercise": "exercise",
+  "/neet-pg": "neet-pg",
+  "/custom-patient": "custom-patient",
+  "/performance": "performance",
+  "/admin": "admin",
+  "/profile": "profile",
+  "/ai-assistant": "ai-assistant",
+  "/career": "career",
+  "/exam": "exam",
+  "/my-applications": "my-applications",
+  "/icu-simulator": "icu-simulator",
+  "/er-simulation": "er-simulation",
+  "/leaderboard": "leaderboard",
+  "/verify": "verify",
+  "/share-app": "share-app",
+  "/drug-reference": "drug-reference",
+};
 
 function getVerifyPrincipalFromHash(): string | null {
   if (typeof window === "undefined") return null;
@@ -126,43 +174,27 @@ function AppWithSeed({
 }) {
   useSeedDiseases();
 
-  const [profileScore, setProfileScore] = React.useState(() =>
-    calcProfileScore(),
-  );
+  const [profileScore, setProfileScore] = useState(calcProfileScore);
+  const [showBanner, setShowBanner] = useState(false);
 
-  React.useEffect(() => {
-    const refresh = () => setProfileScore(calcProfileScore());
-    window.addEventListener("storage", refresh);
-    const handler = () => refresh();
-    window.addEventListener("medsim-profile-updated", handler);
-    refresh();
-    return () => {
-      window.removeEventListener("storage", refresh);
-      window.removeEventListener("medsim-profile-updated", handler);
-    };
-  }, []);
-  const showBanner = profileScore < 100;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: recalculate banner on every page change
+  useEffect(() => {
+    const score = calcProfileScore();
+    setProfileScore(score);
+    const dismissed = !!localStorage.getItem("medsim_banner_dismissed");
+    setShowBanner(!dismissed && score < 100);
+  }, [currentPage]);
 
-  React.useEffect(() => {
-    const ts = localStorage.getItem("medsim_login_timestamp");
-    if (!ts) return;
-    const loginTime = Number.parseInt(ts, 10);
-    if (Number.isNaN(loginTime)) return;
-    const daysLeft = Math.ceil(
-      (loginTime + 30 * 24 * 60 * 60 * 1000 - Date.now()) /
-        (24 * 60 * 60 * 1000),
+  useEffect(() => {
+    const loginTs = Number.parseInt(
+      localStorage.getItem("medsim_login_timestamp") ?? "0",
+      10,
     );
-    if (daysLeft <= 5 && daysLeft > 0) {
-      const reminderKey = `medsim_expiry_reminder_${daysLeft}`;
-      if (!localStorage.getItem(reminderKey)) {
-        // Clean up all old reminder keys before setting the new one
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-          const k = localStorage.key(i);
-          if (k?.startsWith("medsim_expiry_reminder_")) {
-            localStorage.removeItem(k);
-          }
-        }
-        localStorage.setItem(reminderKey, "1");
+    if (loginTs) {
+      const daysLeft = Math.floor(
+        (loginTs + THIRTY_DAYS_MS - Date.now()) / (1000 * 60 * 60 * 24),
+      );
+      if (daysLeft <= 5 && daysLeft >= 0) {
         setTimeout(() => {
           toast.warning(
             `Session expiry reminder: Your login expires in ${daysLeft} day(s). Please login again.`,
@@ -199,20 +231,24 @@ function AppWithSeed({
   );
 }
 
+// ─── Main app component (inside RouterProvider) ─────────────────────────────
+
 function AppMain() {
   const ADMIN_MOBILE = atob("ODIwOTkxODQ5MQ==");
+
+  const navigate = useNavigate();
+  const routerState = useRouterState();
+  const currentPath = routerState.location.pathname;
 
   const { identity, isInitializing } = useInternetIdentity();
   const { isLoading: profileLoading } = useCallerUserProfile();
   const { data: isAdminBackend = false } = useIsAdmin();
 
-  // Corruption recovery: if mobile exists but timestamp is missing, treat as logged-out
   let storedMobile = "";
   try {
     const rawMobile = localStorage.getItem("medsim_login_mobile");
     const rawTimestamp = localStorage.getItem("medsim_login_timestamp");
     if (rawMobile && !rawTimestamp) {
-      // Session bypass attempt or corrupted state -- clear and force re-login
       localStorage.removeItem("medsim_login_mobile");
     } else {
       storedMobile = rawMobile ?? "";
@@ -223,17 +259,17 @@ function AppMain() {
   }
   const isAdmin = isAdminBackend || storedMobile === ADMIN_MOBILE;
 
+  const currentPage: AppPage = pathToPage[currentPath] ?? "home";
+
   const [appState, setAppState] = useState<AppState>("loading");
-  const [currentPage, setCurrentPage] = useState<AppPage>("home");
-  const [pageHistory, setPageHistory] = useState<AppPage[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const lastPageRestoredRef = useRef(false);
 
   useEffect(() => {
     if (isInitializing || profileLoading) {
       setAppState("loading");
       return;
     }
-
     if (!identity) {
       if (isLoginWithin30Days()) {
         setAppState("loading");
@@ -242,46 +278,47 @@ function AppMain() {
       setAppState("login");
       return;
     }
-
-    // Permissions are requested lazily only when simulations start
-    // not at login -- avoids aggressive permission requests
     setAppState("app");
   }, [isInitializing, identity, profileLoading]);
 
   useEffect(() => {
     if (!isInitializing && !identity && isLoginWithin30Days()) {
       const timer = setTimeout(() => {
-        if (!identity) {
-          setAppState("login");
-        }
+        if (!identity) setAppState("login");
       }, 5000);
       return () => clearTimeout(timer);
     }
   }, [isInitializing, identity]);
+
+  // Restore last visited page on app load
+  useEffect(() => {
+    if (appState === "app" && !lastPageRestoredRef.current) {
+      lastPageRestoredRef.current = true;
+      const lastPage = localStorage.getItem("medsim_last_page");
+      if (lastPage && lastPage !== "/" && lastPage !== currentPath) {
+        navigate({ to: lastPage as string, replace: true });
+      }
+    }
+  }, [appState, navigate, currentPath]);
 
   const handleNavigate = (page: string) => {
     if (page === "admin" && !isAdmin) {
       toast.error("Access denied. Admin credentials required.");
       return;
     }
-    setPageHistory((prev) => [...prev, currentPage]);
-    setCurrentPage(page as AppPage);
+    const path = pageToPath[page] ?? "/";
+    navigate({ to: path as string });
+    if (path !== "/") {
+      localStorage.setItem("medsim_last_page", path);
+    }
   };
 
   const handleGoBack = () => {
-    if (pageHistory.length > 0) {
-      const newHistory = [...pageHistory];
-      const prevPage = newHistory.pop()!;
-      setPageHistory(newHistory);
-      setCurrentPage(prevPage);
-    } else {
-      setCurrentPage("home");
-    }
+    window.history.back();
   };
 
   const handleLoginSuccess = () => {
     localStorage.setItem("medsim_login_timestamp", Date.now().toString());
-    // Set app state directly -- demo OTP flow does not rely on ICP identity
     setTimeout(() => {
       setAppState("app");
       const hasName = !!localStorage.getItem("medsim_saved_name");
@@ -312,9 +349,7 @@ function AppMain() {
     "drug-reference": <DrugReferencePage />,
   };
 
-  if (appState === "loading") {
-    return <MedicalSpinner />;
-  }
+  if (appState === "loading") return <MedicalSpinner />;
 
   if (appState === "login") {
     return (
@@ -332,7 +367,7 @@ function AppMain() {
           onComplete={() => {
             localStorage.setItem("medsim_onboarding_done", "1");
             setShowOnboarding(false);
-            setCurrentPage("profile-setup" as AppPage);
+            navigate({ to: "/profile" as string });
           }}
         />
         <Toaster />
@@ -345,12 +380,50 @@ function AppMain() {
       currentPage={currentPage}
       handleNavigate={handleNavigate}
       handleGoBack={handleGoBack}
-      canGoBack={pageHistory.length > 0}
+      canGoBack={currentPage !== "home"}
       isAdmin={isAdmin}
     >
       {pageContent[currentPage]}
     </AppWithSeed>
   );
+}
+
+// ─── Router setup ────────────────────────────────────────────────────────────
+
+const rootRoute = createRootRoute({ component: AppMain });
+
+const makeRoute = (path: string) =>
+  createRoute({ getParentRoute: () => rootRoute, path });
+
+const routeTree = rootRoute.addChildren([
+  makeRoute("/"),
+  makeRoute("/exercise"),
+  makeRoute("/neet-pg"),
+  makeRoute("/custom-patient"),
+  makeRoute("/performance"),
+  makeRoute("/admin"),
+  makeRoute("/profile"),
+  makeRoute("/ai-assistant"),
+  makeRoute("/career"),
+  makeRoute("/exam"),
+  makeRoute("/my-applications"),
+  makeRoute("/icu-simulator"),
+  makeRoute("/er-simulation"),
+  makeRoute("/leaderboard"),
+  makeRoute("/verify"),
+  makeRoute("/share-app"),
+  makeRoute("/drug-reference"),
+]);
+
+const router = createRouter({
+  routeTree,
+  defaultPreload: "intent",
+});
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
 }
 
 export default function App() {
@@ -363,5 +436,5 @@ export default function App() {
       </>
     );
   }
-  return <AppMain />;
+  return <RouterProvider router={router} />;
 }

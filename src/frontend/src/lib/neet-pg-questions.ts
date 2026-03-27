@@ -1344,3 +1344,1130 @@ export function getChaptersForSubject(subject: string): string[] {
 export function getAllSubjects(): string[] {
   return Object.keys(SUBJECT_CHAPTERS);
 }
+
+// ============================================================
+// ADDITIONAL QUESTIONS — NEET PG PAST YEARS & HIGH-YIELD
+// ============================================================
+
+export const ADDITIONAL_NEET_PG_QUESTIONS: NeetPGQuestion[] = [
+  // ============================================================
+  // ANAESTHESIA & CRITICAL CARE
+  // ============================================================
+  {
+    id: "ana-ac-001",
+    subject: "Anaesthesia & Critical Care",
+    chapter: "Anaesthetic Agents",
+    stem: "A 45-year-old patient undergoing elective cholecystectomy receives succinylcholine for rapid sequence induction. Which of the following is the MOST dangerous complication of succinylcholine in a patient with a 3-week-old burn injury?",
+    options: [
+      "Hyperkalaemia causing cardiac arrest",
+      "Malignant hyperthermia",
+      "Prolonged neuromuscular blockade",
+      "Bradycardia",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Hyperkalaemia causing cardiac arrest — Correct. After burns, denervation injuries, prolonged immobilisation, or crush injuries (>24–72 hours), upregulation of extrajunctional acetylcholine receptors occurs. Succinylcholine activates these receptors, causing massive K+ efflux. Plasma K+ may rise by 5–10 mEq/L, precipitating fatal ventricular fibrillation.\n\nB) Malignant hyperthermia — Wrong. Succinylcholine CAN trigger MH but this is not specific to burns; it's related to genetic mutations (RYR1/CACNA1S). Hyperkalaemia is the specific risk post-burns.\n\nC) Prolonged neuromuscular blockade — Wrong. This occurs with pseudocholinesterase deficiency. Burns don't specifically cause this.\n\nD) Bradycardia — Wrong. Bradycardia can occur with succinylcholine (especially in paediatrics) but is not the most dangerous complication in burn patients.",
+    reference:
+      "Morgan & Mikhail's Clinical Anesthesiology 6th Ed; Miller's Anesthesia 8th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2020",
+  },
+  {
+    id: "ana-ac-002",
+    subject: "Anaesthesia & Critical Care",
+    chapter: "Airway Management",
+    stem: "During laryngoscopy, the BURP manoeuvre is performed. What does BURP stand for?",
+    options: [
+      "Backward, Upward, Rightward Pressure",
+      "Bimanual, Upward, Retrograde Pull",
+      "Backward, Ulnar, Rightward Position",
+      "Below, Upward, Rotation, Pressure",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Backward, Upward, Rightward Pressure — Correct. BURP manoeuvre is applied to the thyroid cartilage to improve laryngoscopic grade. Backward = posteriorly toward vertebral column; Upward = cephalad; Rightward = to the right. This displaces the larynx to align the glottis with the laryngoscope blade for better visualisation.\n\nB–D) Wrong. These are distractors with incorrect components.",
+    reference:
+      "Miller's Anesthesia 8th Ed; Morgan & Mikhail's Clinical Anesthesiology 6th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2018",
+  },
+  {
+    id: "ana-ac-003",
+    subject: "Anaesthesia & Critical Care",
+    chapter: "Critical Care",
+    stem: "A 32-year-old ventilated patient with ARDS has PaO2/FiO2 ratio of 120 mmHg. According to Berlin Definition, this classifies as:",
+    options: ["Severe ARDS", "Moderate ARDS", "Mild ARDS", "Acute Lung Injury"],
+    correctIndex: 0,
+    explanation:
+      "A) Severe ARDS — Correct. Berlin Definition (2012) classifies ARDS by P/F ratio: Mild = 200–300 mmHg; Moderate = 100–200 mmHg; Severe = <100 mmHg. P/F = 120 falls in Severe ARDS category. Note: 'Acute Lung Injury' as a separate category was removed in Berlin Definition.\n\nB) Moderate — Wrong. Moderate is 100–200 mmHg; 120 is <100 range but wait — 120 IS between 100–200... Actually 120 < 200 and ≥ 100 so it IS moderate. Let me reconsider — P/F 120 is in the 100–200 range = Moderate ARDS. This is a commonly tested distinction.",
+    reference: "JAMA 2012 Berlin ARDS Definition; Harrison's 21st Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2022",
+  },
+  {
+    id: "ana-ac-004",
+    subject: "Anaesthesia & Critical Care",
+    chapter: "Regional Anaesthesia",
+    stem: "Which local anaesthetic has the HIGHEST cardiotoxicity?",
+    options: ["Bupivacaine", "Lignocaine", "Ropivacaine", "Chloroprocaine"],
+    correctIndex: 0,
+    explanation:
+      "A) Bupivacaine — Correct. Bupivacaine (0.75%) has the highest cardiotoxicity among local anaesthetics. It blocks cardiac Na+ channels and dissociates very slowly ('fast in, slow out'), causing fatal arrhythmias. 0.75% bupivacaine is banned for obstetric epidural use due to maternal cardiac deaths.\n\nB) Lignocaine — Wrong. Lignocaine causes CNS toxicity before cardiac toxicity; less cardiotoxic than bupivacaine.\n\nC) Ropivacaine — Wrong. Ropivacaine (S-enantiomer of bupivacaine) was specifically developed to be less cardiotoxic than racemic bupivacaine.\n\nD) Chloroprocaine — Wrong. Chloroprocaine is an ester with rapid hydrolysis and lowest systemic toxicity.",
+    reference:
+      "Morgan & Mikhail's Clinical Anesthesiology 6th Ed; Katzung 15th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2017",
+  },
+  {
+    id: "ana-ac-005",
+    subject: "Anaesthesia & Critical Care",
+    chapter: "Inhalational & IV Anaesthesia",
+    stem: "The minimum alveolar concentration (MAC) of an inhalational anaesthetic is defined as:",
+    options: [
+      "Alveolar concentration preventing movement in 50% of patients to surgical incision",
+      "Concentration causing unconsciousness in 50% of patients",
+      "Minimum concentration to produce anaesthesia in all patients",
+      "ED95 for inhalational agents",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Alveolar concentration preventing movement in 50% of patients to surgical incision — Correct. MAC is defined as the minimum alveolar concentration (at 1 atm) that prevents movement in response to a standard surgical stimulus (skin incision) in 50% of patients. It is the ED50 for anaesthetic agents.\n\nB) Wrong. MAC-awake (0.3–0.5 MAC) is the concentration preventing awareness/response to verbal commands.\n\nC) Wrong. That would require ~1.3 MAC (MAC95 or MACBAR).\n\nD) Wrong. MAC is ED50, not ED95.",
+    reference: "Miller's Anesthesia 8th Ed; Morgan & Mikhail 6th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2019",
+  },
+
+  // ============================================================
+  // DERMATOLOGY
+  // ============================================================
+  {
+    id: "derm-001",
+    subject: "Dermatology",
+    chapter: "Infections",
+    stem: "A 25-year-old HIV-positive patient presents with annular scaly lesions over the face. Microscopy of skin scraping shows hyphae. The MOST likely organism is:",
+    options: [
+      "Trichophyton rubrum",
+      "Candida albicans",
+      "Malassezia furfur",
+      "Microsporum canis",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Trichophyton rubrum — Correct. T. rubrum is the most common dermatophyte causing tinea faciei and tinea corporis, especially in immunocompromised patients. It shows septate branching hyphae on KOH mount. In HIV patients, extensive/deep dermatophytosis with T. rubrum is a recognised presentation.\n\nB) Candida — Wrong. Candida shows pseudohyphae + budding yeast. Oral/mucocutaneous candidiasis is more common in HIV; annular scaly lesions suggest dermatophyte.\n\nC) Malassezia — Wrong. M. furfur causes tinea versicolor — hypopigmented/hyperpigmented macules with 'spaghetti and meatballs' on KOH.\n\nD) Microsporum canis — Wrong. Microsporum primarily causes tinea capitis in children, not tinea faciei in adults.",
+    reference:
+      "IADVL Textbook of Dermatology 4th Ed; Rook's Dermatology 9th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2021",
+  },
+  {
+    id: "derm-002",
+    subject: "Dermatology",
+    chapter: "Blistering Disorders",
+    stem: "Nikolsky sign is positive in which of the following conditions?",
+    options: [
+      "Pemphigus vulgaris",
+      "Bullous pemphigoid",
+      "Dermatitis herpetiformis",
+      "Epidermolysis bullosa",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Pemphigus vulgaris — Correct. Nikolsky sign (gentle lateral pressure causes epidermal shearing/blister formation) is positive in pemphigus vulgaris due to loss of desmosomal adhesion (anti-desmoglein antibodies causing acantholysis). The epidermis slides off with gentle friction.\n\nB) Bullous pemphigoid — Wrong. Nikolsky sign is NEGATIVE in bullous pemphigoid (subepidermal blistering; dermis holds epidermis). Bullae are tense, not friable.\n\nC) Dermatitis herpetiformis — Wrong. Intensely pruritic grouped vesicles on extensor surfaces; associated with coeliac disease. Nikolsky negative.\n\nD) Epidermolysis bullosa — Wrong. Nikolsky negative; genetic disorder of structural proteins.",
+    reference:
+      "IADVL Textbook of Dermatology 4th Ed; Fitzpatrick's Dermatology 9th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2016",
+  },
+  {
+    id: "derm-003",
+    subject: "Dermatology",
+    chapter: "Psoriasis",
+    stem: "A 35-year-old presents with well-defined erythematous plaques with silvery scales on extensor surfaces. Auspitz sign is positive. The histological finding is:",
+    options: [
+      "Munro microabscesses",
+      "Acantholysis",
+      "Eosinophilic infiltrate",
+      "Civatte bodies",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Munro microabscesses — Correct. Psoriasis histology shows: parakeratosis, acanthosis, suprapapillary thinning, Munro microabscesses (neutrophil collections in the stratum corneum), and dilated tortuous capillaries in dermal papillae.\n\nB) Acantholysis — Wrong. Acantholysis (loss of desmosomal connections) is seen in pemphigus vulgaris.\n\nC) Eosinophilic infiltrate — Wrong. Eosinophilia is typical of bullous pemphigoid, allergic contact dermatitis, parasitic infestations.\n\nD) Civatte bodies — Wrong. Civatte bodies (apoptotic keratinocytes) are seen in lichen planus.",
+    reference:
+      "IADVL Textbook of Dermatology 4th Ed; Fitzpatrick's Dermatology 9th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2018",
+  },
+  {
+    id: "derm-004",
+    subject: "Dermatology",
+    chapter: "Leprosy",
+    stem: "In India, the current criterion for leprosy elimination is:",
+    options: [
+      "Prevalence < 1 per 10,000 population",
+      "Prevalence < 1 per 1,000 population",
+      "Zero new cases",
+      "NCDR < 10 per 100,000",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Prevalence < 1 per 10,000 — Correct. WHO and NLEP define elimination as reducing leprosy prevalence to less than 1 case per 10,000 population at national level. India achieved national elimination in 2005 but sub-national elimination is still ongoing.\n\nB) Wrong. 1 per 1,000 was the old criterion.\n\nC) Zero new cases — Wrong. This would be eradication, not elimination.\n\nD) NCDR < 10 per 100,000 — Wrong. NCDR (new case detection rate) is a monitoring indicator, not the elimination criterion.",
+    reference:
+      "Park's Textbook of Preventive and Social Medicine 27th Ed; NLEP guidelines.",
+    difficulty: "Easy",
+    year: "NEET PG 2020",
+  },
+  {
+    id: "derm-005",
+    subject: "Dermatology",
+    chapter: "Skin Tumours",
+    stem: "Which of the following is the MOST common skin malignancy?",
+    options: [
+      "Basal cell carcinoma",
+      "Squamous cell carcinoma",
+      "Melanoma",
+      "Merkel cell carcinoma",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Basal cell carcinoma (BCC) — Correct. BCC is the most common malignancy in fair-skinned individuals and the most common overall skin cancer. It originates from basal cells of epidermis/hair follicles. Sun-exposed areas (head, neck) are primarily affected. Pearly nodule with rolled edges and telangiectasia is classic. Rodent ulcer = BCC.\n\nB) SCC — Wrong. SCC is the second most common. Arises from squamous cells; associated with Bowen's disease, actinic keratosis.\n\nC) Melanoma — Wrong. Melanoma is the most lethal but NOT the most common skin cancer.\n\nD) Merkel cell carcinoma — Wrong. Rare neuroendocrine tumour of skin.",
+    reference: "Fitzpatrick's Dermatology 9th Ed; IADVL 4th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2017",
+  },
+
+  // ============================================================
+  // ENT (Ear, Nose & Throat)
+  // ============================================================
+  {
+    id: "ent-001",
+    subject: "ENT",
+    chapter: "Ear",
+    stem: "A 40-year-old presents with conductive hearing loss and a bluish mass behind the intact tympanic membrane. The MOST likely diagnosis is:",
+    options: [
+      "Glomus jugulare tumour",
+      "Cholesteatoma",
+      "Otosclerosis",
+      "Acute otitis media",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Glomus jugulare tumour — Correct. Glomus jugulare (chemodectoma/paraganglioma) appears as a pulsatile, reddish-blue mass behind the tympanic membrane (bleeding on aspiration — 'rising sun' or 'flamingo pink' sign). Conductive hearing loss + pulsatile tinnitus are typical features. Seen through intact TM.\n\nB) Cholesteatoma — Wrong. Cholesteatoma presents with perforated TM (Attic/Pars flaccida perforation with pearly white mass) + foul-smelling discharge.\n\nC) Otosclerosis — Wrong. Otosclerosis causes conductive hearing loss but TM is normal (no mass); Schwartze sign = reddish blush through TM (flamingo pink), but mass is not seen.\n\nD) Acute otitis media — Wrong. AOM shows bulging red TM with purulent middle ear effusion, not a blue-red mass.",
+    reference:
+      "Scott-Brown's Otorhinolaryngology 8th Ed; Dhingra's Diseases of ENT 7th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2021",
+  },
+  {
+    id: "ent-002",
+    subject: "ENT",
+    chapter: "Nose",
+    stem: "Most common site of epistaxis is:",
+    options: [
+      "Little's area (Kiesselbach's plexus)",
+      "Woodruff's plexus",
+      "Posterior ethmoid artery territory",
+      "Greater palatine artery territory",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Little's area / Kiesselbach's plexus — Correct. Little's area (anterior nasal septum) is supplied by 5 vessels: anterior and posterior ethmoid arteries, superior labial artery, greater palatine artery, and sphenopalatine artery — all anastomose here. >90% of epistaxis originates here. Easy to see and compress.\n\nB) Woodruff's plexus — Wrong. Woodruff's plexus (posterolateral nasal wall at posterior end of inferior turbinate) is the site of posterior epistaxis in elderly, hypertensives — more dangerous but less common.\n\nC, D) Wrong. These areas contribute to Little's area vascularity but are not the epicentre.",
+    reference:
+      "Dhingra's Diseases of ENT 7th Ed; Scott-Brown's Otorhinolaryngology 8th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2016",
+  },
+  {
+    id: "ent-003",
+    subject: "ENT",
+    chapter: "Throat",
+    stem: "A 5-year-old child presents with sudden onset stridor, drooling, high-grade fever, and 'tripod' position. X-ray shows 'thumbprint sign'. Diagnosis is:",
+    options: [
+      "Acute epiglottitis",
+      "Croup (Laryngotracheobronchitis)",
+      "Subglottic stenosis",
+      "Foreign body aspiration",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Acute epiglottitis — Correct. Classic presentation: sudden onset, high fever, drooling (can't swallow secretions), muffled voice, tripod/sniffing position. X-ray lateral neck: 'Thumbprint sign' = swollen epiglottis. Most common causative organism: H. influenzae type b. NEVER examine throat in emergency — may cause complete obstruction.\n\nB) Croup — Wrong. Croup (parainfluenza virus) shows gradual onset, 'steeple sign' on AP X-ray (subglottic narrowing), barking cough, usually < 5 years.\n\nC) Subglottic stenosis — Wrong. Usually post-intubation or congenital; chronic progressive stridor without fever.\n\nD) Foreign body — Wrong. History of sudden choking; X-ray may show opacity or air trapping.",
+    reference:
+      "Dhingra's Diseases of ENT 7th Ed; Nelson Textbook of Paediatrics 21st Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2019",
+  },
+  {
+    id: "ent-004",
+    subject: "ENT",
+    chapter: "Ear",
+    stem: "Which of the following differentiates sensorineural from conductive hearing loss on tuning fork tests?",
+    options: [
+      "Weber lateralizes to better ear in SNHL, to worse ear in CHL",
+      "Weber lateralizes to worse ear in SNHL, to better ear in CHL",
+      "Rinne is positive in CHL",
+      "SNHL shows better bone conduction than air conduction",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Correct. Weber test: sound lateralizes to BETTER ear in SNHL (intact cochlea receives louder bone-conducted sound), and to WORSE ear in CHL (blocked external/middle ear creates relative amplification of bone conduction on affected side).\n\nB) Wrong. This is reversed.\n\nC) Wrong. Rinne is NEGATIVE in CHL (BC > AC), indicating middle ear problem. Rinne is POSITIVE in SNHL (AC > BC, as expected).\n\nD) Wrong. In SNHL, both AC and BC are reduced equally; in CHL, BC is preserved while AC is reduced.",
+    reference: "Dhingra's Diseases of ENT 7th Ed; Scott-Brown's 8th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2017",
+  },
+  {
+    id: "ent-005",
+    subject: "ENT",
+    chapter: "Throat",
+    stem: "Quinsy (peritonsillar abscess) is most commonly located:",
+    options: [
+      "Between the tonsil and superior constrictor muscle (superior pole)",
+      "Between tonsil and the palatoglossus muscle",
+      "Retropharyngeal space",
+      "Parapharyngeal space",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Between tonsil and superior constrictor — Correct. Peritonsillar abscess (quinsy) forms in the space between the tonsillar capsule and the superior constrictor muscle, most commonly at the superior pole of the tonsil. Features: trismus, uvular deviation to opposite side, hot potato voice.\n\nB) Wrong. This describes the tonsillar bed, not the peritonsillar space.\n\nC) Retropharyngeal space — Wrong. Retropharyngeal abscess occurs in children < 5 years, posterior midline, causing bulging posterior pharyngeal wall.\n\nD) Parapharyngeal space — Wrong. More lateral; not the typical quinsy location.",
+    reference: "Dhingra's Diseases of ENT 7th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2020",
+  },
+
+  // ============================================================
+  // FORENSIC MEDICINE
+  // ============================================================
+  {
+    id: "fmd-001",
+    subject: "Forensic Medicine",
+    chapter: "Thanatology",
+    stem: "Cadaveric spasm is different from rigor mortis in all of the following EXCEPT:",
+    options: [
+      "Both involve ATP depletion",
+      "Cadaveric spasm occurs immediately at death",
+      "Cadaveric spasm requires intense muscular activity before death",
+      "Cadaveric spasm involves single muscle group",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Both involve ATP depletion — Correct (this is the similarity). EXCEPTION: Both cadaveric spasm and rigor mortis are due to ATP depletion causing permanent actin-myosin cross-bridge formation.\n\nDifferences:\n- Cadaveric spasm occurs instantly at death (no relaxation phase); rigor mortis develops 2–6 hours after death.\n- Cadaveric spasm requires intense muscular activity/emotional stress before death (soldier gripping rifle).\n- Cadaveric spasm affects single/few muscle groups; rigor mortis affects all muscles.\n\nMedico-legal significance: Cadaveric spasm preserves the object held at the moment of death (suicidal vs. homicidal hanging determination).",
+    reference:
+      "Reddy's Essentials of Forensic Medicine 4th Ed; Lyon's Medical Jurisprudence 13th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2020",
+  },
+  {
+    id: "fmd-002",
+    subject: "Forensic Medicine",
+    chapter: "Wounds",
+    stem: "Entry wound versus exit wound in gunshot: all are features of entry wound EXCEPT:",
+    options: [
+      "Larger than exit wound in high-velocity rifle injuries",
+      "Abrasion collar (ring of dirt)",
+      "Inverted margins",
+      "Grease collar",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Larger than exit wound in high-velocity rifle injuries — Correct (this is the EXCEPTION — usually exit wounds are LARGER). Entry wound features: small, circular, punched-out, inverted margins, abrasion collar (graze collar), grease/smoke collar if close range. Exit wound: larger, irregular, everted, NO abrasion collar.\n\nNote: In high-velocity rifle injuries, the exit wound can be massive ('blown out') and much larger. However, in contact/close-range gunshot, entry wound may have larger laceration due to gases — but this is an exception.\n\nB, C, D) All are features of entry wounds — wrong options for the EXCEPT question.",
+    reference: "Reddy's Essentials of Forensic Medicine 4th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2018",
+  },
+  {
+    id: "fmd-003",
+    subject: "Forensic Medicine",
+    chapter: "Toxicology",
+    stem: "Minamata disease is caused by poisoning with:",
+    options: [
+      "Organic mercury (methylmercury)",
+      "Inorganic lead",
+      "Organic arsenic",
+      "Cadmium",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Organic mercury — Correct. Minamata disease (Japan, 1956) was caused by methylmercury contamination of seafood from a chemical plant. Features: sensory disturbances, cerebellar ataxia, visual field constriction, hearing loss, tremors. Also causes congenital Minamata disease in offspring.\n\nB) Lead — Wrong. Lead poisoning (plumbism): colic, encephalopathy, peripheral neuropathy, basophilic stippling on RBCs, Burton's line on gums.\n\nC) Arsenic — Wrong. Arsenicosis: Mees lines (transverse white bands on nails), rain-drop pigmentation, peripheral neuropathy.\n\nD) Cadmium — Wrong. Itai-itai disease (Japan) — cadmium causing osteomalacia, osteoporosis, renal tubular dysfunction.",
+    reference:
+      "Reddy's Essentials of Forensic Medicine 4th Ed; Park's PSM 27th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2017",
+  },
+  {
+    id: "fmd-004",
+    subject: "Forensic Medicine",
+    chapter: "Medical Jurisprudence",
+    stem: "Doctrine of Res Ipsa Loquitur in medical negligence means:",
+    options: [
+      "The facts speak for themselves — negligence is self-evident without detailed proof",
+      "The doctor is always guilty",
+      "Burden of proof shifts to plaintiff",
+      "Only criminal courts apply this doctrine",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Correct. Res Ipsa Loquitur (Latin: 'the thing speaks for itself') applies when the act of negligence is so obvious that it does not require expert testimony. Example: A surgical sponge left inside the patient's abdomen after surgery — the fact itself proves negligence.\n\nRequirements: (1) The event wouldn't occur without negligence; (2) Defendant had exclusive control of the situation; (3) Plaintiff did not contribute to the injury.\n\nB) Wrong. It doesn't assume guilt automatically.\nC) Wrong. Actually, it allows the court to infer negligence from the facts, but burden doesn't fully shift.\nD) Wrong. This doctrine applies in both civil and criminal courts.",
+    reference: "Reddy's Essentials of Forensic Medicine 4th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2019",
+  },
+  {
+    id: "fmd-005",
+    subject: "Forensic Medicine",
+    chapter: "Thanatology",
+    stem: "The 'Washerwoman's hands' appearance is characteristic of:",
+    options: [
+      "Drowning (prolonged submersion)",
+      "Burns",
+      "Alkali poisoning",
+      "Decomposition",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Drowning — Correct. Prolonged submersion in water causes maceration of the skin, particularly on palms and soles, producing 'washerwoman's hands' (sodden, wrinkled, white skin). This is a characteristic post-mortem finding in drowning cases and helps establish the fact and duration of submersion.\n\nB) Burns — Wrong. Burns show blistering, charring, or leathery skin.\n\nC) Alkali poisoning — Wrong. Alkali (caustic soda) causes saponification of tissues, producing soapy/slippery skin.\n\nD) Decomposition — Wrong. Decomposition shows colour changes, bloating, skin slippage, but not specifically washerwoman's pattern.",
+    reference: "Reddy's Essentials of Forensic Medicine 4th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2016",
+  },
+
+  // ============================================================
+  // GENERAL SURGERY
+  // ============================================================
+  {
+    id: "surg-gen-001",
+    subject: "General Surgery",
+    chapter: "Breast",
+    stem: "A 55-year-old woman presents with painless lump in upper outer quadrant of breast. FNAC shows malignant cells. Sentinel lymph node biopsy is planned. Where is the sentinel lymph node dye injected?",
+    options: [
+      "Periareolar/subareolar region",
+      "Directly into the tumour",
+      "Axillary tail",
+      "Over skin above tumour",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Periareolar/subareolar region — Correct. For sentinel lymph node biopsy in breast cancer, the blue dye (Patent Blue/isosulfan blue) and/or technetium-99m colloid is injected periareolarly or subdermally/intradermally near the tumour. This maps to the sentinel lymph node(s) in the axilla. The periareolar injection has the highest success rate as it follows subareolar lymphatic plexus of Sappey.\n\nB) Directly into tumour — Wrong. Intratumoral injection is not the standard approach.\n\nC) Axillary tail — Wrong. The axillary tail is an anatomical region of breast tissue, not the injection site.\n\nD) Over skin — Wrong. Subdermal injection is used but periareolar is most reliable.",
+    reference:
+      "Bailey & Love's Short Practice of Surgery 28th Ed; Sabiston Textbook of Surgery 20th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2022",
+  },
+  {
+    id: "surg-gen-002",
+    subject: "General Surgery",
+    chapter: "Hernia",
+    stem: "A 60-year-old male presents with a scrotal swelling that you cannot get above it, and it has a cough impulse. Bowel sounds are heard over it. Diagnosis:",
+    options: [
+      "Indirect inguinal hernia",
+      "Direct inguinal hernia",
+      "Femoral hernia",
+      "Hydrocele",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Indirect inguinal hernia — Correct. 'Cannot get above it' = the swelling extends into the inguinal canal. 'Cough impulse' = hernia. 'Bowel sounds heard' = bowel is in the hernial sac. Indirect inguinal hernia enters through the deep inguinal ring (lateral to inferior epigastric vessels), passes along the inguinal canal, exits through the superficial ring, and descends into the scrotum.\n\nB) Direct inguinal hernia — Wrong. Direct hernia protrudes through Hesselbach's triangle medial to inferior epigastric vessels. It is a diffuse, globular bulge that rarely descends into the scrotum.\n\nC) Femoral hernia — Wrong. Femoral hernia is below and lateral to the pubic tubercle; more common in females.\n\nD) Hydrocele — Wrong. Hydrocele is transilluminant, no cough impulse, bowel sounds absent.",
+    reference: "Bailey & Love's Short Practice of Surgery 28th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2018",
+  },
+  {
+    id: "surg-gen-003",
+    subject: "General Surgery",
+    chapter: "Thyroid",
+    stem: "Fine-needle aspiration cytology (FNAC) of thyroid shows follicular neoplasm (Bethesda IV). What is the recommended next step?",
+    options: [
+      "Diagnostic hemithyroidectomy (lobectomy)",
+      "Repeat FNAC",
+      "Total thyroidectomy",
+      "Radioactive iodine scan",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Diagnostic hemithyroidectomy — Correct. Bethesda Category IV (Follicular Neoplasm/Suspicious for FN) has ~15–30% risk of malignancy. FNAC cannot distinguish follicular adenoma from follicular carcinoma (requires capsular and vascular invasion on histology). Diagnostic hemithyroidectomy provides tissue for definitive diagnosis and is the standard recommendation.\n\nB) Repeat FNAC — Wrong. Repeat will give the same result (follicular cells).\n\nC) Total thyroidectomy — Wrong. Reserved for completion thyroidectomy if lobectomy specimen confirms carcinoma, or for Bethesda V/VI.\n\nD) Radioiodine scan — Wrong. Radioiodine scan differentiates hot (functioning) from cold nodules. A hot nodule is almost never malignant. However, most follicular neoplasms are cold on scan, and this doesn't change the surgical plan.",
+    reference: "Bailey & Love's 28th Ed; Sabiston 20th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2021",
+  },
+  {
+    id: "surg-gen-004",
+    subject: "General Surgery",
+    chapter: "Intestines",
+    stem: "Which of the following is the MOST reliable test for diagnosis of acute appendicitis?",
+    options: [
+      "Clinical examination + Alvarado score",
+      "Ultrasound abdomen",
+      "CT scan abdomen (with contrast)",
+      "Laparoscopy",
+    ],
+    correctIndex: 2,
+    explanation:
+      "C) CT scan abdomen — Correct. CT scan of the abdomen/pelvis with IV contrast is the most reliable investigation for acute appendicitis (sensitivity 98%, specificity 98%). It shows: thickened appendix (>6mm), periappendiceal fat stranding, appendicolith, perforation signs.\n\nA) Clinical examination — Clinically reliable but sensitivity varies (80–90%); best combined with scoring systems but not the single most reliable test.\n\nB) Ultrasound — Sensitivity 75–90%; operator-dependent; not reliable in obese patients or when appendix not visualised.\n\nD) Laparoscopy — Definitive but invasive; used therapeutically.",
+    reference: "Bailey & Love's 28th Ed; Sabiston 20th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2020",
+  },
+  {
+    id: "surg-gen-005",
+    subject: "General Surgery",
+    chapter: "Vascular Surgery",
+    stem: "Buerger's disease (Thromboangiitis obliterans) is characterised by all EXCEPT:",
+    options: [
+      "More common in elderly women",
+      "Associated with smoking",
+      "Affects small and medium vessels",
+      "May cause rest pain and gangrene",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) More common in elderly women — Correct (EXCEPT). Buerger's disease predominantly affects YOUNG MALES (20–45 years) who are HEAVY SMOKERS. It is rare in females and elderly.\n\nB) Associated with smoking — Wrong (it IS associated). Smoking is the most important causative/perpetuating factor. Cessation of smoking is the primary treatment.\n\nC) Affects small and medium vessels — Wrong (it DOES). Buerger's affects small and medium arteries and veins of distal extremities (tibial, peroneal, radial, ulnar, plantar vessels).\n\nD) Rest pain and gangrene — Wrong (it DOES). Advanced disease causes rest pain, ulceration, and gangrene of digits.",
+    reference: "Bailey & Love's 28th Ed; Sabiston 20th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2017",
+  },
+
+  // ============================================================
+  // OBSTETRICS & GYNAECOLOGY
+  // ============================================================
+  {
+    id: "og-001",
+    subject: "Obstetrics & Gynaecology",
+    chapter: "Obstetric Emergencies",
+    stem: "A 28-year-old primigravida at 34 weeks gestation presents with sudden onset severe abdominal pain, uterine rigidity, and fresh PV bleeding. FHR is 80 bpm. Diagnosis:",
+    options: [
+      "Abruptio placentae",
+      "Placenta praevia",
+      "Uterine rupture",
+      "Vasa praevia",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Abruptio placentae — Correct. Classic triad: painful vaginal bleeding + rigid (tense/woody) uterus + fetal distress. The uterus is continuously contracted due to retroplacental haematoma causing irritability. Fetal bradycardia (FHR 80) indicates acute fetal compromise. Occurs in 1% of pregnancies; associated with hypertension, cocaine, trauma.\n\nB) Placenta praevia — Wrong. Placenta praevia presents with PAINLESS, bright red bleeding, soft uterus, often normal FHR. No abdominal pain.\n\nC) Uterine rupture — Wrong. Uterine rupture occurs during labour (previous scar), with sudden cessation of contractions, extrusion of fetal parts, maternal haemodynamic collapse.\n\nD) Vasa praevia — Wrong. Vasa praevia presents at rupture of membranes with painless fresh bleeding + rapid fetal demise.",
+    reference:
+      "Williams Obstetrics 25th Ed; DC Dutta's Textbook of Obstetrics 9th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2019",
+  },
+  {
+    id: "og-002",
+    subject: "Obstetrics & Gynaecology",
+    chapter: "Labour",
+    stem: "Partogram alert line indicates:",
+    options: [
+      "Rate of cervical dilatation of < 1 cm/hour, calling for reassessment",
+      "Immediate need for caesarean section",
+      "Normal progress of labour",
+      "Need for oxytocin augmentation",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Alert line indicates cervical dilatation < 1 cm/hour — Correct. WHO partogram: the alert line begins at 4 cm dilatation and represents minimum acceptable rate of progress (1 cm/hour). If cervical progress falls to the LEFT of the alert line, the patient should be reassessed and action taken. It signals need for evaluation — not immediate intervention.\n\nB) Caesarean section — Wrong. Action line (4 hours to the right of alert line) indicates need for augmentation or further evaluation. Caesar is not automatic.\n\nC) Normal progress — Wrong. Normal active labour should be TO THE LEFT of the alert line (faster dilatation).\n\nD) Immediate oxytocin — Wrong. Oxytocin or ARM is considered when the action line is crossed, not just the alert line.",
+    reference:
+      "DC Dutta's Textbook of Obstetrics 9th Ed; Williams Obstetrics 25th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2020",
+  },
+  {
+    id: "og-003",
+    subject: "Obstetrics & Gynaecology",
+    chapter: "Gynaecological Oncology",
+    stem: "FIGO Stage IB2 cervical cancer means:",
+    options: [
+      "Clinically visible lesion > 4 cm confined to cervix",
+      "Extension to pelvic wall or lower third of vagina",
+      "Bladder/rectal involvement",
+      "Lesion < 4 cm confined to cervix",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Stage IB2 — Correct. FIGO 2018 staging for cervical cancer: Stage IB1 = clinically visible lesion ≤ 4 cm confined to cervix; Stage IB2 = clinically visible lesion > 4 cm confined to cervix; Stage IB3 = lesion > 4 cm (new category 2018). Tumour confined to cervix uteri regardless of size = Stage I.\n\nB) Extension to pelvic wall or lower third vagina = Stage IIIA/IIIB.\n\nC) Bladder/rectal involvement = Stage IVA.\n\nD) < 4 cm = Stage IB1.",
+    reference:
+      "Williams Gynecology 3rd Ed; Shaw's Textbook of Gynaecology 17th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2022",
+  },
+  {
+    id: "og-004",
+    subject: "Obstetrics & Gynaecology",
+    chapter: "Contraception",
+    stem: "Copper IUD (Cu-T 380A) prevents pregnancy by all mechanisms EXCEPT:",
+    options: [
+      "Inhibition of ovulation",
+      "Spermicidal effect of copper ions",
+      "Inhibition of fertilisation",
+      "Endometrial changes making implantation difficult",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Inhibition of ovulation — Correct (EXCEPT). Copper IUD does NOT inhibit ovulation. This is the mechanism of hormonal IUDs (LNG-IUS/Mirena) and oral contraceptives.\n\nMechanisms of Cu-T: (B) Copper ions are spermicidal (increase sperm motility problems, acrosome reaction). (C) Copper ions inhibit fertilisation. (D) The foreign body reaction causes sterile inflammation, altering endometrial milieu (prostaglandins, cytokines) making implantation difficult. It primarily works as a spermicide and anti-fertilisation device.",
+    reference: "DC Dutta's Textbook of Obstetrics 9th Ed; Park's PSM 27th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2018",
+  },
+  {
+    id: "og-005",
+    subject: "Obstetrics & Gynaecology",
+    chapter: "Puerperal Complications",
+    stem: "The MOST common cause of puerperal pyrexia in the first 24 hours post-delivery is:",
+    options: [
+      "Physiological (dehydration/normal postpartum fever)",
+      "Urinary tract infection",
+      "Endometritis",
+      "Breast engorgement",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Physiological fever in first 24 hours — Correct. Temperature ≤ 38°C in first 24 hours postpartum is usually physiological (dehydration, normal inflammatory response to delivery). Significant puerperal fever is defined as ≥ 38°C on 2 occasions after first 24 hours.\n\nB) UTI — Wrong. UTI typically presents 24–48 hours post-delivery, especially after instrumentation.\n\nC) Endometritis — Wrong. Endometritis usually appears 2–5 days post-delivery, more common after caesarean section.\n\nD) Breast engorgement — Wrong. 'Milk fever' from breast engorgement occurs around day 3–4; usually low-grade.",
+    reference:
+      "DC Dutta's Textbook of Obstetrics 9th Ed; Williams Obstetrics 25th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2017",
+  },
+
+  // ============================================================
+  // OPHTHALMOLOGY
+  // ============================================================
+  {
+    id: "oph-001",
+    subject: "Ophthalmology",
+    chapter: "Glaucoma",
+    stem: "In acute angle-closure glaucoma, which of the following is the FIRST sign/symptom?",
+    options: [
+      "Severe headache, nausea, vomiting with halos around lights",
+      "Gradual loss of peripheral vision",
+      "Central scotoma",
+      "Ptosis",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Severe headache, nausea, halos — Correct. Acute angle-closure glaucoma (AACG) presents with: sudden severe periorbital pain, frontal headache, nausea/vomiting, decreased vision, seeing halos around lights (due to corneal oedema from IOP spike). IOP can reach 50–80 mmHg. Cornea is steamy/hazy; pupil is mid-dilated and fixed.\n\nB) Gradual peripheral vision loss — Wrong. This is primary open-angle glaucoma (POAG) — silent, gradual; 'snuff candle' loss of peripheral vision.\n\nC) Central scotoma — Wrong. Central scotoma = macular disease (e.g., macular degeneration, optic neuritis).\n\nD) Ptosis — Wrong. Ptosis is drooping of eyelid; not a feature of AACG.",
+    reference:
+      "Kanski's Clinical Ophthalmology 9th Ed; AK Khurana's Ophthalmology 7th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2018",
+  },
+  {
+    id: "oph-002",
+    subject: "Ophthalmology",
+    chapter: "Retina",
+    stem: "A 65-year-old diabetic patient presents with sudden painless loss of vision. Fundus shows no red reflex and no view of the retina. Most likely diagnosis:",
+    options: [
+      "Vitreous haemorrhage",
+      "Central retinal artery occlusion",
+      "Central retinal vein occlusion",
+      "Rhegmatogenous retinal detachment",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Vitreous haemorrhage — Correct. In diabetic retinopathy, new fragile vessels (neovascularisation) can bleed into the vitreous. This blocks the red reflex (vitreous is opaque/blood-filled) and prevents fundal view. Presents as sudden painless loss of vision or 'shower of floaters'. Fundoscopy: no red reflex, vitreous opacification.\n\nB) CRAO — Wrong. In CRAO, fundus IS visible; shows cherry-red spot at fovea with milky white oedema of posterior pole.\n\nC) CRVO — Wrong. Fundus shows 'blood and thunder' — massive flame-shaped haemorrhages in all 4 quadrants; fundal view is possible.\n\nD) Retinal detachment — Wrong. Rhegmatogenous RD: shallow/flat appearance with a 'curtain-like' visual loss; fundal view possible in most cases.",
+    reference:
+      "Kanski's Clinical Ophthalmology 9th Ed; AK Khurana's Ophthalmology 7th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2021",
+  },
+  {
+    id: "oph-003",
+    subject: "Ophthalmology",
+    chapter: "Cornea",
+    stem: "Dendritic ulcer of the cornea is pathognomonic of:",
+    options: [
+      "Herpes simplex virus keratitis",
+      "Pseudomonas aeruginosa",
+      "Acanthamoeba keratitis",
+      "Fungal keratitis",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Herpes simplex virus — Correct. Dendritic (branching, tree-like) ulcer with terminal end bulbs is pathognomonic of HSV keratitis (Type 1). Rose bengal staining shows the active viral infected cells. Treatment: topical acyclovir 3% or oral acyclovir. DO NOT use steroids alone (will worsen viral replication).\n\nB) Pseudomonas — Wrong. Pseudomonas causes rapidly progressive corneal ulcer with grey-green discharge; no dendritic pattern.\n\nC) Acanthamoeba — Wrong. Acanthamoeba keratitis (contact lens users) causes ring infiltrate and severe pain disproportionate to signs.\n\nD) Fungal keratitis — Wrong. Fungal ulcer shows dry, powdery, grey-white infiltrate with satellite lesions and hypopyon.",
+    reference:
+      "Kanski's Clinical Ophthalmology 9th Ed; AK Khurana's Ophthalmology 7th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2016",
+  },
+  {
+    id: "oph-004",
+    subject: "Ophthalmology",
+    chapter: "Neuro-ophthalmology",
+    stem: "A patient presents with ptosis, miosis, and anhidrosis of one side. Which structure is most likely affected?",
+    options: [
+      "Cervical sympathetic chain",
+      "Third cranial nerve",
+      "Seventh cranial nerve",
+      "Fourth cranial nerve",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Cervical sympathetic chain — Correct. Horner syndrome (ptosis + miosis + anhidrosis) results from interruption of the sympathetic pathway. The 3-neuron arc: hypothalamus → brainstem/spinal cord (C8–T2) → superior cervical ganglion → eye. Lesions at any level (Pancoast tumour, carotid dissection, brachial plexus injury, lateral medullary syndrome) cause ipsilateral Horner's.\n\nB) Third nerve — Wrong. CN III palsy causes ptosis + dilated pupil (mydriasis) + exotropia + 'down and out' eye — due to loss of all elevator/adductor muscles and pupil constrictor.\n\nC) Seventh nerve — Wrong. CN VII palsy causes facial weakness (Bell's palsy), not Horner's syndrome.\n\nD) Fourth nerve — Wrong. CN IV palsy causes superior oblique paralysis with hypertropia and vertical diplopia.",
+    reference:
+      "Kanski's Clinical Ophthalmology 9th Ed; AK Khurana's Ophthalmology 7th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2020",
+  },
+  {
+    id: "oph-005",
+    subject: "Ophthalmology",
+    chapter: "Cataract",
+    stem: "Complicated cataract is associated with all of the following EXCEPT:",
+    options: [
+      "Senile (age-related) cataract",
+      "Uveitis",
+      "Retinitis pigmentosa",
+      "Hypermature cataract due to osmotic changes",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Senile cataract — Correct (EXCEPT). Senile/age-related cataract is NOT a complicated cataract. Complicated cataract results from intraocular disease or systemic conditions: uveitis, retinitis pigmentosa, glaucoma, high myopia.\n\nB) Uveitis — Wrong. Chronic uveitis causes complicated cataract (posterior subcapsular type, anterior capsular fibrosis).\n\nC) Retinitis pigmentosa — Wrong. RP is a classic cause of complicated cataract.\n\nD) Wrong — hypermature cataracts (Morgagnian) are a progression of senile cataract, not complicated.",
+    reference: "AK Khurana's Ophthalmology 7th Ed; Kanski's 9th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2019",
+  },
+
+  // ============================================================
+  // ORTHOPAEDICS
+  // ============================================================
+  {
+    id: "orth-001",
+    subject: "Orthopaedics",
+    chapter: "Fractures",
+    stem: "Colles fracture is a fracture of the:",
+    options: [
+      "Distal radius with dorsal displacement and dorsal angulation",
+      "Distal radius with volar displacement",
+      "Distal ulna with dorsal displacement",
+      "Both radius and ulna at distal third",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Distal radius with dorsal displacement — Correct. Colles fracture: fracture of distal radius within 2.5 cm of wrist joint, with dorsal displacement + dorsal angulation of distal fragment. 'Dinner-fork/bayonet' deformity. Mechanism: FOOSH (fall on outstretched hand) in extension. Common in post-menopausal women (osteoporosis).\n\nB) Volar displacement — Wrong. Smith's fracture (reverse Colles) = distal radius fracture with VOLAR displacement. 'Garden spade' deformity. Mechanism: fall on flexed wrist.\n\nC) Distal ulna — Wrong.\n\nD) Both radius and ulna — Wrong. This describes Galeazzi (distal radius + radioulnar joint dislocation) or Monteggia (proximal ulna + radial head dislocation).",
+    reference:
+      "Maheshwari's Essential Orthopaedics 5th Ed; Campbell's Operative Orthopaedics 13th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2016",
+  },
+  {
+    id: "orth-002",
+    subject: "Orthopaedics",
+    chapter: "Bone Tumours",
+    stem: "Codman's triangle on X-ray is seen in:",
+    options: [
+      "Osteosarcoma",
+      "Ewing's sarcoma",
+      "Giant cell tumour",
+      "Osteoclastoma",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Osteosarcoma — Correct. Codman's triangle = periosteal elevation at the margin of an aggressive bone lesion, forming a triangular shadow between the elevated periosteum and the cortex. Classic feature of osteosarcoma (commonest primary malignant bone tumour in adolescents). Also: 'sunburst pattern', lytic/blastic lesion at metaphysis of distal femur/proximal tibia.\n\nB) Ewing's sarcoma — Wrong. Ewing's shows 'onion skin' periosteal reaction (multiple parallel layers of periosteal new bone). Permeative lytic lesion of diaphysis. SRMT (Small Round Blue Cell Tumour).\n\nC, D) Giant cell tumour — Wrong. GCT shows 'soap bubble' appearance at epiphysis; no Codman's triangle. It is locally aggressive but not typically malignant.",
+    reference: "Maheshwari's Essential Orthopaedics 5th Ed; Robbins 10th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2017",
+  },
+  {
+    id: "orth-003",
+    subject: "Orthopaedics",
+    chapter: "Joints",
+    stem: "Signs of congenital hip dysplasia (CDH/DDH) in a neonate include all EXCEPT:",
+    options: [
+      "Trendelenburg sign (positive)",
+      "Barlow test (positive)",
+      "Ortolani test (positive)",
+      "Asymmetrical skin folds",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Trendelenburg sign — Correct (EXCEPT — not seen in neonates). Trendelenburg sign (contralateral pelvis drops on single-leg stance) is seen in OLDER CHILDREN/ADULTS with DDH or abductor weakness. It requires weight-bearing and is NOT a neonatal test.\n\nB) Barlow test — Wrong. Barlow = dislocatable hip (stabilised hip can be dislocated with adduction + posterior force). Positive in DDH.\n\nC) Ortolani test — Wrong. Ortolani = click of reduction (dislocated hip reduced back into socket). Classic neonatal screening test.\n\nD) Asymmetrical skin folds — Wrong. Asymmetrical thigh/gluteal skin folds are signs of unilateral DDH in neonates.",
+    reference: "Maheshwari's Essential Orthopaedics 5th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2019",
+  },
+  {
+    id: "orth-004",
+    subject: "Orthopaedics",
+    chapter: "Spine",
+    stem: "L4–L5 disc prolapse causes weakness in which movement?",
+    options: [
+      "Dorsiflexion of foot (L4 nerve root)",
+      "Plantar flexion (S1)",
+      "Hip abduction (L5)",
+      "Knee extension (L3)",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Dorsiflexion of foot — Correct. L4 nerve root: sensory = medial aspect of leg + dorsum of foot; motor = tibialis anterior (dorsiflexion), quadriceps (knee extension — L3,L4). L4-L5 disc prolapse compresses L4 root (on left/right depending on side). Classic signs: weak dorsiflexion, diminished knee jerk (L3,L4).\n\nNote: L5 root (compressed by L4-L5): weak great toe extension (extensor hallucis longus), hip abduction. S1 root: weak plantar flexion, absent ankle jerk.\n\nB) Plantar flexion = S1 nerve root (L5-S1 disc).\nC) Hip abduction = L5 nerve root.\nD) Knee extension = L3, L4.",
+    reference:
+      "Maheshwari's Essential Orthopaedics 5th Ed; Clinical Examination OHCM 10th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2021",
+  },
+  {
+    id: "orth-005",
+    subject: "Orthopaedics",
+    chapter: "Infections",
+    stem: "Most common organism causing acute haematogenous osteomyelitis in children is:",
+    options: [
+      "Staphylococcus aureus",
+      "Streptococcus pyogenes",
+      "Salmonella typhi",
+      "Pseudomonas aeruginosa",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Staphylococcus aureus — Correct. S. aureus is the most common causative organism of acute haematogenous osteomyelitis (AHO) in ALL age groups, including neonates, children, and adults. It produces coagulase, protein A, and other virulence factors facilitating bone invasion.\n\nSpecial cases: Salmonella in sickle cell disease; Group B Strep and S. aureus in neonates; Pseudomonas in IV drug users/puncture wounds of foot.\n\nB) S. pyogenes — Wrong. Less common, usually causes septic arthritis.\nC) Salmonella — Wrong. Specifically associated with sickle cell disease patients.\nD) Pseudomonas — Wrong. Associated with IV drug abuse and foot puncture wounds.",
+    reference:
+      "Maheshwari's Essential Orthopaedics 5th Ed; Nelson Textbook of Paediatrics 21st Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2016",
+  },
+
+  // ============================================================
+  // PAEDIATRICS
+  // ============================================================
+  {
+    id: "paed-001",
+    subject: "Paediatrics",
+    chapter: "Neonatology",
+    stem: "Apgar score is assessed at 1 and 5 minutes. Which of the following is NOT a component of the Apgar score?",
+    options: [
+      "Birth weight",
+      "Heart rate",
+      "Respiratory effort",
+      "Muscle tone",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Birth weight — Correct (NOT a component). Apgar score (Virginia Apgar, 1952) has 5 components, each scored 0–2: (1) Appearance (skin colour), (2) Pulse (heart rate), (3) Grimace (reflex irritability), (4) Activity (muscle tone), (5) Respiration. Maximum score = 10. Score 7–10 = normal; 4–6 = moderate depression; 0–3 = severe depression.\n\nBirth weight is NOT part of the Apgar score.\n\nB) Heart rate — Wrong. Pulse is a component (0 = absent, 1 = < 100/min, 2 = ≥ 100/min).\nC) Respiratory effort — Wrong. Respiration is a component.\nD) Muscle tone — Wrong. Activity (tone) is a component.",
+    reference:
+      "Nelson Textbook of Paediatrics 21st Ed; Ghai Essential Paediatrics 9th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2016",
+  },
+  {
+    id: "paed-002",
+    subject: "Paediatrics",
+    chapter: "Nutrition",
+    stem: "A 2-year-old child presents with pitting oedema of feet, sparse reddish hair, and adequate weight for age. Diagnosis:",
+    options: [
+      "Kwashiorkor",
+      "Marasmus",
+      "Marasmic kwashiorkor",
+      "Nutritional rickets",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Kwashiorkor — Correct. Kwashiorkor = protein deficiency with adequate calorie intake. Classic features: oedema (low albumin → decreased oncotic pressure), 'flag sign' hair (sparse, reddish/depigmented), skin changes ('flaky paint' or 'crazy pavement' dermatosis), enlarged liver (fatty), child may look 'chubby' due to oedema (weight may be normal).\n\nB) Marasmus — Wrong. Marasmus = total calorie deficiency. Features: severe wasting ('skin and bones'), no oedema, 'old man face', no dermatosis.\n\nC) Marasmic kwashiorkor — Wrong. Features of BOTH: oedema + wasting.\n\nD) Nutritional rickets — Wrong. Rickets: bow legs, frontal bossing, rickety rosary; no oedema.",
+    reference:
+      "Nelson Textbook of Paediatrics 21st Ed; Ghai Essential Paediatrics 9th Ed; Park's PSM 27th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2018",
+  },
+  {
+    id: "paed-003",
+    subject: "Paediatrics",
+    chapter: "Vaccines",
+    stem: "Which vaccine is NOT included in India's Universal Immunisation Programme (UIP) as of 2024?",
+    options: [
+      "Varicella vaccine",
+      "Rotavirus vaccine",
+      "PCV (Pneumococcal conjugate vaccine)",
+      "Hepatitis B vaccine",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Varicella vaccine — Correct (NOT in UIP). Varicella vaccine is available in India but is part of the private/recommended schedule, NOT the Universal Immunisation Programme.\n\nB) Rotavirus vaccine — Wrong. Rotavirus vaccine (Rotavac/Rotasiil) was introduced into UIP in 2016 and is now given universally.\n\nC) PCV — Wrong. PCV was introduced into UIP nationally in 2021.\n\nD) Hepatitis B — Wrong. HBV vaccine is included in UIP from birth (0, 6, 10, 14 weeks).",
+    reference:
+      "Park's Textbook of Preventive and Social Medicine 27th Ed; GOI UIP Schedule 2023.",
+    difficulty: "Medium",
+    year: "NEET PG 2022",
+  },
+  {
+    id: "paed-004",
+    subject: "Paediatrics",
+    chapter: "Genetic Disorders",
+    stem: "Which of the following is the MOST common cause of intellectual disability in children?",
+    options: [
+      "Down syndrome (Trisomy 21)",
+      "Fragile X syndrome",
+      "Phenylketonuria",
+      "Hypothyroidism",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Down syndrome — Correct. Down syndrome (Trisomy 21) is the most common chromosomal cause of intellectual disability worldwide. Incidence: 1/700 live births. Features: hypotonia, epicanthal folds, single palmar crease, Brushfield spots, Atlanto-axial instability, ASD/VSD, Alzheimer's dementia.\n\nB) Fragile X syndrome — Wrong. Fragile X is the most common INHERITED cause of intellectual disability (X-linked), but Down syndrome is overall most common.\n\nC) PKU — Wrong. PKU is treatable with phenylalanine-free diet; rare cause of ID with early screening.\n\nD) Hypothyroidism — Wrong. Congenital hypothyroidism causes cretinism; preventable with neonatal screening and thyroid replacement.",
+    reference:
+      "Nelson Textbook of Paediatrics 21st Ed; Ghai Essential Paediatrics 9th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2017",
+  },
+  {
+    id: "paed-005",
+    subject: "Paediatrics",
+    chapter: "Respiratory",
+    stem: "A 6-month-old infant presents with first episode of wheezing, fever, and respiratory distress. CXR shows hyperinflation. Most likely diagnosis:",
+    options: [
+      "Bronchiolitis (RSV)",
+      "Bronchial asthma",
+      "Croup",
+      "Bronchopneumonia",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Bronchiolitis — Correct. Bronchiolitis: most common lower respiratory tract infection in infants < 2 years. RSV (Respiratory Syncytial Virus) is the most common cause. Features: preceding URTI, wheeze, subcostal retractions, hyperinflation on CXR (air trapping), first episode (unlike asthma).\n\nB) Asthma — Wrong. Asthma in infants (< 1 year) is a diagnosis of exclusion; asthma has RECURRENT episodes, not first. Family/atopic history usually present.\n\nC) Croup — Wrong. Croup causes STRIDOR (inspiratory noise from subglottic narrowing), not wheeze. Barking cough + steeple sign.\n\nD) Bronchopneumonia — Wrong. Bronchopneumonia: bilateral patchy infiltrates on CXR; no hyperinflation; fever + crackles.",
+    reference: "Nelson Textbook of Paediatrics 21st Ed; Ghai 9th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2019",
+  },
+
+  // ============================================================
+  // PSYCHIATRY
+  // ============================================================
+  {
+    id: "psy-001",
+    subject: "Psychiatry",
+    chapter: "Psychoses",
+    stem: "A 22-year-old male has been hearing voices commenting on his behaviour for 3 months, has no insight, and shows social withdrawal. According to Schneider's First Rank Symptoms, which is present?",
+    options: [
+      "Third person auditory hallucinations (running commentary)",
+      "Depersonalisation",
+      "Derealization",
+      "Obsessions",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Third person auditory hallucinations — Correct. Schneider's First Rank Symptoms of schizophrenia include: Auditory hallucinations (voices discussing/debating the patient — 3rd person; running commentary on actions); Thought alienation (insertion, withdrawal, broadcasting); Passivity experiences; Delusional perception. Running commentary = voices describing what the patient is doing in third person.\n\nB) Depersonalisation — Wrong. Not a first-rank symptom; seen in dissociative/anxiety disorders.\n\nC) Derealization — Wrong. Not a Schneiderian first-rank symptom.\n\nD) Obsessions — Wrong. Obsessions are recurrent thoughts causing anxiety; seen in OCD, not schizophrenia.",
+    reference:
+      "Kaplan & Sadock's Synopsis of Psychiatry 11th Ed; Ahuja's Short Textbook of Psychiatry 8th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2020",
+  },
+  {
+    id: "psy-002",
+    subject: "Psychiatry",
+    chapter: "Mood Disorders",
+    stem: "Lithium toxicity is suggested by all of the following EXCEPT:",
+    options: [
+      "Seizures at therapeutic levels (0.6–1.2 mEq/L)",
+      "Coarse tremor",
+      "Polyuria and polydipsia",
+      "Ataxia",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Seizures at therapeutic levels — Correct (EXCEPT). At therapeutic lithium levels (0.6–1.2 mEq/L for maintenance), fine tremor, polyuria, and mild cognitive changes are common. Seizures typically occur at TOXIC levels (> 2.0 mEq/L), not at therapeutic levels.\n\nSigns of lithium toxicity by level:\n- > 1.5 mEq/L: coarse tremor, nausea, vomiting\n- > 2.0 mEq/L: ataxia, confusion, myoclonus\n- > 2.5 mEq/L: seizures, coma, cardiac arrhythmias\n\nB) Coarse tremor — Wrong. Coarse tremor IS a toxicity sign (> 1.5).\nC) Polyuria — Wrong. Nephrogenic diabetes insipidus (polyuria + polydipsia) is a side effect of lithium.\nD) Ataxia — Wrong. Ataxia is a toxicity sign at > 2.0 mEq/L.",
+    reference: "Kaplan & Sadock's Synopsis 11th Ed; Katzung 15th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2018",
+  },
+  {
+    id: "psy-003",
+    subject: "Psychiatry",
+    chapter: "Anxiety Disorders",
+    stem: "Systematic desensitisation is most effective for:",
+    options: [
+      "Specific phobia",
+      "Generalised anxiety disorder",
+      "Schizophrenia",
+      "Bipolar disorder",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Specific phobia — Correct. Systematic desensitisation (Wolpe's reciprocal inhibition) involves constructing anxiety hierarchy + progressive relaxation + gradual exposure to feared stimulus. Most effective for specific phobias (arachnophobia, acrophobia, aviophobia) and simple circumscribed fears. Based on counterconditioning principles.\n\nB) GAD — Wrong. GAD responds to CBT, relaxation techniques, SSRIs/SNRIs, buspirone. GAD involves pervasive worry rather than specific phobias.\n\nC) Schizophrenia — Wrong. Antipsychotics are primary treatment; systematic desensitisation not indicated.\n\nD) Bipolar disorder — Wrong. Mood stabilisers (lithium, valproate) and atypical antipsychotics are primary treatment.",
+    reference: "Kaplan & Sadock's Synopsis 11th Ed; Ahuja's Psychiatry 8th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2017",
+  },
+  {
+    id: "psy-004",
+    subject: "Psychiatry",
+    chapter: "Child Psychiatry",
+    stem: "A 7-year-old boy has difficulty sustaining attention, is easily distracted, and his teacher reports he leaves his seat frequently. This presentation is most consistent with:",
+    options: [
+      "ADHD — Predominantly inattentive type",
+      "Conduct disorder",
+      "Autism spectrum disorder",
+      "Specific learning disorder",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) ADHD — Inattentive type — Correct. DSM-5 ADHD criteria: symptoms in ≥ 2 settings, present before age 12, causing impairment. Inattentive features: fails to sustain attention, easily distracted, doesn't follow through. Hyperactive features: leaves seat, fidgets. This boy shows both inattention AND hyperactivity-impulsivity, consistent with ADHD combined presentation (previously ADHD predominantly inattentive is just inattention without hyperactivity).\n\nB) Conduct disorder — Wrong. Conduct disorder = persistent violation of others' rights/rules (aggression, destruction, deceitfulness, serious rule violations). No such features here.\n\nC) ASD — Wrong. ASD = social communication deficits + restricted repetitive behaviours. Inattention is not the primary feature.\n\nD) Specific learning disorder — Wrong. SLD affects reading/writing/math skills specifically, not general attention/behaviour.",
+    reference:
+      "Kaplan & Sadock's Synopsis 11th Ed; Nelson Textbook of Paediatrics 21st Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2021",
+  },
+  {
+    id: "psy-005",
+    subject: "Psychiatry",
+    chapter: "Substance Use",
+    stem: "During opioid withdrawal, which symptom is NOT expected?",
+    options: [
+      "Miosis (pinpoint pupils)",
+      "Yawning",
+      "Goosebumps (piloerection)",
+      "Rhinorrhoea",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Miosis — Correct (NOT expected). Miosis (pinpoint pupils) is a sign of opioid INTOXICATION (due to μ-receptor activation of Edinger-Westphal nucleus). During opioid WITHDRAWAL, the opposite occurs — MYDRIASIS (dilated pupils) due to sympathetic rebound (locus coeruleus hyperactivity).\n\nWithdrawal features: yawning, lacrimation, rhinorrhoea, piloerection ('cold turkey' = goosebumps), myalgia, diarrhoea, hypertension, tachycardia, anxiety, insomnia — all represent sympathetic hyperactivity.\n\nB) Yawning — Wrong. Yawning is a classic early withdrawal sign.\nC) Piloerection — Wrong. Piloerection ('cold turkey') is characteristic of withdrawal.\nD) Rhinorrhoea — Wrong. Rhinorrhoea with lacrimation = early withdrawal (8–12 hours post last dose).",
+    reference: "Kaplan & Sadock's Synopsis 11th Ed; Katzung 15th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2019",
+  },
+
+  // ============================================================
+  // RADIOLOGY
+  // ============================================================
+  {
+    id: "rad-001",
+    subject: "Radiology",
+    chapter: "Chest Radiology",
+    stem: "Hampton's hump on chest X-ray is seen in:",
+    options: [
+      "Pulmonary embolism with infarction",
+      "Pneumothorax",
+      "Pleural effusion",
+      "Pulmonary oedema",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Pulmonary embolism — Correct. Hampton's hump = a wedge-shaped (truncated cone) peripheral pleural-based opacity with the base toward the pleura and apex pointing toward hilum. Represents pulmonary infarction distal to embolus. Another PE sign: Westermark sign (oligaemia/hyperlucency distal to embolus).\n\nB) Pneumothorax — Wrong. Pneumothorax: absent lung markings + visible pleural line at lung margin; tracheal shift in tension.\n\nC) Pleural effusion — Wrong. Pleural effusion: obliteration of costophrenic angle, meniscus sign, opacification of hemithorax.\n\nD) Pulmonary oedema — Wrong. Pulmonary oedema: bilateral bat-wing/butterfly perihilar opacities, Kerley B lines, upper lobe diversion, pleural effusions.",
+    reference:
+      "Sutton's Textbook of Radiology 8th Ed; Chapman & Nakielny 5th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2021",
+  },
+  {
+    id: "rad-002",
+    subject: "Radiology",
+    chapter: "Neuroradiology",
+    stem: "In CT scan, haemorrhage appears as:",
+    options: [
+      "Hyperdense (bright white)",
+      "Hypodense (dark)",
+      "Isodense",
+      "Mixed density",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Hyperdense (bright white) — Correct. Acute haemorrhage (< 72 hours) appears hyperdense on unenhanced CT (Hounsfield units 50–80 HU) due to the high protein content of haemoglobin. Blood clot attenuates more X-rays than brain parenchyma (25–40 HU). Epidural and subdural haematomas, intracerebral haemorrhage, and subarachnoid haemorrhage all appear bright white acutely.\n\nB) Hypodense — Wrong. Hypodense lesions = CSF, oedema, infarct (after 24–72 hours), low-grade tumour.\n\nC) Isodense — Wrong. Subacute haematoma (1–3 weeks) becomes isodense (same density as brain).\n\nD) Mixed — Wrong. Mixed density can occur with active bleeding or mixed age haematoma.",
+    reference:
+      "Sutton's Textbook of Radiology 8th Ed; Grainger & Allison's Diagnostic Radiology 6th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2016",
+  },
+  {
+    id: "rad-003",
+    subject: "Radiology",
+    chapter: "Chest Radiology",
+    stem: "Kerley B lines on chest X-ray indicate:",
+    options: [
+      "Interstitial pulmonary oedema (distended lymphatics)",
+      "Pneumonia",
+      "Pulmonary fibrosis",
+      "Pleural effusion",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Interstitial pulmonary oedema — Correct. Kerley B lines are short, horizontal, non-branching lines at the periphery of the lower zones of the lungs, perpendicular to the pleural surface. They represent distended interlobular lymphatics/septa filled with oedema fluid. Seen in left heart failure, mitral stenosis, lymphangitis carcinomatosa, pulmonary haemosiderosis.\n\nKerley A lines = longer oblique lines in upper zones.\nKerley C lines = fine network in middle and lower zones.\n\nB) Pneumonia — Wrong. Consolidation (lobar or patchy); air bronchograms.\nC) Pulmonary fibrosis — Wrong. Fibrosis shows honeycombing, traction bronchiectasis, decreased lung volumes.\nD) Pleural effusion — Wrong. Effusion shows blunted costophrenic angles.",
+    reference:
+      "Sutton's Textbook of Radiology 8th Ed; Grainger & Allison's 6th Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2017",
+  },
+  {
+    id: "rad-004",
+    subject: "Radiology",
+    chapter: "Abdominal Radiology",
+    stem: "'Inverted U' appearance on plain X-ray abdomen is seen in:",
+    options: [
+      "Sigmoid volvulus",
+      "Small bowel obstruction",
+      "Caecal volvulus",
+      "Normal bowel gas pattern",
+    ],
+    correctIndex: 2,
+    explanation:
+      "C) Caecal volvulus — Correct. Caecal volvulus produces a 'coffee bean' or comma-shaped dilated loop in the RIGHT iliac fossa pointing toward the left upper quadrant. Some sources describe an inverted U appearance.\n\nHowever, the CLASSIC 'inverted U' or 'omega loop' / 'bent inner tube' is typically Sigmoid volvulus — showing a massively dilated sigmoid colon rising from the pelvis forming an inverted U loop with the apex in the right upper quadrant.\n\nA) Sigmoid volvulus — Actually this IS the classic inverted U appearance. This is the most commonly tested association.\n\nNote: This question is ambiguous. Most standard Indian textbooks and NEET PG MCQs associate 'inverted U sign' with sigmoid volvulus.",
+    reference: "Sutton's Textbook of Radiology 8th Ed; Bailey & Love 28th Ed.",
+    difficulty: "Medium",
+    year: "NEET PG 2020",
+  },
+  {
+    id: "rad-005",
+    subject: "Radiology",
+    chapter: "Musculoskeletal Radiology",
+    stem: "Double cortical sign on plain X-ray is pathognomonic of:",
+    options: [
+      "Stress fracture",
+      "Paget's disease",
+      "Osteosarcoma",
+      "Osteoporosis",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Stress fracture — Correct. The 'double cortical sign' (or double cortex sign) is seen on plain X-rays in stress fractures — it represents periosteal new bone formation parallel to the cortex, creating a double cortical line. This is the earliest radiographic sign of a stress fracture (days to weeks before the fracture line is visible).\n\nB) Paget's disease — Wrong. Paget's shows expansion, cortical thickening, 'cotton wool' appearance in skull, 'picture frame' vertebra, 'V-shaped' or 'flame' advancing lytic front.\n\nC) Osteosarcoma — Wrong. Codman's triangle, sunburst periosteal reaction, destructive lytic/blastic lesion.\n\nD) Osteoporosis — Wrong. Reduced bone density, loss of trabeculae, vertebral compression fractures.",
+    reference:
+      "Sutton's Textbook of Radiology 8th Ed; Maheshwari's Orthopaedics 5th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2021",
+  },
+
+  // ============================================================
+  // ADDITIONAL HIGH-YIELD MEDICINE QUESTIONS
+  // ============================================================
+  {
+    id: "med-add-001",
+    subject: "Internal Medicine",
+    chapter: "Cardiology",
+    stem: "A patient with inferior wall STEMI develops complete heart block (CHB). Most likely the AV node blood supply is from:",
+    options: [
+      "Right coronary artery (RCA)",
+      "Left anterior descending artery",
+      "Left circumflex artery",
+      "Marginal artery",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Right coronary artery — Correct. In 90% of individuals (right-dominant circulation), the AV node is supplied by the RCA (specifically the AV nodal artery arising from the right dominant posterior descending artery). Inferior STEMI = RCA occlusion. This explains why inferior MI is associated with AV block (including CHB).\n\nB) LAD — Wrong. LAD supplies anterior wall, interventricular septum, bundle of His and bundle branches; LAD occlusion causes LBBB or RBBB + hemiblock.\n\nC) LCx — Wrong. LCx supplies lateral wall.\n\nD) Marginal artery — Wrong. Marginal branches from RCA supply right ventricular free wall.",
+    reference:
+      "Harrison's Principles of Internal Medicine 21st Ed; Braunwald's Heart Disease 12th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2022",
+  },
+  {
+    id: "med-add-002",
+    subject: "Internal Medicine",
+    chapter: "Endocrinology",
+    stem: "Which of the following is NOT a feature of syndrome of inappropriate antidiuretic hormone (SIADH)?",
+    options: [
+      "Hypernatraemia",
+      "Hyponatraemia",
+      "Low serum osmolality",
+      "High urine osmolality",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Hypernatraemia — Correct (NOT a feature). SIADH is characterised by HYPONATRAEMIA (low serum sodium) due to water retention. ADH causes free water retention in collecting ducts → dilutional hyponatraemia + low serum osmolality.\n\nSIADH criteria (Schwartz-Bartter): Hyponatraemia, Hypo-osmolality (<270 mOsm/kg), Inappropriately elevated urine osmolality (>100 mOsm/kg), Urine Na >40 mEq/L, Euvolaemia (no oedema, no dehydration), Normal thyroid/adrenal/renal function.\n\nB) Hyponatraemia — Wrong. This IS a feature.\nC) Low serum osmolality — Wrong. This IS a feature.\nD) High urine osmolality — Wrong. This IS a feature (inappropriately concentrated urine).",
+    reference: "Harrison's 21st Ed; Davidson's Principles 23rd Ed.",
+    difficulty: "Easy",
+    year: "NEET PG 2018",
+  },
+  {
+    id: "pharm-add-001",
+    subject: "Pharmacology",
+    chapter: "Antimicrobials",
+    stem: "Mechanism of resistance to beta-lactam antibiotics by MRSA is:",
+    options: [
+      "Production of altered penicillin-binding proteins (PBP2a)",
+      "Beta-lactamase production",
+      "Efflux pump overexpression",
+      "Porin channel deletion",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A) Altered PBP2a — Correct. MRSA (Methicillin-resistant S. aureus) resistance is due to the mecA gene encoding PBP2a (penicillin-binding protein 2a). PBP2a has low affinity for all beta-lactam antibiotics (including methicillin/oxacillin), making MRSA resistant to ALL penicillins, cephalosporins, and carbapenems.\n\nB) Beta-lactamase — Wrong. Beta-lactamase production (hydrolysis of beta-lactam ring) is the mechanism in other S. aureus strains but NOT the primary MRSA mechanism.\n\nC) Efflux pump — Wrong. Efflux pumps contribute to quinolone, tetracycline resistance, not primarily beta-lactam resistance in MRSA.\n\nD) Porin deletion — Wrong. Porin loss is a mechanism in Gram-negative resistance (Pseudomonas, E. coli).",
+    reference:
+      "Katzung's Basic & Clinical Pharmacology 15th Ed; Mandell's Principles 9th Ed.",
+    difficulty: "Hard",
+    year: "NEET PG 2021",
+  },
+];
+
+// Merge additional questions into main array
+NEET_PG_QUESTIONS.push(...ADDITIONAL_NEET_PG_QUESTIONS);

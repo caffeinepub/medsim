@@ -142,7 +142,6 @@ function CompactDiseaseCard({ disease }: { disease: Disease }) {
               className="px-2.5 pb-2.5 space-y-2"
               style={{ borderTop: "1px solid oklch(0.28 0.05 230 / 0.4)" }}
             >
-              {/* Symptoms */}
               {disease.symptoms.length > 0 && (
                 <div className="pt-2">
                   <div className="flex items-center gap-1 mb-1">
@@ -175,7 +174,6 @@ function CompactDiseaseCard({ disease }: { disease: Disease }) {
                 </div>
               )}
 
-              {/* Medicines */}
               {disease.medicines.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1 mb-1">
@@ -213,7 +211,6 @@ function CompactDiseaseCard({ disease }: { disease: Disease }) {
 
 function InlineText({ text }: { text: string }) {
   if (!text) return null;
-  // Show first 300 chars with basic bold support
   const truncated = text.length > 300 ? `${text.slice(0, 300)}…` : text;
   const lines = truncated.split("\n").filter((l) => l.trim());
 
@@ -297,7 +294,6 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
           color: "oklch(0.85 0.015 215)",
         }}
       >
-        {/* Need more info */}
         {showNeedMoreInfo && (
           <div
             className="flex items-start gap-1.5 rounded-lg px-2.5 py-2"
@@ -309,15 +305,14 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
           >
             <HelpCircle className="mt-0.5 h-3 w-3 flex-shrink-0" />
             <div>
-              <p className="font-semibold">Aur detail mein batao</p>
+              <p className="font-semibold">Please provide more details</p>
               <p className="opacity-75 mt-0.5">
-                Disease ka naam ya symptoms likhein.
+                Enter disease name or specific symptoms.
               </p>
             </div>
           </div>
         )}
 
-        {/* Escalation warning */}
         {isLowConf && !showNeedMoreInfo && (
           <div
             className="flex items-center gap-1.5 rounded-lg px-2 py-1.5"
@@ -327,14 +322,12 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
             }}
           >
             <AlertTriangle className="h-3 w-3 flex-shrink-0" />
-            <span>Expert ko forward kar diya gaya</span>
+            <span>Forwarded to clinical expert</span>
           </div>
         )}
 
-        {/* Response text */}
         {msg.content && !showNeedMoreInfo && <InlineText text={msg.content} />}
 
-        {/* Disease cards */}
         {msg.diseases && msg.diseases.length > 0 && (
           <div className="space-y-1.5">
             <div className="flex items-center gap-1">
@@ -359,13 +352,12 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
                 className="text-[10px] pl-1"
                 style={{ color: "oklch(0.58 0.08 196)" }}
               >
-                +{msg.diseases.length - 3} more — full page kholo
+                +{msg.diseases.length - 3} more — open full page
               </p>
             )}
           </div>
         )}
 
-        {/* Confidence bar */}
         {msg.probability !== undefined && msg.probability > 0 && (
           <div className="flex items-center gap-2">
             <div
@@ -389,7 +381,6 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
           </div>
         )}
 
-        {/* Escalated note */}
         {msg.escalated && (
           <div
             className="flex items-center gap-1.5 rounded-lg px-2 py-1"
@@ -399,7 +390,7 @@ function FloatMessageBubble({ msg }: { msg: FloatMessage }) {
             }}
           >
             <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
-            <span>Expert ko alert bhej diya gaya</span>
+            <span>Expert alert sent</span>
           </div>
         )}
       </div>
@@ -418,6 +409,111 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // ─── Drag state ───────────────────────────────────────────────
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    try {
+      const saved = localStorage.getItem("medsim_ai_float_pos");
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return {
+      x: window.innerWidth - 80,
+      y: window.innerHeight - 100,
+    };
+  });
+  const dragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
+  const moved = useRef(false);
+
+  const BUTTON_SIZE = 56;
+  const PANEL_W = Math.min(380, window.innerWidth - 16);
+  const PANEL_H = 520;
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    dragging.current = true;
+    moved.current = false;
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      posX: pos.x,
+      posY: pos.y,
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    e.stopPropagation();
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      moved.current = true;
+    }
+    const newX = Math.max(
+      0,
+      Math.min(window.innerWidth - BUTTON_SIZE, dragStart.current.posX + dx),
+    );
+    const newY = Math.max(
+      0,
+      Math.min(window.innerHeight - BUTTON_SIZE, dragStart.current.posY + dy),
+    );
+    setPos({ x: newX, y: newY });
+  };
+
+  const handlePointerUp = () => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    // Save position
+    setPos((current) => {
+      localStorage.setItem("medsim_ai_float_pos", JSON.stringify(current));
+      return current;
+    });
+    // Only open if it was a tap (not a drag)
+    if (!moved.current) {
+      if (!isOpen) {
+        setIsOpen(true);
+        setUnreadCount(0);
+      }
+    }
+  };
+
+  // Calculate chat panel position based on button position
+  const getPanelStyle = (): React.CSSProperties => {
+    const btnCenterX = pos.x + BUTTON_SIZE / 2;
+
+    const margin = 8;
+
+    // Prefer opening above button
+    let panelLeft = btnCenterX - PANEL_W / 2;
+    let panelTop = pos.y - PANEL_H - margin;
+
+    // If not enough space above, open below
+    if (panelTop < margin) {
+      panelTop = pos.y + BUTTON_SIZE + margin;
+    }
+
+    // Clamp horizontally
+    panelLeft = Math.max(
+      margin,
+      Math.min(window.innerWidth - PANEL_W - margin, panelLeft),
+    );
+
+    // Clamp vertically
+    panelTop = Math.max(
+      margin,
+      Math.min(window.innerHeight - PANEL_H - margin, panelTop),
+    );
+
+    return {
+      position: "fixed" as const,
+      left: panelLeft,
+      top: panelTop,
+      width: PANEL_W,
+      height: PANEL_H,
+    };
+  };
+
   const { data: diseases = [] } = useAllDiseases();
   const aiDiagnosis = useGetAIDiagnosis();
   const escalationAlert = useCreateAIEscalationAlert();
@@ -435,17 +531,13 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
     if (!isOpen) return;
     const handleClick = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        // Don't close if clicking the float button itself
         setIsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen]);
-
-  const handleOpen = () => {
-    setIsOpen(true);
-    setUnreadCount(0);
-  };
 
   const handleSend = async () => {
     const userMessage = input.trim();
@@ -462,7 +554,6 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      // 1. Local disease database search first
       const matched = searchDiseases(userMessage, diseases);
       const localResult = generateResponse(userMessage, diseases, matched);
 
@@ -482,7 +573,7 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
         return;
       }
 
-      // 2. Backend fallback
+      // Backend fallback
       const patientData: PatientData = {
         id: crypto.randomUUID(),
         age: BigInt(
@@ -535,7 +626,7 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
       const aiMsg: FloatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: result.reasoning || "Koi jawab nahi mila.",
+        content: result.reasoning || "No response found.",
         responseType: "backend",
         diseases: result.diagnosis.map((d) => ({
           id: d.diseaseId,
@@ -565,7 +656,7 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
         {
           id: crypto.randomUUID(),
           role: "assistant" as const,
-          content: "Kuch error aa gaya. Dobara try karein.",
+          content: "An error occurred. Please try again.",
           probability: 0,
         },
       ]);
@@ -582,23 +673,20 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
   };
 
   return (
-    <div
-      ref={panelRef}
-      className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3"
-    >
-      {/* Chat panel */}
+    <>
+      {/* Chat panel — positioned based on button position */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            ref={panelRef}
             initial={{ opacity: 0, scale: 0.92, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 12 }}
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
             data-ocid="ai_float.panel"
-            className="flex flex-col overflow-hidden rounded-2xl shadow-2xl"
+            className="z-[60] flex flex-col overflow-hidden rounded-2xl shadow-2xl"
             style={{
-              width: "380px",
-              height: "520px",
+              ...getPanelStyle(),
               background:
                 "linear-gradient(180deg, oklch(0.17 0.05 235) 0%, oklch(0.15 0.04 230) 100%)",
               border: "1px solid oklch(0.35 0.06 230)",
@@ -640,8 +728,11 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
 
               <button
                 type="button"
-                onClick={() => onNavigate("ai-assistant")}
-                title="Full page kholo"
+                onClick={() => {
+                  setIsOpen(false);
+                  onNavigate("ai-assistant");
+                }}
+                title="Open full page"
                 className="flex h-6 w-6 items-center justify-center rounded transition-opacity hover:opacity-70"
                 style={{ color: "oklch(0.65 0.02 215)" }}
               >
@@ -676,17 +767,16 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
                       style={{ color: "oklch(0.55 0.02 230)" }}
                     >
                       {diseases.length > 0
-                        ? `${diseases.length} diseases loaded. Koi bhi medical sawaal poochho.`
-                        : "Koi bhi medical sawaal poochho"}
+                        ? `${diseases.length} diseases loaded. Ask any medical question.`
+                        : "Ask any medical question"}
                     </p>
-                    {/* Quick suggestions */}
                     <div className="mt-3 flex flex-wrap justify-center gap-1.5">
                       {[
-                        "Malaria ke symptoms?",
-                        "Dengue ka treatment?",
-                        "TB ki diagnosis?",
+                        "Malaria symptoms?",
+                        "Dengue treatment?",
+                        "TB diagnosis?",
                         "Diabetes management?",
-                        "Hypertension ki medicines?",
+                        "Hypertension medicines?",
                       ].map((s) => (
                         <button
                           key={s}
@@ -732,7 +822,7 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Medical sawaal likhein… (e.g. malaria symptoms)"
+                placeholder="Type a medical question… (e.g. malaria symptoms)"
                 rows={1}
                 className="resize-none text-xs ai-textarea"
                 style={{
@@ -768,15 +858,19 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
         )}
       </AnimatePresence>
 
-      {/* Floating button */}
-      <motion.button
+      {/* Draggable floating button */}
+      <div
         data-ocid="ai_float.open_modal_button"
-        type="button"
-        onClick={handleOpen}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.95 }}
-        className="relative flex h-14 w-14 items-center justify-center rounded-full shadow-2xl"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        className="relative flex h-14 w-14 cursor-grab items-center justify-center rounded-full shadow-2xl active:cursor-grabbing select-none"
         style={{
+          position: "fixed",
+          left: pos.x,
+          top: pos.y,
+          zIndex: 50,
+          touchAction: "none",
           background:
             "linear-gradient(135deg, oklch(0.55 0.16 200), oklch(0.42 0.12 230))",
           boxShadow:
@@ -785,7 +879,7 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
       >
         {/* Glow ring pulse */}
         <motion.span
-          className="absolute inset-0 rounded-full"
+          className="absolute inset-0 rounded-full pointer-events-none"
           animate={{
             boxShadow: [
               "0 0 0 0 oklch(0.55 0.16 200 / 0.5)",
@@ -794,21 +888,21 @@ export function AIAssistantFloat({ onNavigate }: AIAssistantFloatProps) {
           }}
           transition={{ duration: 1.8, repeat: Number.POSITIVE_INFINITY }}
         />
-        <Brain className="h-7 w-7 text-white drop-shadow-lg" />
+        <Brain className="h-7 w-7 text-white drop-shadow-lg pointer-events-none" />
 
         {/* Unread badge */}
         {unreadCount > 0 && (
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white pointer-events-none"
             style={{ background: "oklch(0.65 0.22 27)" }}
           >
             {unreadCount}
           </motion.span>
         )}
-      </motion.button>
-    </div>
+      </div>
+    </>
   );
 }
 

@@ -59,10 +59,12 @@ interface DrugInfusion {
 interface Scenario {
   id: string;
   name: string;
+  category?: string;
   age: number;
   gender: string;
   complaint: string;
   diagnosis: string;
+  difficulty?: "Easy" | "Medium" | "Hard";
   phases: Record<VitalPhase, Vitals>;
   ventilator?: Ventilator;
   drugs: DrugInfusion[];
@@ -78,6 +80,8 @@ const ICU_SCENARIOS: Scenario[] = [
   {
     id: "septic-shock",
     name: "Septic Shock",
+    category: "Sepsis",
+    difficulty: "Hard",
     age: 58,
     gender: "Male",
     complaint: "High-grade fever, altered sensorium, hypotension × 6 hours",
@@ -257,6 +261,8 @@ const OT_SCENARIOS: Scenario[] = [
   {
     id: "difficult-airway",
     name: "Difficult Airway",
+    category: "Airway",
+    difficulty: "Hard",
     age: 44,
     gender: "Female",
     complaint: "Emergency laparotomy — perforated peptic ulcer",
@@ -351,6 +357,8 @@ const OT_SCENARIOS: Scenario[] = [
   {
     id: "malignant-hyperthermia",
     name: "Malignant Hyperthermia",
+    category: "Critical",
+    difficulty: "Hard",
     age: 31,
     gender: "Male",
     complaint: "Generalised muscle rigidity, rising temperature during GA",
@@ -436,6 +444,8 @@ const EMERGENCY_SCENARIOS: Scenario[] = [
   {
     id: "anaphylaxis",
     name: "Anaphylaxis",
+    category: "Allergy",
+    difficulty: "Medium",
     age: 28,
     gender: "Female",
     complaint:
@@ -525,6 +535,8 @@ const EMERGENCY_SCENARIOS: Scenario[] = [
   {
     id: "status-epilepticus",
     name: "Status Epilepticus",
+    category: "Neurological",
+    difficulty: "Hard",
     age: 19,
     gender: "Male",
     complaint: "Continuous tonic-clonic seizure for > 30 minutes, unresponsive",
@@ -1185,46 +1197,94 @@ export function IcuSimulatorPage() {
           </TabsList>
         </Tabs>
 
-        {/* ── Scenario Selector ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {scenarios.map((sc, idx) => (
-            <button
-              key={sc.id}
-              type="button"
-              data-ocid={`icu.scenario.item.${idx + 1}`}
-              onClick={() => setSelectedScenarioId(sc.id)}
-              className="flex flex-col items-start rounded-xl px-4 py-3 text-left transition-all hover:scale-[1.02] overflow-hidden"
-              style={{
-                background:
-                  selectedScenarioId === sc.id
-                    ? "oklch(0.65 0.16 196 / 0.15)"
-                    : "oklch(0.18 0.05 235)",
-                border:
-                  selectedScenarioId === sc.id
-                    ? "1px solid oklch(0.65 0.16 196 / 0.6)"
-                    : "1px solid oklch(0.65 0.16 196 / 0.15)",
-                boxShadow:
-                  selectedScenarioId === sc.id
-                    ? "0 0 20px oklch(0.65 0.16 196 / 0.2)"
-                    : "none",
-              }}
-            >
+        {/* ── Scenario Selector (Organized by Category) ── */}
+        <div>
+          {/* Category header pills */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {Array.from(
+              new Set(scenarios.map((s) => s.category || "Other")),
+            ).map((cat) => (
               <span
-                className="text-sm font-bold truncate w-full"
+                key={cat}
+                className="rounded-full px-2.5 py-0.5 text-xs font-bold border"
                 style={{
-                  color:
-                    selectedScenarioId === sc.id
-                      ? "oklch(0.65 0.16 196)"
-                      : "oklch(0.88 0.015 215)",
+                  background: "oklch(0.22 0.06 235)",
+                  borderColor: "oklch(0.65 0.16 196 / 0.3)",
+                  color: "oklch(0.72 0.12 196)",
                 }}
               >
-                {sc.name}
+                {cat}
               </span>
-              <span className="text-xs opacity-50 mt-0.5">
-                {sc.age}yr {sc.gender}
-              </span>
-            </button>
-          ))}
+            ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {scenarios.map((sc, idx) => (
+              <button
+                key={sc.id}
+                type="button"
+                data-ocid={`icu.scenario.item.${idx + 1}`}
+                onClick={() => setSelectedScenarioId(sc.id)}
+                className="flex flex-col items-start rounded-xl px-4 py-3 text-left transition-all hover:scale-[1.02] overflow-hidden"
+                style={{
+                  background:
+                    selectedScenarioId === sc.id
+                      ? "oklch(0.65 0.16 196 / 0.15)"
+                      : "oklch(0.18 0.05 235)",
+                  border:
+                    selectedScenarioId === sc.id
+                      ? "1px solid oklch(0.65 0.16 196 / 0.6)"
+                      : "1px solid oklch(0.65 0.16 196 / 0.15)",
+                  boxShadow:
+                    selectedScenarioId === sc.id
+                      ? "0 0 20px oklch(0.65 0.16 196 / 0.2)"
+                      : "none",
+                }}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  {sc.category && (
+                    <span
+                      className="text-[9px] font-bold uppercase tracking-wider rounded-full px-1.5 py-0.5"
+                      style={{
+                        background: "oklch(0.65 0.16 196 / 0.12)",
+                        color: "oklch(0.65 0.16 196 / 0.8)",
+                      }}
+                    >
+                      {sc.category}
+                    </span>
+                  )}
+                  {sc.difficulty && (
+                    <span
+                      className="text-[9px] font-bold"
+                      style={{
+                        color:
+                          sc.difficulty === "Hard"
+                            ? "oklch(0.65 0.2 25)"
+                            : sc.difficulty === "Medium"
+                              ? "oklch(0.72 0.14 68)"
+                              : "oklch(0.7 0.15 145)",
+                      }}
+                    >
+                      {sc.difficulty}
+                    </span>
+                  )}
+                </div>
+                <span
+                  className="text-sm font-bold truncate w-full"
+                  style={{
+                    color:
+                      selectedScenarioId === sc.id
+                        ? "oklch(0.65 0.16 196)"
+                        : "oklch(0.88 0.015 215)",
+                  }}
+                >
+                  {sc.name}
+                </span>
+                <span className="text-xs opacity-50 mt-0.5">
+                  {sc.age}yr {sc.gender}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── Patient Info Bar ── */}

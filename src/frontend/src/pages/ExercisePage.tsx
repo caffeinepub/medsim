@@ -1188,6 +1188,18 @@ function CaseSolver({
   const [aiThinking, setAiThinking] = useState(false);
   const aiScrollRef = useRef<HTMLDivElement>(null);
 
+  // Reset all state when a new case is loaded (patientCase.id changes)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset on case change
+  useEffect(() => {
+    setStep("diagnose");
+    setSelectedDiagnosis("");
+    setSelectedMedicines([]);
+    setResults(null);
+    setTimeLeft(TIMER_SECONDS);
+    setTimerExpired(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, [patientCase.id]);
+
   // Start timer on "diagnose" step, stop on other steps
   // biome-ignore lint/correctness/useExhaustiveDependencies: timerExpired intentionally excluded to avoid restart loop
   useEffect(() => {
@@ -1209,7 +1221,7 @@ function CaseSolver({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [step]);
+  }, [step, patientCase.id]);
 
   const handleAIHelp = () => {
     // Pre-fill with case context

@@ -832,6 +832,52 @@ function ResultsSummary({
     }));
   }, [attempts, questions]);
 
+  // Difficulty breakdown
+  const difficultyBreakdown = useMemo(() => {
+    const map = new Map<string, { correct: number; total: number }>();
+    for (const attempt of attempts) {
+      const q = questions.find((q) => q.id === attempt.questionId);
+      if (!q) continue;
+      const diff = q.difficulty || "Medium";
+      const curr = map.get(diff) ?? { correct: 0, total: 0 };
+      curr.total += 1;
+      if (attempt.isCorrect) curr.correct += 1;
+      map.set(diff, curr);
+    }
+    return Array.from(map.entries()).map(([diff, stats]) => ({
+      diff,
+      ...stats,
+      pct:
+        stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+    }));
+  }, [attempts, questions]);
+
+  // Weak chapters (<50% accuracy)
+  const weakChapters = useMemo(() => {
+    const map = new Map<
+      string,
+      { correct: number; total: number; subject: string }
+    >();
+    for (const attempt of attempts) {
+      const q = questions.find((q) => q.id === attempt.questionId);
+      if (!q) continue;
+      const key = `${q.subject}::${q.chapter}`;
+      const curr = map.get(key) ?? { correct: 0, total: 0, subject: q.subject };
+      curr.total += 1;
+      if (attempt.isCorrect) curr.correct += 1;
+      map.set(key, curr);
+    }
+    return Array.from(map.entries())
+      .map(([key, stats]) => ({
+        chapter: key.split("::")[1],
+        ...stats,
+        pct:
+          stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+      }))
+      .filter((c) => c.pct < 50)
+      .sort((a, b) => a.pct - b.pct);
+  }, [attempts, questions]);
+
   // Wrong questions for review
   const wrongAttempts = attempts.filter((a) => !a.isCorrect);
 
@@ -959,6 +1005,161 @@ function ResultsSummary({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Difficulty breakdown */}
+        {difficultyBreakdown.length > 0 && (
+          <div
+            className="rounded-2xl border p-4 space-y-3"
+            style={{
+              background: "oklch(0.17 0.05 235 / 0.85)",
+              borderColor: "oklch(0.35 0.06 230)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle2
+                className="h-4 w-4"
+                style={{ color: "oklch(0.7 0.15 145)" }}
+              />
+              <h3
+                className="font-display font-bold text-sm"
+                style={{ color: "oklch(0.92 0.015 215)" }}
+              >
+                Performance by Difficulty
+              </h3>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {["Easy", "Medium", "Hard"].map((d) => {
+                const item = difficultyBreakdown.find((x) => x.diff === d);
+                const pct = item?.pct ?? 0;
+                const color =
+                  d === "Easy"
+                    ? "oklch(0.7 0.15 145)"
+                    : d === "Medium"
+                      ? "oklch(0.72 0.14 68)"
+                      : "oklch(0.65 0.2 25)";
+                return (
+                  <div
+                    key={d}
+                    className="rounded-xl p-3 text-center"
+                    style={{ background: "oklch(0.22 0.05 235 / 0.6)" }}
+                  >
+                    <p
+                      className="font-mono font-black text-xl"
+                      style={{ color }}
+                    >
+                      {item ? `${pct}%` : "—"}
+                    </p>
+                    <p
+                      className="text-xs mt-0.5"
+                      style={{ color: "oklch(0.65 0.02 215)" }}
+                    >
+                      {d}
+                    </p>
+                    {item && (
+                      <p
+                        className="text-[10px] mt-0.5"
+                        style={{ color: "oklch(0.5 0.02 215)" }}
+                      >
+                        {item.correct}/{item.total}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Weak chapters + improvement suggestions */}
+        {weakChapters.length > 0 && (
+          <div
+            className="rounded-2xl border p-4 space-y-3"
+            style={{
+              background: "oklch(0.17 0.05 235 / 0.85)",
+              borderColor: "oklch(0.45 0.18 25 / 0.4)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <XCircle
+                className="h-4 w-4"
+                style={{ color: "oklch(0.65 0.2 25)" }}
+              />
+              <h3
+                className="font-display font-bold text-sm"
+                style={{ color: "oklch(0.92 0.015 215)" }}
+              >
+                Study These Topics First
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {weakChapters.slice(0, 5).map((c) => (
+                <div
+                  key={c.chapter}
+                  className="flex items-start gap-2 rounded-xl p-3"
+                  style={{
+                    background: "oklch(0.22 0.05 235 / 0.5)",
+                    border: "1px solid oklch(0.35 0.06 230)",
+                  }}
+                >
+                  <div className="flex-1">
+                    <p
+                      className="font-semibold text-sm"
+                      style={{ color: "oklch(0.85 0.015 215)" }}
+                    >
+                      {c.chapter}
+                    </p>
+                    <p
+                      className="text-xs"
+                      style={{ color: "oklch(0.65 0.02 215)" }}
+                    >
+                      {c.subject} &bull; {c.correct}/{c.total} correct ({c.pct}
+                      %)
+                    </p>
+                  </div>
+                  <div
+                    className="flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-bold"
+                    style={{
+                      background: "oklch(0.45 0.18 25 / 0.15)",
+                      color: "oklch(0.65 0.2 25)",
+                    }}
+                  >
+                    Weak
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div
+              className="rounded-xl p-3"
+              style={{
+                background: "oklch(0.65 0.16 196 / 0.08)",
+                border: "1px solid oklch(0.65 0.16 196 / 0.2)",
+              }}
+            >
+              <p
+                className="text-xs font-bold mb-1"
+                style={{ color: "oklch(0.65 0.16 196)" }}
+              >
+                Improvement Plan
+              </p>
+              <ul className="space-y-1">
+                {weakChapters.slice(0, 3).map((c) => (
+                  <li
+                    key={c.chapter}
+                    className="text-xs"
+                    style={{ color: "oklch(0.72 0.02 215)" }}
+                  >
+                    • Review{" "}
+                    <strong style={{ color: "oklch(0.85 0.015 215)" }}>
+                      {c.chapter}
+                    </strong>{" "}
+                    from standard textbooks — focus on NEET PG high-yield
+                    concepts and mnemonics.
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         )}
 

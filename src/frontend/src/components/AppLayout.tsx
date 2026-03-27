@@ -56,7 +56,7 @@ type Page =
 
 interface AppLayoutProps {
   currentPage: Page;
-  onNavigate: (page: Page) => void;
+  onNavigate: (page: string) => void;
   onGoBack?: () => void;
   canGoBack?: boolean;
   isAdmin: boolean;
@@ -234,6 +234,7 @@ export function AppLayout({
   const handleLogout = () => {
     localStorage.removeItem("medsim_login_timestamp");
     localStorage.removeItem("medsim_login_mobile");
+    localStorage.removeItem("medsim_last_page");
     clear();
   };
 
@@ -332,7 +333,7 @@ export function AppLayout({
                   ? "nav.profile_link"
                   : item.id === "share-app"
                     ? "nav.share_app_link"
-                    : undefined
+                    : `nav.${item.id.replace(/-/g, "_")}_link`
               }
               className="group flex w-full min-h-[48px] items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all"
               style={
@@ -518,8 +519,21 @@ export function AppLayout({
         {/* Profile incomplete banner */}
         {banner}
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto pb-4">{children}</main>
+        {/* Page content with transition animation */}
+        <main className="flex-1 overflow-y-auto pb-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentPage}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="h-full"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
 
       {/* Back navigation button */}

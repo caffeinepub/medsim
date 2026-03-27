@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertCircle,
@@ -23,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { AIResult, Diagnosis } from "../backend.d";
 import { DiagnosticTray } from "../components/DiagnosticTray";
@@ -185,6 +186,14 @@ export function CustomPatientPage() {
     setSelectedDiagnosis(diag);
   };
 
+  // Auto-select top diagnosis when AI result arrives
+  useEffect(() => {
+    if (aiResult && aiResult.diagnosis.length > 0) {
+      setSelectedDiagnosis(aiResult.diagnosis[0]);
+      setSelectedMedicines([]); // reset medicine selection
+    }
+  }, [aiResult]);
+
   const diseaseForDiagnosis = selectedDiagnosis
     ? diseases.find((d) => d.id === selectedDiagnosis.diseaseId)
     : null;
@@ -254,11 +263,37 @@ export function CustomPatientPage() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-6">
           <h1 className="font-display text-3xl font-black text-foreground">
-            Create Custom Patient
+            Custom Patient Simulator
           </h1>
           <p className="text-muted-foreground">
-            Create your patient and get AI diagnosis
+            Configure patient parameters, get AI diagnosis, and plan treatment
           </p>
+          {/* 3-step progress */}
+          <div className="mt-4 flex items-center gap-2">
+            {[
+              { n: 1, label: "Patient Setup", active: true },
+              { n: 2, label: "AI Diagnosis", active: !!aiResult },
+              { n: 3, label: "Treatment Plan", active: !!selectedDiagnosis },
+            ].map((step, i) => (
+              <React.Fragment key={step.n}>
+                <div
+                  className={`flex items-center gap-2 text-xs font-semibold ${step.active ? "text-primary" : "text-muted-foreground"}`}
+                >
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${step.active ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"}`}
+                  >
+                    {step.n}
+                  </span>
+                  <span className="hidden sm:inline">{step.label}</span>
+                </div>
+                {i < 2 && (
+                  <div
+                    className={`flex-1 h-0.5 rounded-full ${(i === 0 && aiResult) || (i === 1 && selectedDiagnosis) ? "bg-primary" : "bg-border"}`}
+                  />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
@@ -427,7 +462,7 @@ export function CustomPatientPage() {
                 <div className="space-y-2">
                   <Label>Patient History</Label>
                   <Textarea
-                    placeholder="5 din se bukhaar hai, kandhe mein dard, weak feel kar raha hai..."
+                    placeholder="Patient presents with 5 days history of high-grade fever, shoulder pain, and generalised weakness..."
                     value={history}
                     onChange={(e) => setHistory(e.target.value)}
                     rows={3}
@@ -464,12 +499,12 @@ export function CustomPatientPage() {
               {aiDiagnosis.isPending ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  AI Diagnosis Dekh Raha Hai...
+                  Analyzing Patient Data...
                 </>
               ) : (
                 <>
                   <Brain className="h-5 w-5" />
-                  AI Diagnosis Lein
+                  Get AI Diagnosis
                 </>
               )}
             </Button>
@@ -641,46 +676,148 @@ export function CustomPatientPage() {
                       animate={{ opacity: 1 }}
                       className="mt-4 rounded-xl border border-border bg-card p-4"
                     >
-                      <h4 className="font-display mb-3 font-bold text-foreground">
-                        Medicine Select Karo
+                      {/* Primary diagnosis header */}
+                      <div className="mb-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p className="text-xs font-bold uppercase tracking-wide text-primary">
+                            Primary Diagnosis
+                          </p>
+                          <Badge variant="secondary" className="text-xs">
+                            {Number(aiResult!.probability)}% Confidence
+                          </Badge>
+                        </div>
+                        <p className="font-bold text-foreground text-sm">
+                          {selectedDiagnosis.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          ICD-10: {selectedDiagnosis.icd10Code} &bull;{" "}
+                          {selectedDiagnosis.category}
+                        </p>
+                      </div>
+
+                      {/* ICMR Treatment Protocol */}
+                      <div className="mb-3 space-y-2">
+                        <p className="text-xs font-bold uppercase tracking-wide text-foreground flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-success inline-block" />
+                          Standard Treatment Protocol
+                        </p>
+                        <p className="text-[11px] text-muted-foreground rounded-lg bg-muted/30 px-3 py-2 leading-relaxed">
+                          {diseaseForDiagnosis.description ||
+                            `Evidence-based management for ${selectedDiagnosis.name} as per ICMR guidelines and Harrison's Principles of Internal Medicine.`}
+                        </p>
+                      </div>
+
+                      {/* Monitoring parameters */}
+                      <div className="mb-3 rounded-lg border border-warning/20 bg-warning/5 p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-warning mb-1.5">
+                          Monitoring Parameters
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 text-[11px]">
+                          {[
+                            "Vitals q4h",
+                            "SpO2",
+                            "Urine output",
+                            "CBC",
+                            "Metabolic panel",
+                          ].map((m) => (
+                            <span
+                              key={m}
+                              className="rounded px-2 py-0.5 font-mono"
+                              style={{
+                                background: "oklch(0.22 0.05 75/0.4)",
+                                color: "oklch(0.82 0.12 75)",
+                              }}
+                            >
+                              {m}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Red flags */}
+                      <div className="mb-3 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-destructive mb-1">
+                          Red Flags — Escalate Immediately
+                        </p>
+                        <div className="text-[11px] text-muted-foreground space-y-0.5">
+                          {[
+                            "SpO2 &lt; 90%",
+                            "SBP < 90 mmHg",
+                            "GCS deterioration",
+                            "Oliguria (< 0.5 mL/kg/h)",
+                          ].map((f) => (
+                            <p key={f} className="flex gap-1">
+                              <span className="text-destructive">•</span>
+                              <span>{f}</span>
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+
+                      <Separator className="my-3" />
+
+                      {/* Medicine selection */}
+                      <h4 className="font-display mb-3 font-bold text-foreground text-sm">
+                        Select Treatment Medicines
                       </h4>
-                      <ScrollArea className="max-h-48">
+                      <ScrollArea className="max-h-52">
                         <div className="space-y-2 pr-2">
                           {diseaseForDiagnosis.medicines.map((med) => (
                             <div
                               key={med.id}
-                              className={`flex items-center gap-3 rounded-lg border p-3 ${
+                              className={`flex flex-col gap-1 rounded-lg border p-3 transition-colors ${
                                 selectedMedicines.includes(med.id)
                                   ? "border-primary bg-primary/5"
                                   : "border-border"
                               }`}
                             >
-                              <Checkbox
-                                id={`custom-${med.id}`}
-                                checked={selectedMedicines.includes(med.id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedMedicines((p) => [...p, med.id]);
-                                  } else {
-                                    setSelectedMedicines((p) =>
-                                      p.filter((id) => id !== med.id),
-                                    );
-                                  }
-                                }}
-                              />
-                              <Label
-                                htmlFor={`custom-${med.id}`}
-                                className="flex-1 cursor-pointer"
-                              >
-                                <span className="font-medium">{med.name}</span>
-                                <span className="ml-2 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-3">
+                                <Checkbox
+                                  id={`custom-${med.id}`}
+                                  checked={selectedMedicines.includes(med.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedMedicines((p) => [
+                                        ...p,
+                                        med.id,
+                                      ]);
+                                    } else {
+                                      setSelectedMedicines((p) =>
+                                        p.filter((id) => id !== med.id),
+                                      );
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`custom-${med.id}`}
+                                  className="flex-1 cursor-pointer"
+                                >
+                                  <span className="font-semibold text-sm">
+                                    {med.name}
+                                  </span>
+                                </Label>
+                              </div>
+                              <div className="pl-7 flex flex-wrap gap-1.5 text-[11px]">
+                                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground/70">
                                   {med.dosage}
                                 </span>
-                              </Label>
+                                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground/70">
+                                  {med.route}
+                                </span>
+                                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground/70">
+                                  {med.duration}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>
                       </ScrollArea>
+
+                      {/* Reference */}
+                      <p className="mt-2 text-[10px] text-muted-foreground italic">
+                        Ref: Harrison's Principles of Internal Medicine, 21st Ed
+                        &bull; ICMR Standard Treatment Guidelines 2025
+                      </p>
 
                       <Button
                         className="mt-3 w-full gap-2"
@@ -691,7 +828,7 @@ export function CustomPatientPage() {
                         }
                       >
                         <Send className="h-4 w-4" />
-                        Treatment Submit Karo
+                        Submit Treatment Plan
                       </Button>
                     </motion.div>
                   )}
