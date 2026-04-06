@@ -24,6 +24,10 @@ import {
   useGetAIDiagnosis,
 } from "../hooks/useQueries";
 import { generateResponse, searchDiseases } from "../lib/aiSearch";
+import {
+  type DiseaseEntry,
+  allBatch1Diseases,
+} from "../lib/disease-db-anatomy-physiology";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -1053,6 +1057,61 @@ const ICMR_PROTOCOLS: Record<
   },
 };
 
+// ─── Extended Disease DB Search ──────────────────────────────────
+function searchExtendedDB(query: string): DiseaseEntry | null {
+  const q = query.toLowerCase();
+  const direct = allBatch1Diseases.find((d) =>
+    q.includes(d.name.toLowerCase()),
+  );
+  if (direct) return direct;
+  const scored = allBatch1Diseases.map((d) => {
+    let score = 0;
+    const text =
+      `${d.name} ${d.definition} ${d.category} ${d.clinicalFeatures.join(" ")}`.toLowerCase();
+    for (const w of q.split(/\s+/).filter((w) => w.length > 3)) {
+      if (text.includes(w)) score += 1;
+    }
+    if (
+      d.name
+        .toLowerCase()
+        .split(" ")
+        .some((w) => q.includes(w) && w.length > 3)
+    )
+      score += 5;
+    return { d, score };
+  });
+  const best = scored.sort((a, b) => b.score - a.score)[0];
+  return best && best.score > 0 ? best.d : null;
+}
+
+function formatExtendedDBResponse(entry: DiseaseEntry): string {
+  const drugs = entry.indianBrandDrugs
+    ? `\n\n**Indian Brands:** ${entry.indianBrandDrugs.join(", ")}`
+    : "";
+  const icmr = entry.icmrProtocol
+    ? `\n\n**ICMR Protocol:** ${entry.icmrProtocol}`
+    : "";
+  return [
+    `**${entry.name}** (${entry.icd10})`,
+    `**Subject:** ${entry.subject} | **Category:** ${entry.category}`,
+    "",
+    "**Definition:**",
+    entry.definition,
+    "",
+    `**Etiology:** ${entry.etiology}`,
+    "",
+    "**Clinical Features:**",
+    entry.clinicalFeatures.map((f) => `• ${f}`).join("\n"),
+    "",
+    "**Key Investigations:**",
+    entry.investigations.map((i) => `• ${i}`).join("\n"),
+    "",
+    `**Treatment:** ${entry.treatment}`,
+    icmr,
+    drugs,
+  ].join("\n");
+}
+
 const DOSE_WARNINGS: Array<{ pattern: RegExp; warning: string }> = [
   {
     pattern: /1\s*mg?\s*(of\s*)?adrenaline\s*(IV|intravenous)/i,
@@ -2061,6 +2120,33 @@ export function AIAssistantPage() {
           },
           doseWarning: matchedWarning?.warning,
           probability: 95,
+          escalated: false,
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+        setIsThinking(false);
+        return;
+      }
+
+      // 1b. Search extended disease DB (Anatomy + Physiology batch)
+      const extendedMatch = searchExtendedDB(userMessage);
+      if (extendedMatch) {
+        const responseText = formatExtendedDBResponse(extendedMatch);
+        const pearlEntry = extendedMatch;
+        const aiMsg: AIMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: responseText,
+          responseType: "icmr_protocol" as const,
+          icmrProtocol: {
+            title: pearlEntry.name,
+            overview: pearlEntry.definition,
+            firstLine: pearlEntry.clinicalFeatures.slice(0, 4),
+            differentiatingFeature: pearlEntry.differentiatingFeature,
+            pearlPoints: pearlEntry.pearlPoints,
+          },
+          doseWarning: matchedWarning?.warning,
+          probability: 90,
           escalated: false,
           timestamp: Date.now(),
         };
