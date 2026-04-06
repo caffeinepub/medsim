@@ -28,6 +28,12 @@ import {
   type DiseaseEntry,
   allBatch1Diseases,
 } from "../lib/disease-db-anatomy-physiology";
+import { allBatch2Diseases } from "../lib/disease-db-biochemistry-pathology";
+
+const ALL_DISEASES_DB: DiseaseEntry[] = [
+  ...allBatch1Diseases,
+  ...allBatch2Diseases,
+];
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -1060,11 +1066,9 @@ const ICMR_PROTOCOLS: Record<
 // ─── Extended Disease DB Search ──────────────────────────────────
 function searchExtendedDB(query: string): DiseaseEntry | null {
   const q = query.toLowerCase();
-  const direct = allBatch1Diseases.find((d) =>
-    q.includes(d.name.toLowerCase()),
-  );
+  const direct = ALL_DISEASES_DB.find((d) => q.includes(d.name.toLowerCase()));
   if (direct) return direct;
-  const scored = allBatch1Diseases.map((d) => {
+  const scored = ALL_DISEASES_DB.map((d) => {
     let score = 0;
     const text =
       `${d.name} ${d.definition} ${d.category} ${d.clinicalFeatures.join(" ")}`.toLowerCase();
