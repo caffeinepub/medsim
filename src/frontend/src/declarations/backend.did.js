@@ -173,6 +173,13 @@ export const CaseAttempt = IDL.Record({
   'outcome' : Outcome,
   'wrongDiagnosis' : IDL.Opt(WrongDiagnosis),
 });
+export const LeaderboardEntry = IDL.Record({
+  'id' : IDL.Text,
+  'name' : IDL.Text,
+  'role' : IDL.Text,
+  'updatedAt' : Time,
+  'points' : IDL.Nat,
+});
 export const SubjectStats = IDL.Vec(IDL.Text);
 export const PerformanceStats = IDL.Record({
   'studentId' : IDL.Text,
@@ -233,6 +240,7 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getDisease' : IDL.Func([IDL.Text], [IDL.Opt(Disease)], ['query']),
+  'getLeaderboard' : IDL.Func([], [IDL.Vec(LeaderboardEntry)], ['query']),
   'getMyCaseAttempts' : IDL.Func([], [IDL.Vec(CaseAttempt)], ['query']),
   'getMyCustomPatientSessions' : IDL.Func(
       [],
@@ -268,6 +276,7 @@ export const idlService = IDL.Service({
   'logSecurityEvent' : IDL.Func([SecurityEvent], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'submitCaseAttempt' : IDL.Func([CaseAttempt], [], []),
+  'submitLeaderboardScore' : IDL.Func([IDL.Nat], [], []),
   'updateAdminAlertStatus' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'updateDisease' : IDL.Func([Disease], [], []),
   'updatePatientCase' : IDL.Func([PatientCase], [], []),
@@ -443,6 +452,13 @@ export const idlFactory = ({ IDL }) => {
     'outcome' : Outcome,
     'wrongDiagnosis' : IDL.Opt(WrongDiagnosis),
   });
+  const LeaderboardEntry = IDL.Record({
+    'id' : IDL.Text,
+    'name' : IDL.Text,
+    'role' : IDL.Text,
+    'updatedAt' : Time,
+    'points' : IDL.Nat,
+  });
   const SubjectStats = IDL.Vec(IDL.Text);
   const PerformanceStats = IDL.Record({
     'studentId' : IDL.Text,
@@ -503,6 +519,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getDisease' : IDL.Func([IDL.Text], [IDL.Opt(Disease)], ['query']),
+    'getLeaderboard' : IDL.Func([], [IDL.Vec(LeaderboardEntry)], ['query']),
     'getMyCaseAttempts' : IDL.Func([], [IDL.Vec(CaseAttempt)], ['query']),
     'getMyCustomPatientSessions' : IDL.Func(
         [],
@@ -542,6 +559,7 @@ export const idlFactory = ({ IDL }) => {
     'logSecurityEvent' : IDL.Func([SecurityEvent], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'submitCaseAttempt' : IDL.Func([CaseAttempt], [], []),
+    'submitLeaderboardScore' : IDL.Func([IDL.Nat], [], []),
     'updateAdminAlertStatus' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'updateDisease' : IDL.Func([Disease], [], []),
     'updatePatientCase' : IDL.Func([PatientCase], [], []),

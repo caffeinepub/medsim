@@ -3,7 +3,6 @@ import Prim "mo:prim";
 import Runtime "mo:core/Runtime";
 
 mixin (accessControlState : AccessControl.AccessControlState) {
-  // Initialize auth (first caller becomes admin, others become users)
   public shared ({ caller }) func _initializeAccessControlWithSecret(userSecret : Text) : async () {
     switch (Prim.envVar<system>("CAFFEINE_ADMIN_TOKEN")) {
       case (null) {
@@ -20,7 +19,6 @@ mixin (accessControlState : AccessControl.AccessControlState) {
   };
 
   public shared ({ caller }) func assignCallerUserRole(user : Principal, role : AccessControl.UserRole) : async () {
-    // Admin-only check happens inside
     AccessControl.assignRole(accessControlState, caller, user, role);
   };
 

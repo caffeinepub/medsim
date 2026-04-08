@@ -1,0 +1,268 @@
+type WrongMedicine = 
+ record {
+   correctAlternative: text;
+   medicineId: text;
+   reason: text;
+   sideEffect: text;
+ };
+type WrongDiagnosis = 
+ record {
+   correctDiagnosis: text;
+   explanation: text;
+ };
+type VitalSigns = 
+ record {
+   bp: text;
+   hr: nat;
+   rr: nat;
+   spo2: nat;
+   temp: nat;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type UserProfile = 
+ record {
+   createdAt: Time;
+   id: text;
+   isActive: bool;
+   mobile: text;
+   name: text;
+   role: text;
+ };
+type Time = int;
+type Symptom = 
+ record {
+   description: text;
+   name: text;
+   severity: nat;
+ };
+type SubjectStats = vec text;
+type SideEffect = 
+ record {
+   description: text;
+   timeMinutes: nat;
+ };
+type SecurityEvent = 
+ record {
+   details: text;
+   eventType: text;
+   id: text;
+   status: text;
+   studentId: opt text;
+   timestamp: Time;
+ };
+type PerformanceStats = 
+ record {
+   accuracy: nat;
+   caseHistory:
+    vec record {
+          accuracy: nat;
+          attempts: nat;
+          correct: nat;
+          subjectName: text;
+        };
+   correctCount: nat;
+   recommendations: vec text;
+   studentId: text;
+   subjectStats: SubjectStats;
+   totalAttempts: nat;
+   weakSubjects: vec text;
+ };
+type PatientData = 
+ record {
+   age: nat;
+   allergies: vec text;
+   diagnosisAttempt: text;
+   gender: text;
+   hasDisability: bool;
+   history: text;
+   id: text;
+   medicinesChosen: vec text;
+   outcome: Outcome;
+   symptoms: vec text;
+   vitals: VitalSigns;
+ };
+type PatientCase = 
+ record {
+   chiefComplaint: text;
+   correctDiagnosis: text;
+   correctMedicines: vec text;
+   difficulty: text;
+   diseaseId: text;
+   examinationFindings: text;
+   history: text;
+   id: text;
+   investigations: text;
+   patientAge: nat;
+   patientDisability: opt text;
+   patientGender: text;
+   subject: text;
+   title: text;
+ };
+type Outcome = 
+ record {
+   _diagnosis: opt Diagnosis;
+   details: text;
+   effectsTimeline: vec Effect;
+   isCorrect: bool;
+   responseTime: Time;
+ };
+type Medicine = 
+ record {
+   contraindications: vec text;
+   dosage: text;
+   drugInteractions: vec text;
+   duration: text;
+   goodEffects: vec GoodEffect;
+   id: text;
+   name: text;
+   route: text;
+   sideEffects: vec SideEffect;
+ };
+type LeaderboardEntry = 
+ record {
+   id: text;
+   name: text;
+   points: nat;
+   role: text;
+   updatedAt: Time;
+ };
+type GoodEffect = 
+ record {
+   description: text;
+   timeMinutes: nat;
+ };
+type Effect = 
+ record {
+   description: text;
+   timeMinutes: nat;
+ };
+type Disease = 
+ record {
+   associatedDiseases: vec text;
+   category: text;
+   clinicalSigns: ClinicalSigns;
+   description: text;
+   diagnosticCriteria: text;
+   icd10Code: text;
+   id: text;
+   medicines: vec Medicine;
+   name: text;
+   subjectMapping: vec text;
+   symptoms: vec Symptom;
+ };
+type Diagnosis = 
+ record {
+   category: text;
+   description: text;
+   diseaseId: text;
+   icd10Code: text;
+   name: text;
+   symptoms: vec Symptom;
+ };
+type CustomPatientSession = 
+ record {
+   diagnosisAttempt: text;
+   id: text;
+   medicinesChosen: vec text;
+   outcome: Outcome;
+   patientData: PatientData;
+   studentId: text;
+   timestamp: Time;
+ };
+type ClinicalSigns = 
+ record {
+   bp: text;
+   hr: text;
+   rr: text;
+   spo2: text;
+   temp: text;
+ };
+type CaseAttempt = 
+ record {
+   caseId: text;
+   diagnosisChosen: text;
+   isCorrect: bool;
+   medicinesChosen: vec text;
+   outcome: Outcome;
+   studentId: text;
+   subject: text;
+   timestamp: Time;
+   wrongDiagnosis: opt WrongDiagnosis;
+   wrongMedicines: vec WrongMedicine;
+ };
+type AdminAlert = 
+ record {
+   createdAt: Time;
+   id: text;
+   message: text;
+   severity: nat;
+   status: text;
+   title: text;
+ };
+type AIResult = 
+ record {
+   diagnosis: vec Diagnosis;
+   probability: nat;
+   reasoning: text;
+ };
+service : {
+  _initializeAccessControlWithSecret: (userSecret: text) -> ();
+  addDisease: (disease: Disease) -> ();
+  addPatientCase: (patientCase: PatientCase) -> ();
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  createAIEscalationAlert: (alert: AdminAlert) -> ();
+  createAdminAlert: (alert: AdminAlert) -> ();
+  createCustomPatientSession: (session: CustomPatientSession) -> ();
+  deleteDisease: (diseaseId: text) -> ();
+  deletePatientCase: (caseId: text) -> ();
+  getAIDiagnosis: (patientData: PatientData) -> (AIResult);
+  getAllAdminAlerts: () -> (vec AdminAlert) query;
+  getAllDiseases: () -> (vec Disease) query;
+  getAllPatientCases: () -> (vec PatientCase) query;
+  getAllSecurityEvents: () -> (vec SecurityEvent) query;
+  getAllStudents: () -> (vec UserProfile) query;
+  getCallerUserProfile: () -> (opt UserProfile) query;
+  getCallerUserRole: () -> (UserRole) query;
+  getCaseAttemptsByStudent: (studentId: text) -> (vec CaseAttempt) query;
+  getCustomPatientSession: (sessionId: text) ->
+   (opt CustomPatientSession) query;
+  getDashboardStats: () ->
+   (record {
+      activeToday: nat;
+      commonMistakes: vec text;
+      mostAttemptedCases: vec record {
+                                text;
+                                nat;
+                              };
+      totalStudents: nat;
+    }) query;
+  getDisease: (diseaseId: text) -> (opt Disease) query;
+  getLeaderboard: () -> (vec LeaderboardEntry) query;
+  getMyCaseAttempts: () -> (vec CaseAttempt) query;
+  getMyCustomPatientSessions: () -> (vec CustomPatientSession) query;
+  getMyPerformanceStats: () -> (opt PerformanceStats) query;
+  getPatientCase: (caseId: text) -> (opt PatientCase) query;
+  getPerformanceStats: () -> (vec PerformanceStats) query;
+  getSecurityEventsByStudent: (studentId: text) -> (vec SecurityEvent) query;
+  getStudentPerformanceStats: (studentId: text) ->
+   (opt PerformanceStats) query;
+  getUnresolvedAdminAlerts: () -> (vec AdminAlert) query;
+  getUserProfile: (userId: text) -> (opt UserProfile) query;
+  getUserProfileMobile: (_mobile: text) -> (opt UserProfile) query;
+  isCallerAdmin: () -> (bool) query;
+  isUserProfileVerify: (_id: text) -> (bool) query;
+  logSecurityEvent: (event: SecurityEvent) -> ();
+  saveCallerUserProfile: (profile: UserProfile) -> ();
+  submitCaseAttempt: (attempt: CaseAttempt) -> ();
+  submitLeaderboardScore: (points: nat) -> ();
+  updateAdminAlertStatus: (alertId: text, status: text) -> ();
+  updateDisease: (disease: Disease) -> ();
+  updatePatientCase: (patientCase: PatientCase) -> ();
+  updateSecurityEventStatus: (eventId: text, status: text) -> ();
+  updateStudentStatus: (studentId: text, isActive: bool) -> ();
+}

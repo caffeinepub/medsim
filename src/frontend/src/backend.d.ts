@@ -12,6 +12,13 @@ export interface AIResult {
     diagnosis: Array<Diagnosis>;
     reasoning: string;
 }
+export interface LeaderboardEntry {
+    id: string;
+    name: string;
+    role: string;
+    updatedAt: Time;
+    points: bigint;
+}
 export type Time = bigint;
 export interface SecurityEvent {
     id: string;
@@ -214,6 +221,7 @@ export interface backendInterface {
         commonMistakes: Array<string>;
     }>;
     getDisease(diseaseId: string): Promise<Disease | null>;
+    getLeaderboard(): Promise<Array<LeaderboardEntry>>;
     getMyCaseAttempts(): Promise<Array<CaseAttempt>>;
     getMyCustomPatientSessions(): Promise<Array<CustomPatientSession>>;
     getMyPerformanceStats(): Promise<PerformanceStats | null>;
@@ -229,6 +237,7 @@ export interface backendInterface {
     logSecurityEvent(event: SecurityEvent): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     submitCaseAttempt(attempt: CaseAttempt): Promise<void>;
+    submitLeaderboardScore(points: bigint): Promise<void>;
     updateAdminAlertStatus(alertId: string, status: string): Promise<void>;
     updateDisease(disease: Disease): Promise<void>;
     updatePatientCase(patientCase: PatientCase): Promise<void>;

@@ -1,0 +1,255 @@
+// Version: 1.0.0
+type AdminAlert__404610279 =
+  {
+    createdAt : Time__900049286;
+    id : Text;
+    message : Text;
+    severity : Nat;
+    status : Text;
+    title : Text
+  };
+type CaseAttempt__441998733 =
+  {
+    caseId : Text;
+    diagnosisChosen : Text;
+    isCorrect : Bool;
+    medicinesChosen : [Text];
+    outcome : Outcome__199124338;
+    studentId : Text;
+    subject : Text;
+    timestamp : Time__900049286;
+    wrongDiagnosis : ?WrongDiagnosis__598701420;
+    wrongMedicines : [WrongMedicine__217902087]
+  };
+type ClinicalSigns__259495390 =
+  {bp : Text; hr : Text; rr : Text; spo2 : Text; temp : Text};
+type CustomPatientSession__1038949170 =
+  {
+    diagnosisAttempt : Text;
+    id : Text;
+    medicinesChosen : [Text];
+    outcome : Outcome__199124338;
+    patientData : PatientData__573591723;
+    studentId : Text;
+    timestamp : Time__900049286
+  };
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type Diagnosis__532607674 =
+  {
+    category : Text;
+    description : Text;
+    diseaseId : Text;
+    icd10Code : Text;
+    name : Text;
+    symptoms : [Symptom__539289740]
+  };
+type Disease__606748063 =
+  {
+    associatedDiseases : [Text];
+    category : Text;
+    clinicalSigns : ClinicalSigns__259495390;
+    description : Text;
+    diagnosticCriteria : Text;
+    icd10Code : Text;
+    id : Text;
+    medicines : [Medicine__869616789];
+    name : Text;
+    subjectMapping : [Text];
+    symptoms : [Symptom__539289740]
+  };
+type Effect__244195134 = {description : Text; timeMinutes : Nat};
+type GoodEffect__60134086 = {description : Text; timeMinutes : Nat};
+type Int__270357528 = Int__616954475;
+type Int__616954475 = Int;
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type LeaderboardEntry__252692527 =
+  {
+    id : Text;
+    name : Text;
+    points : Nat;
+    role : Text;
+    updatedAt : Time__900049286
+  };
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type LoginType__915536963 = {#admin; #mobile};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Medicine__869616789 =
+  {
+    contraindications : [Text];
+    dosage : Text;
+    drugInteractions : [Text];
+    duration : Text;
+    goodEffects : [GoodEffect__60134086];
+    id : Text;
+    name : Text;
+    route : Text;
+    sideEffects : [SideEffect__833442152]
+  };
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type Outcome__199124338 =
+  {
+    _diagnosis : ?Diagnosis__532607674;
+    details : Text;
+    effectsTimeline : [Effect__244195134];
+    isCorrect : Bool;
+    responseTime : Time__900049286
+  };
+type PatientCase__556280424 =
+  {
+    chiefComplaint : Text;
+    correctDiagnosis : Text;
+    correctMedicines : [Text];
+    difficulty : Text;
+    diseaseId : Text;
+    examinationFindings : Text;
+    history : Text;
+    id : Text;
+    investigations : Text;
+    patientAge : Nat;
+    patientDisability : ?Text;
+    patientGender : Text;
+    subject : Text;
+    title : Text
+  };
+type PatientData__573591723 =
+  {
+    age : Nat;
+    allergies : [Text];
+    diagnosisAttempt : Text;
+    gender : Text;
+    hasDisability : Bool;
+    history : Text;
+    id : Text;
+    medicinesChosen : [Text];
+    outcome : Outcome__199124338;
+    symptoms : [Text];
+    vitals : VitalSigns__681997343
+  };
+type PerformanceStats__901320274 =
+  {
+    accuracy : Nat;
+    caseHistory :
+      [{accuracy : Nat; attempts : Nat; correct : Nat; subjectName : Text}];
+    correctCount : Nat;
+    recommendations : [Text];
+    studentId : Text;
+    subjectStats : SubjectStats__1042940130;
+    totalAttempts : Nat;
+    weakSubjects : [Text]
+  };
+type SecurityEvent__338469793 =
+  {
+    details : Text;
+    eventType : Text;
+    id : Text;
+    status : Text;
+    studentId : ?Text;
+    timestamp : Time__900049286
+  };
+type Session__107932720 =
+  {
+    createdAt : Time__900049286;
+    expiresAt : Time__900049286;
+    id : Text;
+    loginType : LoginType__915536963;
+    role : UserRole__521596351;
+    userId : Text
+  };
+type SideEffect__833442152 = {description : Text; timeMinutes : Nat};
+type SubjectStats__1042940130 = [Text];
+type Symptom__539289740 = {description : Text; name : Text; severity : Nat};
+type Time__796480547 = Int__270357528;
+type Time__900049286 = Time__796480547;
+type UserProfile__491224006 =
+  {
+    createdAt : Time__900049286;
+    id : Text;
+    isActive : Bool;
+    mobile : Text;
+    name : Text;
+    role : Text
+  };
+type UserRole__521596351 = {#admin; #guest; #user};
+type VitalSigns__681997343 =
+  {bp : Text; hr : Nat; rr : Nat; spo2 : Nat; temp : Nat};
+type WrongDiagnosis__598701420 =
+  {correctDiagnosis : Text; explanation : Text};
+type WrongMedicine__217902087 =
+  {
+    correctAlternative : Text;
+    medicineId : Text;
+    reason : Text;
+    sideEffect : Text
+  };
+actor {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__521596351>
+    };
+  stable adminAlerts :
+    {
+      var root : Node__46230540<Text, AdminAlert__404610279>;
+      var size : Nat__490723111
+    };
+  stable caseAttempts :
+    {
+      var root : Node__46230540<Text, CaseAttempt__441998733>;
+      var size : Nat__490723111
+    };
+  stable customPatientSessions :
+    {
+      var root : Node__46230540<Text, CustomPatientSession__1038949170>;
+      var size : Nat__490723111
+    };
+  stable diseases :
+    {
+      var root : Node__46230540<Text, Disease__606748063>;
+      var size : Nat__490723111
+    };
+  stable leaderboardEntries :
+    {
+      var root : Node__46230540<Text, LeaderboardEntry__252692527>;
+      var size : Nat__490723111
+    };
+  stable medicines :
+    {
+      var root : Node__46230540<Text, Medicine__869616789>;
+      var size : Nat__490723111
+    };
+  stable patientCases :
+    {
+      var root : Node__46230540<Text, PatientCase__556280424>;
+      var size : Nat__490723111
+    };
+  stable performanceStatsMap :
+    {
+      var root : Node__46230540<Text, PerformanceStats__901320274>;
+      var size : Nat__490723111
+    };
+  stable principalToUserId :
+    {var root : Node__46230540<Principal, Text>; var size : Nat__490723111};
+  stable securityEvents :
+    {
+      var root : Node__46230540<Text, SecurityEvent__338469793>;
+      var size : Nat__490723111
+    };
+  stable sessions :
+    {
+      var root : Node__46230540<Principal, Session__107932720>;
+      var size : Nat__490723111
+    };
+  stable users :
+    {
+      var root : Node__46230540<Text, UserProfile__491224006>;
+      var size : Nat__490723111
+    }
+};

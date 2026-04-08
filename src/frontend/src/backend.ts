@@ -94,6 +94,13 @@ export interface AIResult {
     diagnosis: Array<Diagnosis>;
     reasoning: string;
 }
+export interface LeaderboardEntry {
+    id: string;
+    name: string;
+    role: string;
+    updatedAt: Time;
+    points: bigint;
+}
 export type Time = bigint;
 export interface SecurityEvent {
     id: string;
@@ -297,6 +304,7 @@ export interface backendInterface {
         commonMistakes: Array<string>;
     }>;
     getDisease(diseaseId: string): Promise<Disease | null>;
+    getLeaderboard(): Promise<Array<LeaderboardEntry>>;
     getMyCaseAttempts(): Promise<Array<CaseAttempt>>;
     getMyCustomPatientSessions(): Promise<Array<CustomPatientSession>>;
     getMyPerformanceStats(): Promise<PerformanceStats | null>;
@@ -312,6 +320,7 @@ export interface backendInterface {
     logSecurityEvent(event: SecurityEvent): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     submitCaseAttempt(attempt: CaseAttempt): Promise<void>;
+    submitLeaderboardScore(points: bigint): Promise<void>;
     updateAdminAlertStatus(alertId: string, status: string): Promise<void>;
     updateDisease(disease: Disease): Promise<void>;
     updatePatientCase(patientCase: PatientCase): Promise<void>;
@@ -620,6 +629,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n33(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getLeaderboard(): Promise<Array<LeaderboardEntry>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getLeaderboard();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getLeaderboard();
+            return result;
+        }
+    }
     async getMyCaseAttempts(): Promise<Array<CaseAttempt>> {
         if (this.processError) {
             try {
@@ -827,6 +850,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.submitCaseAttempt(to_candid_CaseAttempt_n39(this._uploadFile, this._downloadFile, arg0));
+            return result;
+        }
+    }
+    async submitLeaderboardScore(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.submitLeaderboardScore(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.submitLeaderboardScore(arg0);
             return result;
         }
     }

@@ -74,6 +74,13 @@ export interface Disease {
 }
 export interface Effect { 'description' : string, 'timeMinutes' : bigint }
 export interface GoodEffect { 'description' : string, 'timeMinutes' : bigint }
+export interface LeaderboardEntry {
+  'id' : string,
+  'name' : string,
+  'role' : string,
+  'updatedAt' : Time,
+  'points' : bigint,
+}
 export interface Medicine {
   'id' : string,
   'goodEffects' : Array<GoodEffect>,
@@ -215,6 +222,7 @@ export interface _SERVICE {
     }
   >,
   'getDisease' : ActorMethod<[string], [] | [Disease]>,
+  'getLeaderboard' : ActorMethod<[], Array<LeaderboardEntry>>,
   'getMyCaseAttempts' : ActorMethod<[], Array<CaseAttempt>>,
   'getMyCustomPatientSessions' : ActorMethod<[], Array<CustomPatientSession>>,
   'getMyPerformanceStats' : ActorMethod<[], [] | [PerformanceStats]>,
@@ -230,6 +238,7 @@ export interface _SERVICE {
   'logSecurityEvent' : ActorMethod<[SecurityEvent], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'submitCaseAttempt' : ActorMethod<[CaseAttempt], undefined>,
+  'submitLeaderboardScore' : ActorMethod<[bigint], undefined>,
   'updateAdminAlertStatus' : ActorMethod<[string, string], undefined>,
   'updateDisease' : ActorMethod<[Disease], undefined>,
   'updatePatientCase' : ActorMethod<[PatientCase], undefined>,

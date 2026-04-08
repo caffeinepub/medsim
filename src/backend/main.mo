@@ -7,7 +7,10 @@ import Iter "mo:core/Iter";
 import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
 import List "mo:core/List";
+import Nat "mo:core/Nat";
 import Nat32 "mo:core/Nat32";
+import Int "mo:core/Int";
+import Char "mo:core/Char";
 import Principal "mo:core/Principal";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
@@ -274,7 +277,7 @@ actor {
   func textToLower(t : Text) : Text {
     t.map(func(c : Char) : Char {
       if (c >= 'A' and c <= 'Z') {
-        Char.fromNat32(Char.toNat32(c) + 32);
+        Char.fromNat32(c.toNat32() + 32);
       } else {
         c;
       };
@@ -747,7 +750,7 @@ actor {
 
     for (i in topDiseases.keys()) {
       let sd = topDiseases[i];
-      reasoning #= Nat.toText(i + 1) # ". " # sd.disease.name # " (स्कोर/Score: " # Nat.toText(sd.score) # ")\n";
+      reasoning #= (i + 1).toText() # ". " # sd.disease.name # " (स्कोर/Score: " # sd.score.toText() # ")\n";
       reasoning #= "   मिलान लक्षण / Matched Symptoms:\n";
       for (symptom in sd.matchedSymptoms.vals()) {
         reasoning #= "   - " # symptom # "\n";
