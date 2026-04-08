@@ -29,12 +29,14 @@ import {
   allBatch1Diseases,
 } from "../lib/disease-db-anatomy-physiology";
 import { allBatch2Diseases } from "../lib/disease-db-biochemistry-pathology";
+import { allBatch4Diseases } from "../lib/disease-db-forensic-community";
 import { allBatch3Diseases } from "../lib/disease-db-pharmacology-microbiology";
 
 const ALL_DISEASES_DB: DiseaseEntry[] = [
   ...allBatch1Diseases,
   ...allBatch2Diseases,
   ...allBatch3Diseases,
+  ...allBatch4Diseases,
 ];
 
 // ─── Types ────────────────────────────────────────────────────────
